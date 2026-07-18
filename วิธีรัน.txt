@@ -1,0 +1,21 @@
+======= folder นอก ======
+docker compose build backend
+
+docker rm -f factory-postgres factory-backend
+
+docker compose up -d
+
+ืnote1: เมื่อ docker compose up -d จะรันไฟล์ main.go เข้าไปด้วยเพราะ
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o factory-backend .
+ในไฟล์ \backend\DockerFile
+
+======== frontend =======
+cd frontend
+
+npm install
+
+cp .env .env.local
+
+npm run dev
+
