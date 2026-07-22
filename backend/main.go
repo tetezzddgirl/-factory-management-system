@@ -36,7 +36,8 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chimw.Logger, chimw.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{cfg.CORSOrigin},
+		//AllowedOrigins: []string{cfg.CORSOrigin},
+		AllowedOrigins: cfg.CORSOrigins,
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}))

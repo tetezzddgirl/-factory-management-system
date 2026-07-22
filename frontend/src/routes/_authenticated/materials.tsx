@@ -39,20 +39,35 @@ function MaterialsPage() {
       description="ตรวจสอบสต็อก บันทึกการรับ-จ่าย และแจ้งเตือนของหมด"
       icon={<Inventory2 />}
       actions={
-        <AddItemDialog
-          title="บันทึกรายการวัตถุดิบ"
-          description="บันทึกการรับเข้า เบิกจ่าย หรือคืนวัตถุดิบ"
-          successMessage="บันทึกรายการสำเร็จ"
-          trigger={<Button variant="contained">บันทึกรายการ</Button>}
-          fields={[
-            { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "เบิกจ่าย", "คืน"], defaultValue: "รับเข้า" },
-            { name: "item", label: "ชื่อวัตถุดิบ", placeholder: "HDPE Resin" },
-            { name: "qty", label: "จำนวน (เช่น +500 kg)", placeholder: "+500 kg" },
-          ]}
-          onSubmit={(v) => setTxns((prev) => [{ type: v.type, item: v.item, qty: v.qty, time: "เมื่อสักครู่" }, ...prev])}
-        />
+        <Stack direction="row" spacing={2}>{
+          <AddItemDialog
+            title="บันทึกรายการวัตถุดิบ"
+            description="บันทึกการรับเข้า เบิกจ่าย โอนย้าย หรือคืนวัตถุดิบ"
+            successMessage="บันทึกรายการสำเร็จ"
+            trigger={<Button variant="contained">บันทึกรายการ</Button>}
+            fields={[
+              { name: "type",     label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "เบิกจ่าย", "โอนย้าย","คืน"], defaultValue: "" },
+              { name: "code",     label: "รหัสวัตถุดิบ", type: "select", options: ["MAT-001", "MAT-002", "MAT-003","MAT-004", "MAT-005", "MAT-006"], defaultValue: "" },
+              { name: "item",     label: "ชื่อวัตถุดิบ", placeholder: "HDPE Resin" },
+              {
+                type: "row",
+                fields: [
+                  { name: "qty",  label: "จำนวน", placeholder: "+500", flex: 2 },
+                  { name: "unit", label: "หน่วย", type: "select", options: ["kg", "ชิ้น", "เมตร","ลิตร"], defaultValue: "", flex: 1 },
+                ],
+              },
+              { name: "location", label: "ตำแหน่งที่จัดเก็บ", placeholder: "A11" },
+              { name: "lot number",label: "lot number", placeholder: "LOT-005" },
+              { name: "palette number",label: "palette number", placeholder: "PLT-005" },
+            //โอนย้ายต้องบอกต้นทางปลายทาง
+            ]}
+            onSubmit={(v) => setTxns((prev) => [{ type: v.type, code: v.code, item: v.item, qty: v.qty, location: v.location, time: "เมื่อสักครู่" }, ...prev,])}
+          />
+        }
+      </Stack>
       }
     >
+      <Grid container spacing={2}></Grid>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Grid container spacing={2}>
