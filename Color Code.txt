@@ -1,25 +1,21 @@
 Status Color Code
 
 Red
-HEX: #FF2A04
-RGB: 255,42,4
+HEX: #EF4444
+Critical, severe, alert, form error, emergency, urgent
 
 Orange
-HEX: #FFAF3D
-RGB: 255,175,61
-
-Yellow
-HEX: #FAD800
-RGB: 250,216,0
+HEX: #F59E0B
+Serious, distress, error, needs attention
 
 Green
-HEX: #00E200
-RGB: 0,226,0
+HEX: #10B981
+Normal, on, ok, fine, go, satisfactory
 
 Blue
-HEX: #64D9FF
-RGB: 45,204,255
+HEX: #4A90E2
+Standby, available, enabled
 
 Gray
-HEX: #7B8089
-RGB: 123,128,137
+HEX: #A4ABB6
+Off, unavailable, disabled
