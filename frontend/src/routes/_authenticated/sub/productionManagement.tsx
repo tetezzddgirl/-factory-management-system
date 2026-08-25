@@ -1,0 +1,308 @@
+import { useState, useEffect, useCallback } from 'react';
+import { createFileRoute, useSearch } from '@tanstack/react-router';
+import { 
+  Box, Typography, Button, Chip, LinearProgress, Stack, Grid, 
+  Avatar, Tabs, Tab, Dialog, CircularProgress, Alert
+} from '@mui/material';
+import { Factory, Person, Settings as CogIcon } from '@mui/icons-material';
+import { PageShell } from "@/components/page-shell";
+
+// --- Import Components ---
+import ProductionDetails from "@/components/production_comp/productionDetails";
+import ProductionFix from "@/components/production_comp/productionFix";
+import ProductionEven from "@/components/production_comp/productionEven";
+import ProductionReport from "@/components/production_comp/productionReport";
+import ProductionStatus from "@/components/production_comp/productionStatus";
+import ProductionWip from "@/components/production_comp/productionWip";
+import ProductionFg from "@/components/production_comp/productionFg";
+
+// --- Types ---
+interface ProductionReport {
+  reportId?: string;
+  goodQuantity?: number;
+  actualQuantity?: number;
+  scrapQuantity?: number;
+}
+
+interface ProductionOrder {
+  orderID: string;
+  timestamp: string;
+  name: string;
+  status:
+    | "Pending"      // รอเริ่ม
+    | "Preparing"    // กำลังเตรียมการ
+    | "InProgress"   // กำลังดำเนินการ
+    | "Paused"       // หยุดชั่วคราว
+    | "Completed"    // เสร็จสิ้น
+    | "Cancelled";   // ยกเลิก
+  amount: number;
+  machines: string;
+  startDate: string;
+  endDate: string;
+  report?: ProductionReport;
+}
+
+// 1. กำหนดโครงสร้าง Search Params เพื่อรับ id จาก URL
+type ProductionManagementSearch = {
+  id: string;
+};
+
+export const Route = createFileRoute('/_authenticated/sub/productionManagement')({
+  validateSearch: (search: Record<string, unknown>): ProductionManagementSearch => {
+    return {
+      id: (search.id as string) || "",
+    };
+  },
+  component: RouteComponent,
+});
+
+function RouteComponent() {
+  // ดึง orderID มาจาก URL Params
+  const { id: orderID } = useSearch({ from: '/_authenticated/sub/productionManagement' });
+
+  // States
+  const [order, setOrder] = useState<ProductionOrder | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tabValue, setTabValue] = useState(0);
+  const [openStatusDialog, setOpenStatusDialog] = useState(false);
+
+  // 2. ฟังก์ชันดึงข้อมูล Order เดี่ยวจาก API
+  const fetchOrderDetails = useCallback(async (isSilent = false) => {
+    if (!orderID) return;
+    try {
+      if (!isSilent) setLoading(true);
+      const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
+
+      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
+      const data = await res.json();
+      setOrder(data);
+      setError(null);
+    } catch (err: any) {
+      if (!isSilent) setError(err.message || "เกิดข้อผิดพลาด");
+    } finally {
+      if (!isSilent) setLoading(false);
+    }
+  }, [orderID]);
+
+  // 3. ทำ Polling อัปเดตข้อมูลทุกๆ 3 วินาที
+  useEffect(() => {
+    if (orderID) {
+      fetchOrderDetails(false);
+      const interval = setInterval(() => {
+        fetchOrderDetails(true);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [orderID, fetchOrderDetails]);
+
+  // 4. ฟังก์ชันบันทึกสถานะใหม่ไปยัง API
+  const handleSaveStatus = async (newStatus: string) => {
+    try {
+      const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
+      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          reason: `Updated to ${newStatus} via Management UI`,
+          changedBy: "Operator", // ในอนาคตอาจดึงชื่อจริงจาก token
+        }),
+      });
+
+      if (!res.ok) throw new Error("อัปเดตสถานะไม่สำเร็จ");
+      
+      // อัปเดตข้อมูลบนหน้าจอทันที ไม่ต้องรอ Polling รอบถัดไป
+      setOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+      setOpenStatusDialog(false); 
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  // ปรับการกำหนดสีให้ตรงกับโทนสีที่ให้มา (ส่งเป็น sx object กลับไป)
+  const getStatusChipProps = (status: string) => {
+    switch (status) {
+      case "InProgress": 
+        return { label: "กำลังผลิต", sx: { bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      case "Paused": 
+        return { label: "หยุดชั่วคราว", sx: { bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      case "Completed": 
+        return { label: "เสร็จสิ้น", sx: { bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      case "Cancelled":
+      default: 
+        return { label: "ยกเลิก", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+    }
+  };
+
+  // รอโหลดข้อมูลครั้งแรก
+  if (loading) {
+    return (
+      <PageShell title="จัดการผลิต" description="" icon={<Factory />}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
+    );
+  }
+
+  // กรณีหาข้อมูลไม่เจอ
+  if (error || !order) {
+    return (
+      <PageShell title="จัดการผลิต" description="" icon={<Factory />}>
+        <Alert severity="error">{error || "ไม่พบข้อมูลคำสั่งผลิต"}</Alert>
+      </PageShell>
+    );
+  }
+
+  // คำนวณความคืบหน้าจากข้อมูลจริง
+  const done = 0;
+  const target = order.amount || 1;
+  const progressPct = Math.min(100, Math.round((done / target) * 100));
+  
+  // เรียกใช้งาน Get Chip Props
+  const chipProps = getStatusChipProps(order.status);
+
+  return (
+    <PageShell title="" description="">
+      <Box sx={{ p: 2 }}>
+        
+        {/* --- Header Section --- */}
+        <Grid container spacing={3} sx={{ mt: -6, mb: 1, alignItems: 'flex-start' }}>
+          
+          {/* ฝั่งซ้าย: ข้อมูลงาน */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Stack spacing={2}> 
+              
+              <Stack direction="row" spacing={2}>
+                <Avatar sx={{ bgcolor: '#E3F2FD', width: 48, height: 48 }}> 
+                  <Factory sx={{ color: 'primary.main', fontSize: 24 }} /> 
+                </Avatar>
+                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Stack direction="row" spacing={2} sx={{ mb: 0.5, alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      {order.name} {/* 👈 ชื่อจริงจาก DB */}
+                    </Typography> 
+                    <Chip 
+                      label={chipProps.label} 
+                      sx={chipProps.sx} // นำ object sx มาใส่แทน
+                      size="small" 
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    {order.orderID} {/* 👈 OrderID จริงจาก DB */}
+                  </Typography>
+                </Box>
+              </Stack>
+
+              {/* ส่วนล่าง: แถบความคืบหน้า */}
+              <Box>
+                <Stack direction="row" sx={{ mb: 1, justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">ความคืบหน้า</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {done.toLocaleString()} / {target.toLocaleString()} <Box component="span" sx={{ color: 'primary.main' }}>({progressPct}%)</Box>
+                  </Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={progressPct} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
+                
+                <Stack direction="row" spacing={3}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Person fontSize="small" color="action" />
+                    <Typography variant="body2" color="text.secondary">Operator</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <CogIcon fontSize="small" color="action" />
+                    <Typography variant="body2" color="text.secondary">{order.machines || "-"}</Typography>
+                  </Stack>
+                </Stack>
+              </Box>
+
+            </Stack>
+          </Grid>
+
+          {/* ฝั่งขวา: ปุ่ม Action */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 6 }}>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  color="primary" 
+                  sx={{ borderRadius: 2 }}
+                  onClick={() => setOpenStatusDialog(true)}
+                >
+                  แก้ไขสถานะ
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>แจ้งเสีย</Button></Grid>
+              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>ขอเบิก</Button></Grid>
+              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>แจ้งปัญหา</Button></Grid>
+            </Grid>
+          </Grid>
+
+        </Grid>
+
+        {/* --- Tabs Section --- */}
+        <Box sx={{ mb: -1, borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="production detail tabs">
+            <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 'bold' : 'normal' }} />
+            <Tab label="แก้ไขข้อบกพร่อง" sx={{ fontWeight: tabValue === 1 ? 'bold' : 'normal' }} />
+            <Tab label="บันทึกเหตุการณ์" sx={{ fontWeight: tabValue === 2 ? 'bold' : 'normal' }} />
+            <Tab label="บันทึกผล" sx={{ fontWeight: tabValue === 3 ? 'bold' : 'normal' }} />
+            <Tab label="WIP" sx={{ fontWeight: tabValue === 4 ? 'bold' : 'normal' }} />
+            <Tab label="สินค้าสำเร็จรูป" sx={{ fontWeight: tabValue === 5 ? 'bold' : 'normal' }} />
+          </Tabs>
+        </Box>
+
+        {/* --- Content Section --- */}
+        <Box sx={{ pt: 3 }}>
+          {tabValue === 0 && <ProductionDetails />}
+          {tabValue === 1 && <ProductionFix />}
+          {tabValue === 2 && (
+            <ProductionEven 
+              orderId={order.orderID} 
+              orderName={order.name} 
+            />
+          )}
+          {tabValue === 3 && (
+            <ProductionReport 
+              orderId={order.orderID}
+              orderName={order.name}
+            />
+          )}
+          {tabValue === 4 && <ProductionWip />}
+          {tabValue === 5 && <ProductionFg />}
+        </Box>
+
+      </Box>
+
+      {/* Popup เปลี่ยนสถานะ */}
+      <Dialog
+        open={openStatusDialog}
+        onClose={() => setOpenStatusDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+      >
+        <ProductionStatus
+          orderId={order.orderID}
+          orderName={order.name}
+          initialStatus={order.status}
+          onSave={handleSaveStatus}
+          onCancel={() => setOpenStatusDialog(false)}
+        />
+      </Dialog>
+    </PageShell>
+  );
+}

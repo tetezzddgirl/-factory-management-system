@@ -1,0 +1,229 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import {
+  Factory,
+  Settings as CogIcon,
+  Schedule,
+} from "@mui/icons-material";
+import {
+  Box,
+  Card,
+  CardContent,
+  CardActionArea,
+  Chip,
+  Grid,
+  Stack,
+  Typography,
+  LinearProgress,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { PageShell } from "@/components/page-shell";
+
+export const Route = createFileRoute("/_authenticated/production")({
+  head: () => ({ meta: [{ title: "การผลิต — FactoryFlow" }] }),
+  component: ProductionPage,
+});
+
+interface ProductionReport {
+  reportId?: string;
+  goodQuantity?: number;
+  actualQuantity?: number;
+  scrapQuantity?: number;
+}
+
+interface ProductionOrder {
+  orderID: string;
+  timestamp: string;
+  name: string;
+  status:
+    | "Pending"      // รอเริ่ม
+    | "Preparing"    // กำลังเตรียมการ
+    | "InProgress"   // กำลังดำเนินการ
+    | "Paused"       // หยุดชั่วคราว
+    | "Completed"    // เสร็จสิ้น
+    | "Cancelled";   // ยกเลิก
+  amount: number;
+  machines: string;
+  startDate: string;
+  endDate: string;
+  report?: ProductionReport;
+}
+
+function ProductionPage() {
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<ProductionOrder[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOrders = useCallback(async (isSilent = false) => {
+    try {
+      if (!isSilent) setLoading(true);
+      const token =
+        localStorage.getItem("ff:token") ||
+        localStorage.getItem("auth_token") ||
+        localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("ไม่พบ Token กรุณาเข้าสู่ระบบ");
+      }
+
+      const res = await fetch("http://localhost:8090/api/production/orders", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("ดึงข้อมูลคำสั่งผลิตไม่สำเร็จ");
+      const data = await res.json();
+      setOrders(data || []);
+      setError(null);
+    } catch (err: any) {
+      if (!isSilent) setError(err.message || "เกิดข้อผิดพลาด");
+    } finally {
+      if (!isSilent) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders(false);
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
+  // ปรับแก้สีตามชุดสีที่กำหนดมาให้
+  const getStatusChip = (status: ProductionOrder["status"]) => {
+    switch (status) {
+      case "InProgress": // Normal, go -> Green
+        return <Chip label="กำลังผลิต" sx={{ bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "Paused": // Needs attention -> Orange
+        return <Chip label="หยุดชั่วคราว" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "Completed": // Done/Available -> Blue
+        return <Chip label="เสร็จสิ้น" sx={{ bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "Cancelled": // Disabled, Off -> Gray (หรือถ้ามองว่าเป็น Critical/Error ให้เปลี่ยนเป็น #EF4444 ได้ครับ)
+      default:
+        return <Chip label="ยกเลิก" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+    }
+  };
+
+  return (
+    <PageShell
+      title="การผลิต"
+      description="ติดตามความคืบหน้าและเลือกรายการผลิตเพื่อจัดการรายละเอียด"
+      icon={<Factory />}
+    >
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Grid container spacing={2}>
+          {orders.map((order, i) => {
+            const done = order.report?.goodQuantity || 0;
+            const target = order.amount || 1;
+            const pct = Math.min(100, Math.round((done / target) * 100));
+
+            return (
+              <Grid key={order.orderID} size={{ xs: 12, md: 6 }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ y: -4 }}
+                >
+                  <Card sx={{ overflow: "hidden" }}>
+                    <CardActionArea 
+                      onClick={() => 
+                        navigate({ 
+                          to: '/sub/productionManagement', 
+                          search: { id: order.orderID } 
+                        } as any)
+                      }
+                    >
+                      <Box
+                        sx={{
+                          height: 4,
+                          // ปรับสีขีดด้านบนของการ์ดให้ตรงกับสีสถานะใหม่
+                          background:
+                            order.status === "InProgress"
+                              ? "#10B981"
+                              : order.status === "Completed"
+                              ? "#4A90E2"
+                              : order.status === "Paused"
+                              ? "#F59E0B"
+                              : "#A4ABB6", // สีเทาสำหรับ Cancelled
+                        }}
+                      />
+                      <CardContent>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          sx={{
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            mb: 2,
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                              {order.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {order.orderID}
+                            </Typography>
+                          </Box>
+                          {getStatusChip(order.status)}
+                        </Stack>
+
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ justifyContent: "space-between", mb: 1 }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            ความคืบหน้า
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {done.toLocaleString()} / {target.toLocaleString()}{" "}
+                            <Box component="span" sx={{ color: "primary.main" }}>
+                              ({pct}%)
+                            </Box>
+                          </Typography>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} />
+
+                        <Stack direction="row" spacing={2} sx={{ color: "text.secondary", mb: 1 }}>
+                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                            <CogIcon sx={{ fontSize: 16 }} />
+                            <Typography variant="caption">{order.machines || "-"}</Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                            <Schedule sx={{ fontSize: 16 }} />
+                            <Typography variant="caption">
+                              {order.startDate
+                                ? new Date(order.startDate).toLocaleDateString("th-TH")
+                                : "-"}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </motion.div>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
+    </PageShell>
+  );
+}
