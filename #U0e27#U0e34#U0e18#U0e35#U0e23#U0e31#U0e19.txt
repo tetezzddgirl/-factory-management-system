@@ -1,0 +1,23 @@
+==== backend ====
+
+cd backend
+
+go mod tidy
+
+==== folder นอก ====
+
+docker compose up --build
+
+==== frontend ====
+
+cd frontend
+
+npm run dev
+
+
+
+
+
+==== note ====
+
+docker compose stop backend
