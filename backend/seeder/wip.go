@@ -20,10 +20,10 @@ func SeedWip(db *gorm.DB) {
 	})
 
 	upsert(db, "wip_location_id", []models.WIPLocation{
-		{WipLocationID: "WLO-001", Location: "A-01-01", PaletteNumber: "PLT-201", LotNumber: "LOT-3001", Amount: 3200, WipID: "WIP-001"},
-		{WipLocationID: "WLO-002", Location: "A-02-01", PaletteNumber: "PLT-202", LotNumber: "LOT-3002", Amount: 1800, WipID: "WIP-002"},
-		{WipLocationID: "WLO-003", Location: "A-03-01", PaletteNumber: "PLT-203", LotNumber: "LOT-3003", Amount: 900, WipID: "WIP-003"},
-		{WipLocationID: "WLO-004", Location: "A-04-01", PaletteNumber: "PLT-204", LotNumber: "LOT-3004", Amount: 150, WipID: "WIP-004"},
+		{WipLocationID: "WLO-001", Location: "A-01-01", PalletNumber: "PLT-201", LotNumber: "LOT-3001", Amount: 3200, WipID: "WIP-001"},
+		{WipLocationID: "WLO-002", Location: "A-02-01", PalletNumber: "PLT-202", LotNumber: "LOT-3002", Amount: 1800, WipID: "WIP-002"},
+		{WipLocationID: "WLO-003", Location: "A-03-01", PalletNumber: "PLT-203", LotNumber: "LOT-3003", Amount: 900, WipID: "WIP-003"},
+		{WipLocationID: "WLO-004", Location: "A-04-01", PalletNumber: "PLT-204", LotNumber: "LOT-3004", Amount: 150, WipID: "WIP-004"},
 	})
 
 	upsert(db, "wip_record_id", []models.WorkInProcessRecord{

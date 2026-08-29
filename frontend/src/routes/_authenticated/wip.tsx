@@ -78,16 +78,16 @@ function WipPage() {
   // ชื่อผู้บันทึกรายการ เติมจากบัญชีที่ล็อกอินอยู่ให้เองทุกฟอร์ม (ยังแก้ไขเองได้)
   const currentHandler = getSession()?.email ?? "";
 
-  /** เลือกสินค้าระหว่างผลิต -> เติมหน่วยให้เอง, พิมพ์ Palette Number ที่มีอยู่แล้ว -> ดึง Location/Lot/รายการให้เอง */
+  /** เลือกสินค้าระหว่างผลิต -> เติมหน่วยให้เอง, พิมพ์ Pallet Number ที่มีอยู่แล้ว -> ดึง Location/Lot/รายการให้เอง */
   function autoFillRecord(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
     if (changed === "item") {
       const code = values.item.split(" — ")[0];
       const found = workInProcess.find((m) => m.wipID === code);
       if (found) return { unit: found.unit };
     }
-    if (changed === "paletteNumber" && values.paletteNumber) {
+    if (changed === "palletNumber" && values.palletNumber) {
       const loc = wipLocations.find(
-        (l) => l.paletteNumber.trim().toLowerCase() === values.paletteNumber.trim().toLowerCase(),
+        (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
       );
       if (loc) {
         const mat = workInProcess.find((m) => m.wipID === loc.wipID);
@@ -114,7 +114,7 @@ function WipPage() {
     try {
       await wipApi.create({ wipID: v.wipID, wip: v.wip, inStage: v.inStage, amount, unit: v.unit, max });
       await wipLocationsApi.create({
-        wipID: v.wipID, location: v.location, paletteNumber: v.paletteNumber, lotNumber: v.lotNumber, amount,
+        wipID: v.wipID, location: v.location, palletNumber: v.palletNumber, lotNumber: v.lotNumber, amount,
       });
       await wipRecordsApi.create({
         wipID: v.wipID, orderID: v.orderID, type: "รับเข้า", inStage: v.inStage,
@@ -145,7 +145,7 @@ function WipPage() {
         await wipApi.updateAmount(code, newAmount);
       }
       await wipLocationsApi.create({
-        wipID: code, location: v.location, paletteNumber: v.paletteNumber, lotNumber: v.lotNumber, amount: newAmount,
+        wipID: code, location: v.location, palletNumber: v.palletNumber, lotNumber: v.lotNumber, amount: newAmount,
       });
       await wipRecordsApi.create({
         wipID: code, orderID: v.orderID || "-", type: v.type, inStage: "-",
@@ -180,7 +180,7 @@ function WipPage() {
   }
 
   async function handleAssignLocation(wipID: string, location: string, amount: number) {
-    await wipLocationsApi.create({ wipID, location, amount, paletteNumber: "", lotNumber: "" });
+    await wipLocationsApi.create({ wipID, location, amount, palletNumber: "", lotNumber: "" });
     await wipRecordsApi.create({
       wipID, orderID: "-", type: "รับเข้า", inStage: "-",
       amount, leftAmount: amount, handler: "-", agency: "ฝ่ายคลัง WIP", wipLocationID: "",
@@ -207,15 +207,15 @@ function WipPage() {
                 fields={[
                   { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า"], defaultValue: "รับเข้า" },
                   { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
-                  { name: "wipID", label: "รหัสสินค้าระหว่างผลิต", placeholder: "WIP-005", helperText: "ถ้ากรอกรหัสที่มีอยู่แล้วในระบบ จะเติมชื่อ/หน่วยให้อัตโนมัติ" },
+                  { name: "wipID", label: "รหัสสินค้าระหว่างผลิต", placeholder: "WIP-005", helperText: "หากกรอกรหัสที่มีอยู่แล้วในรายการสินค้าระหว่างผลิต ระบบจะเติมชื่อ/หน่วยให้อัตโนมัติ" },
                   { name: "wip", label: "ชื่อสินค้าระหว่างผลิต", placeholder: "ขวดติดฉลากแล้ว" },
                   { name: "inStage", label: "ขั้นตอนการผลิต", placeholder: "หลังติดฉลาก" },
                   { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-                  { name: "paletteNumber", label: "Palette Number", placeholder: "PLT-005" },
+                  { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
                   { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler },
                   { name: "agency", label: "แผนกต้นทาง", defaultValue: "ฝ่ายผลิต" },
                 ]}
                 onAutoFill={autoFillNewWip}
@@ -231,11 +231,11 @@ function WipPage() {
                   { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
                   { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
                   { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
-                  { name: "unit", label: "หน่วย", defaultValue: "ชิ้น", helperText: "เติมอัตโนมัติตามรายการที่เลือก" },
+                  { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },  // "เติมอัตโนมัติตามรายการที่เลือก"
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-                  { name: "paletteNumber", label: "Palette Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Palette ที่มีอยู่แล้ว จะดึง Location/Lot/รายการให้อัตโนมัติ" },
+                  { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
                   { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler },
                   { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
                 ]}
                 onAutoFill={autoFillRecord}
@@ -254,10 +254,10 @@ function WipPage() {
                 { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
                 { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
                 { name: "amount", label: "จำนวนที่ต้องการเบิก", type: "number", defaultValue: "0" },
-                { name: "unit", label: "หน่วย", defaultValue: "ชิ้น", helperText: "เติมอัตโนมัติตามรายการที่เลือก" },
-                { name: "paletteNumber", label: "Palette Number", placeholder: "PLT-005" },
+                { name: "unit", label: "หน่วย", defaultValue: "ชิ้น",  }, // "เติม unit อัตโนมัติตามรายการที่เลือก"
+                { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
                 { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                { name: "handler", label: "ชื่อผู้ขอเบิก", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+                { name: "handler", label: "ชื่อผู้ขอเบิก", placeholder: "สมชาย ใจดี", defaultValue: currentHandler },
                 { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
               ]}
               onAutoFill={(values, changed) => {

@@ -229,10 +229,10 @@ function PlanningPage() {
               fields={[
                 { name: "planID", label: "หมายเลขแผนการผลิต", placeholder: "PLAN-2025-07-01" },
                 { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
-                { name: "bom", label: "สูตรการผลิต", placeholder: "BOM-001", helperText: "เติมอัตโนมัติตามสินค้าที่เลือก" },
+                { name: "bom", label: "สูตรการผลิต", placeholder: "BOM-001"  }, // "เติมอัตโนมัติตามสินค้าที่เลือก"
                 { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000" },
-                { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
-                { name: "machine", label: "ลำดับสายการผลิตที่ใช้งาน", placeholder: "สายการผลิตที่ 1" },
+                { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false }, // "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน"
+                { name: "machine", label: "ลำดับสายการผลิตที่ใช้งาน", placeholder: "สายการเป่าขวด-01" },
                 { name: "priority", label: "ลำดับความสำคัญ", type: "select", options: ["สูง", "ปกติ", "ต่ำ"], defaultValue: "ปกติ" },
                 { name: "start", label: "วันที่เริ่มผลิต", placeholder: "10 ก.ค. 2568" },
                 { name: "due", label: "กำหนดเสร็จ", placeholder: "15 ก.ค. 2568" },
@@ -315,7 +315,7 @@ function PlanningPage() {
                     {/* <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} /> */}
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary" }}>
                       <TrendingUp sx={{ fontSize: 16 }} />
-                      <Typography variant="caption">กำหนดเสร็จ: {p.dueDate}</Typography>
+                      <Typography variant="caption">กำหนดเสร็จ: {p.dueDate} </Typography>
                     </Stack>
                   </CardContent>
                   </CardActionArea>

@@ -9,7 +9,7 @@ import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
 
 export type WorkInProcess = { wipID: string; wip: string; amount: number; unit: string };
-export type WipLocation = { wipLocationID: string; wipID: string; location: string; paletteNumber: string; lotNumber: string; amount: number };
+export type WipLocation = { wipLocationID: string; wipID: string; location: string; palletNumber: string; lotNumber: string; amount: number };
 
 /** Location master */
 export const LOCATION_MASTER = [

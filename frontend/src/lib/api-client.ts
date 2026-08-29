@@ -126,7 +126,7 @@ export const materialsApi = {
 export type ApiRawMaterialLocation = {
   rmLocationID: string;
   location: string;
-  paletteNumber: string;
+  palletNumber: string;
   lotNumber: string;
   amount: number;
   rmID: string;
@@ -213,7 +213,7 @@ export type ApiWorkInProcess = { wipID: string; wip: string; inStage: string; am
 export type ApiWipLocation = {
   wipLocationID: string;
   location: string;
-  paletteNumber: string;
+  palletNumber: string;
   lotNumber: string;
   amount: number;
   wipID: string;

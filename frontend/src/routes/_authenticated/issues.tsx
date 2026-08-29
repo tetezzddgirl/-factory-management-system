@@ -127,7 +127,7 @@ function ProblemPage() {
           trigger={<Button variant="contained" startIcon={<Add />}>แจ้งปัญหา</Button>}
           fields={[
             { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
-            { name: "reporterID", label: "รหัสเจ้าหน้าที่ผู้แจ้งปัญหา", placeholder: "OPR-0007", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+            { name: "reporterID", label: "รหัสเจ้าหน้าที่ผู้แจ้งปัญหา", placeholder: "OPR-0007", defaultValue: currentHandler }, // เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ
             { name: "problem", label: "ปัญหาที่พบ", placeholder: "เครื่องจักรหยุดกลางคัน" },
             { name: "description", label: "รายละเอียดปัญหา", type: "textarea", placeholder: "อธิบายสถานการณ์ที่พบ" },
           ]}

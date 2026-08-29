@@ -7,7 +7,7 @@ import { PageShell } from "@/components/page-shell";
 import { AddItemDialog } from "@/components/add-item-dialog";
 import { useRole } from "@/lib/roles";
 import { RMLocationsTable, LOCATION_MASTER } from "@/components/material-locations-table";
-import { materialsApi, materialLocationsApi, materialRecordsApi, workOrdersApi, personnelApi, resolveHandlerName, type ApiRawMaterial, type ApiRawMaterialRecord, type ApiRawMaterialLocation, type ApiWorkOrder, type ApiPersonnel } from "@/lib/api-client";
+import { materialsApi, materialLocationsApi, materialRecordsApi, workOrdersApi, personnelApi, productsApi, formulasApi, computeRequiredMaterials, resolveHandlerName, type ApiRawMaterial, type ApiRawMaterialRecord, type ApiRawMaterialLocation, type ApiWorkOrder, type ApiPersonnel, type ApiProduct, type ApiFormulaItem } from "@/lib/api-client";
 import { getSession } from "@/lib/auth";
 import { toast } from "sonner";
 
@@ -30,6 +30,8 @@ function MaterialsPage() {
   const [rawMaterialLocation, setRawMaterialLocation] = useState<ApiRawMaterialLocation[]>([]);
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
   const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [formulas, setFormulas] = useState<ApiFormulaItem[]>([]);
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,18 +40,22 @@ function MaterialsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [materials, records, locations, orders, people] = await Promise.all([
+      const [materials, records, locations, orders, people, prods, forms] = await Promise.all([
         materialsApi.list(),
         materialRecordsApi.list(),
         materialLocationsApi.list(),
         workOrdersApi.list(),
         personnelApi.list(),
+        productsApi.list(),
+        formulasApi.list(),
       ]);
       setRawMaterial(materials ?? []);
       setRawMaterialRecord(records ?? []);
       setRawMaterialLocation(locations ?? []);
       setWorkOrders(orders ?? []);
       setPersonnel(people ?? []);
+      setProducts(prods ?? []);
+      setFormulas(forms ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหลดข้อมูลวัตถุดิบไม่สำเร็จ");
     } finally {
@@ -70,16 +76,27 @@ function MaterialsPage() {
   // ถ้าบัญชีนี้ผูกกับรายชื่อในหน้า "บุคลากร" ไว้แล้ว (email ตรงกัน) จะใช้ชื่อ-สกุลจริงแทน email
   const currentHandler = resolveHandlerName(personnel, getSession()?.email);
 
-  /** กรอกอัตโนมัติสำหรับ dialog "บันทึกรายการวัตถุดิบ": เลือกวัตถุดิบ -> เติมหน่วยให้เอง, พิมพ์ Palette Number ที่มีอยู่แล้ว -> ดึง Location/Lot/วัตถุดิบให้เอง, เลือก Location -> ดึง Palette/Lot/วัตถุดิบที่เก็บอยู่ตรงนั้นให้เอง */
+  // วัตถุดิบที่ต้องใช้ต่อ "ใบสั่งผลิต" แต่ละใบ (คำนวณจากสูตรการผลิต x จำนวนที่สั่งผลิต) — เอาไว้โชว์เหนือรายการเคลื่อนไหว
+  // เฉพาะใบสั่งที่ยังไม่เสร็จ/ยกเลิก เพราะเป็นตัวที่คลังต้องเตรียมของจริง
+  const materialsPerOrder = workOrders
+    .filter((o) => o.status !== "เสร็จสิ้น" && o.status !== "ยกเลิก")
+    .map((o) => {
+      const product = products.find((p) => p.name === o.name);
+      const materials = product ? computeRequiredMaterials(formulas, rawMaterial, product.productID, o.amount) : [];
+      return { order: o, materials };
+    })
+    .filter((x) => x.materials.length > 0);
+
+  /** กรอกอัตโนมัติสำหรับ dialog "บันทึกรายการวัตถุดิบ": เลือกวัตถุดิบ -> เติมหน่วยให้เอง, พิมพ์ Pallet Number ที่มีอยู่แล้ว -> ดึง Location/Lot/วัตถุดิบให้เอง, เลือก Location -> ดึง Pallet/Lot/วัตถุดิบที่เก็บอยู่ตรงนั้นให้เอง */
   function autoFillRecord(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
     if (changed === "item") {
       const code = values.item.split(" — ")[0];
       const found = rawMaterial.find((m) => m.rmID === code);
       if (found) return { unit: found.unit };
     }
-    if (changed === "paletteNumber" && values.paletteNumber) {
+    if (changed === "palletNumber" && values.palletNumber) {
       const loc = rawMaterialLocation.find(
-        (l) => l.paletteNumber.trim().toLowerCase() === values.paletteNumber.trim().toLowerCase(),
+        (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
       );
       if (loc) {
         const mat = rawMaterial.find((m) => m.rmID === loc.rmID);
@@ -99,7 +116,7 @@ function MaterialsPage() {
       if (loc) {
         const mat = rawMaterial.find((m) => m.rmID === loc.rmID);
         return {
-          paletteNumber: loc.paletteNumber,
+          palletNumber: loc.palletNumber,
           lotNumber: loc.lotNumber,
           ...(mat && !values.item ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
         };
@@ -131,16 +148,16 @@ function MaterialsPage() {
             fields={[
               { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า"], defaultValue: "รับเข้า" },
               { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
-              { name: "rmID", label: "รหัสวัตถุดิบ", placeholder: "RM-005", helperText: "ถ้ากรอกรหัสที่มีอยู่แล้วในระบบ จะเติมชื่อ/หน่วย/ค่าสูงสุด-ต่ำสุดให้อัตโนมัติ" },
+              { name: "rmID", label: "รหัสวัตถุดิบ", placeholder: "RM-005", helperText: "หากกรอกรหัสวัตถุดิบที่มีอยู่ในรายการวัตถุดิบ ระบบจะดึงชื่อ/หน่วย/จำนวนสูงสุดและจำนวนสำรองให้โดยอัตโนมัติ" },
               { name: "rawMaterial", label: "ชื่อวัตถุดิบ", placeholder: "HDPE Resin" },
               { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
               { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
               { name: "max", label: "จำนวนสูงสุดที่เก็บได้", type: "number", defaultValue: "10000" },
               { name: "min", label: "จำนวนที่ต้องสำรอง", type: "number", defaultValue: "0" },
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-              { name: "paletteNumber", label: "Palette Number", placeholder: "PLT-005" },
+              { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-              { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+              { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler },
               { name: "agency", label: "แผนกต้นทาง", defaultValue: "Supplier A" },
             ]}
             onAutoFill={autoFillNewItem}
@@ -157,7 +174,7 @@ function MaterialsPage() {
 
                 const loc = await materialLocationsApi.create({
                   rmID: v.rmID, amount, location: v.location,
-                  paletteNumber: v.paletteNumber, lotNumber: v.lotNumber,
+                  palletNumber: v.palletNumber, lotNumber: v.lotNumber,
                 });
                 const rec = await materialRecordsApi.create({
                   rmID: v.rmID, orderID: v.orderID, type: "รับเข้า", amount,
@@ -181,11 +198,11 @@ function MaterialsPage() {
               { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
               { name: "item", label: "รหัส / ชื่อวัตถุดิบ", type: "select", options: rawMaterial.map((i) => `${i.rmID} — ${i.rawMaterial}`), defaultValue: rawMaterial[0] ? `${rawMaterial[0].rmID} — ${rawMaterial[0].rawMaterial}` : "" },
               { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
-              { name: "unit", label: "หน่วย", defaultValue: "ชิ้น", helperText: "เติมอัตโนมัติตามวัตถุดิบที่เลือก" },
+              { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },    // ระบบจะเติม unit ให้โดยอัตโนมัติตามวัตถุดิบที่เลือก
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-              { name: "paletteNumber", label: "Palette Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Palette ที่มีอยู่แล้ว จะดึง Location/Lot/วัตถุดิบให้อัตโนมัติ" },
+              { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ" }, // หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมั
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-              { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, helperText: "เติมจากบัญชีที่ล็อกอินอยู่ให้อัตโนมัติ" },
+              { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "สมชาย ใจดี", defaultValue: currentHandler, },
               { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
             ]}
             onAutoFill={autoFillRecord}
@@ -210,7 +227,7 @@ function MaterialsPage() {
                 if (v.location) {
                   const loc = await materialLocationsApi.create({
                     rmID: code, amount: qty, location: v.location,
-                    paletteNumber: v.paletteNumber, lotNumber: v.lotNumber,
+                    palletNumber: v.palletNumber, lotNumber: v.lotNumber,
                   });
                   rmLocationID = loc.rmLocationID;
                 }
@@ -276,7 +293,38 @@ function MaterialsPage() {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card>
+          <Stack spacing={2}>
+            {materialsPerOrder.length > 0 && (
+              <Card>
+                <CardContent>
+                  <Typography sx={{ fontWeight: 600, mb: 2 }}>วัตถุดิบที่ต้องใช้ต่อใบสั่งผลิต</Typography>
+                  <Stack spacing={2}>
+                    {materialsPerOrder.map(({ order, materials }) => (
+                      <Box key={order.orderID}>
+                        <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{order.orderID} — {order.name}</Typography>
+                          <Chip size="small" label={`${order.amount.toLocaleString()} หน่วย`} />
+                        </Stack>
+                        <Stack spacing={0.5}>
+                          {materials.map((m) => {
+                            const short = m.required > m.available;
+                            return (
+                              <Stack key={m.rmID} direction="row" spacing={1} sx={{ justifyContent: "space-between" }}>
+                                <Typography variant="caption" color="text.secondary" noWrap>{m.name}</Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: short ? "error.main" : "text.primary", whiteSpace: "nowrap" }}>
+                                  {m.required.toLocaleString()} / {m.available.toLocaleString()} {m.unit}
+                                </Typography>
+                              </Stack>
+                            );
+                          })}
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
+            <Card>
             <CardContent>
               <Typography sx={{ fontWeight: 600, mb: 2 }}>รายการเคลื่อนไหวล่าสุด</Typography>
               <Stack spacing={1.5}>
@@ -300,6 +348,7 @@ function MaterialsPage() {
               </Stack>
             </CardContent>
           </Card>
+          </Stack>
         </Grid>
       </Grid>
       )

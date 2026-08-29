@@ -14,7 +14,7 @@ type RawMaterial struct {
 type RawMaterialLocation struct {
 	RmLocationID  string `json:"rmLocationID" gorm:"primaryKey;column:rm_location_id"`
 	Location      string `json:"location"`
-	PaletteNumber string `json:"paletteNumber"`
+	PalletNumber string  `json:"palletNumber"`
 	LotNumber     string `json:"lotNumber"`
 	Amount        int    `json:"amount"`
 	RmID          string `json:"rmID" gorm:"column:rm_id"`
@@ -46,7 +46,7 @@ type WorkInProcess struct {
 type WIPLocation struct {
 	WipLocationID string `json:"wipLocationID" gorm:"primaryKey;column:wip_location_id"`
 	Location      string `json:"location"`
-	PaletteNumber string `json:"paletteNumber"`
+	PalletNumber  string `json:"palletNumber"`
 	LotNumber     string `json:"lotNumber"`
 	Amount        int    `json:"amount"`
 	WipID         string `json:"wipID" gorm:"column:wip_id"`
