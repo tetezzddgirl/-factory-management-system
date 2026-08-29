@@ -1,0 +1,30 @@
+==== backend ====
+
+cd backend
+
+go mod tidy
+
+go build
+
+go run ./seeder
+
+$env:CORS_ORIGIN="http://localhost:8081"
+
+go run main.go
+
+
+
+
+==== docker ====
+
+docker compose up -d
+
+
+
+==== frontend ====
+
+cd frontend
+
+npm install
+
+npm run dev
