@@ -1,0 +1,70 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	"factoryflow/models"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+// PersonnelHandler รวม dependency ของ endpoint ฝั่งบุคลากร (Personnel)
+type PersonnelHandler struct {
+	db *gorm.DB
+}
+
+// NewPersonnelHandler สร้าง PersonnelHandler ตัวใหม่
+func NewPersonnelHandler(db *gorm.DB) *PersonnelHandler {
+	return &PersonnelHandler{db: db}
+}
+
+// ListPersonnel คืนรายชื่อบุคลากรทั้งหมด
+func (h *PersonnelHandler) ListPersonnel(c *gin.Context) {
+	out := []models.Personnel{}
+	if err := h.db.Order("id").Find(&out).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, out)
+}
+
+// CreatePersonnel เพิ่มบุคลากรใหม่ (gen id ให้ถ้าไม่ระบุมา)
+func (h *PersonnelHandler) CreatePersonnel(c *gin.Context) {
+	var p models.Personnel
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if p.ID == "" {
+		p.ID = fmt.Sprintf("PSN-%d", time.Now().UnixNano())
+	}
+	if p.Status == "" {
+		p.Status = "กำลังทำงาน"
+	}
+	if err := h.db.Create(&p).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, p)
+}
+
+// UpdatePersonnelStatus แก้ไขสถานะของบุคลากรตาม id (path param: /api/personnel/:id)
+func (h *PersonnelHandler) UpdatePersonnelStatus(c *gin.Context) {
+	id := c.Param("id")
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if err := h.db.Model(&models.Personnel{}).Where("id = ?", id).
+		Update("status", body.Status).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
