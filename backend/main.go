@@ -103,6 +103,7 @@ func main() {
 
 		api.GET("/wip/locations", wipHandler.ListWipLocations)
 		api.POST("/wip/locations", wipHandler.CreateWipLocation)
+		api.PUT("/wip/locations/:id", wipHandler.UpdateWipLocation)
 
 		api.GET("/wip/records", wipHandler.ListWipRecords)
 		api.POST("/wip/records", wipHandler.CreateWipRecord)

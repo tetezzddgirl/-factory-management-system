@@ -98,6 +98,35 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 	c.JSON(http.StatusOK, loc)
 }
 
+// UpdateWipLocation อัปเดตตำแหน่งจัดเก็บหรือจำนวนคงเหลือตาม wipLocationID (path param: /api/wip-locations/:id)
+func (h *WipHandler) UpdateWipLocation(c *gin.Context) {
+	fmt.Println("🔥 HIT UpdateWipLocation! ID:", c.Param("id"))
+	id := c.Param("id")
+	var body struct {
+		Location string `json:"location"`
+		Amount   int    `json:"amount"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if body.Location != "" {
+		updates["location"] = body.Location
+	}
+	if body.Amount >= 0 {
+		updates["amount"] = body.Amount
+	}
+
+	if err := h.db.Model(&models.WIPLocation{}).Where("wip_location_id = ?", id).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 // ---- ประวัติรายการเคลื่อนไหว WIP ----
 
 // ListWipRecords คืนประวัติรายการเคลื่อนไหวของ WIP เรียงล่าสุดก่อน (กรองด้วย wipID ได้)

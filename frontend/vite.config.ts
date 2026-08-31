@@ -17,6 +17,12 @@ export default defineConfig({
     server: {
       port: 5173,
       strictPort: true, // ป้องกันไม่ให้เปลี่ยนไปใช้พอร์ตอื่นหาก 5173 ไม่ว่าง
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8090', 
+          changeOrigin: true,
+        }
+      }
     },
   },
 });

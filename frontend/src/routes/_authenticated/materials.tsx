@@ -291,40 +291,80 @@ onSubmit={async (v) => {
             ]}
             onAutoFill={autoFillRecord}
             onSubmit={async (v) => {
-              const qty = Number(v.amount) || 0;
-              const code = v.item.split(" — ")[0];
-              const target = rawMaterial.find((i) => i.rmID === code);
-              const sign = v.type === "เบิกจ่าย" ? -1 : v.type === "โอนย้าย" ? 0 : 1;
+  const qty = Number(v.amount) || 0;
+  const code = v.item.split(" — ")[0];
+  const target = rawMaterial.find((i) => i.rmID === code);
+  const sign = v.type === "เบิกจ่าย" ? -1 : v.type === "โอนย้าย" ? 0 : 1;
 
-              if (sign === -1 && target && qty > target.amount) {
-                toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
-                return false;
-              }
+  if (sign === -1 && target && qty > target.amount) {
+    toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
+    return false;
+  }
 
-              const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
+  const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
 
-              try {
-                await materialsApi.updateStock(code, newAmount);
-                setRawMaterial((prev) => prev.map((i) => (i.rmID === code ? { ...i, amount: newAmount } : i)));
+  // ค้นหา Location/Pallet เดิมก่อน
+  const existingLoc = rawMaterialLocation.find((l) => {
+    if (v.palletNumber) {
+      return l.rmID === code && l.palletNumber.trim().toLowerCase() === v.palletNumber.trim().toLowerCase();
+    }
+    return l.rmID === code && l.location === v.location;
+  });
 
-                let rmLocationID = "";
-                if (v.location) {
-                  const loc = await materialLocationsApi.create({
-                    rmID: code, amount: qty, location: v.location,
-                    palletNumber: v.palletNumber, lotNumber: v.lotNumber,
-                  });
-                  rmLocationID = loc.rmLocationID;
-                }
-                const rec = await materialRecordsApi.create({
-                  rmID: code, orderID: v.orderID.split(" - ")[0], type: v.type, amount: qty,
-                  leftAmount: newAmount, handler: v.handler, agency: v.agency, rmLocationID,
-                });
-                setRawMaterialRecord((prev) => [rec, ...prev]);
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "บันทึกรายการไม่สำเร็จ");
-                return false;
-              }
-            }}
+  try {
+    await materialsApi.updateStock(code, newAmount);
+    setRawMaterial((prev) => prev.map((i) => (i.rmID === code ? { ...i, amount: newAmount } : i)));
+
+    let rmLocationID = "";
+
+    if (v.type === "เบิกจ่าย") {
+      // เบิกจ่าย: ลดจำนวนจาก Pallet/Location เดิม
+      if (existingLoc) {
+        const updated = Math.max(0, existingLoc.amount - qty);
+        await materialLocationsApi.update(existingLoc.rmLocationID, updated, existingLoc.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, amount: updated } : l))
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      }
+    } else if (v.type === "โอนย้าย") {
+      // โอนย้าย: ย้าย Location ของ Pallet เดิม
+      if (existingLoc) {
+        await materialLocationsApi.update(existingLoc.rmLocationID, existingLoc.amount, v.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, location: v.location } : l))
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      }
+    } else if (v.location) {
+      // รับเข้า / คืน: ถ้ามี Pallet/Location เดิมให้บวกเพิ่ม ถ้าไม่มีค่อยสร้างใหม่
+      if (existingLoc) {
+        const updated = existingLoc.amount + qty;
+        await materialLocationsApi.update(existingLoc.rmLocationID, updated, v.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, amount: updated, location: v.location } : l))
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      } else {
+        const loc = await materialLocationsApi.create({
+          rmID: code, amount: qty, location: v.location,
+          palletNumber: v.palletNumber, lotNumber: v.lotNumber,
+        });
+        setRawMaterialLocation((prev) => [loc, ...prev]);
+        rmLocationID = loc.rmLocationID;
+      }
+    }
+
+    const rec = await materialRecordsApi.create({
+      rmID: code, orderID: v.orderID.split(" - ")[0], type: v.type, amount: qty,
+      leftAmount: newAmount, handler: v.handler, agency: v.agency, rmLocationID,
+    });
+    setRawMaterialRecord((prev) => [rec, ...prev]);
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "บันทึกรายการไม่สำเร็จ");
+    return false;
+  }
+}}
             />
         </>
   )}

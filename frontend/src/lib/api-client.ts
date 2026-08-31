@@ -311,10 +311,29 @@ export const wipApi = {
 };
 
 export const wipLocationsApi = {
-  list: (wipID?: string) =>
-    apiFetch<ApiWipLocation[]>(`/api/wip/locations${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`),
-  create: (loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string }) =>
-    apiFetch<ApiWipLocation>("/api/wip/locations", { method: "POST", body: JSON.stringify(loc) }),
+  list: (wipID?: string) => apiFetch<ApiWipLocation[]>(`/api/wip/locations${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`),
+    create: (loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string; }
+  ) =>
+    apiFetch<ApiWipLocation>("/api/wip/locations", {
+      method: "POST",
+      body: JSON.stringify(loc),
+    }),
+
+  update: (
+    wipLocationID: string,
+    amount: number,
+    location: string
+  ) =>
+    apiFetch<ApiWipLocation>(
+      `/api/wip/locations/${encodeURIComponent(wipLocationID)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          amount,
+          location,
+        }),
+      }
+    ),
 };
 
 export const wipRecordsApi = {
