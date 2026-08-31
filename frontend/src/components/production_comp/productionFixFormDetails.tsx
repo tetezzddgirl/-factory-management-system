@@ -70,9 +70,9 @@ export default function ProductionFixFormDetails({ inspection, items }: Producti
             </Typography>
 
             {inspection.overallResult === "Fail" && (
-              <Typography variant="body2" sx={{ gridColumn: { xs: "span 1", sm: "span 2" }, color: "#b91c1c" }}>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 แนวทางการแก้ไข (เบื้องต้น):{" "}
-                <Box component="span" sx={{ fontWeight: 500 }}>
+                <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>
                   {inspection.actionGuideline || "-"}
                 </Box>
               </Typography>

@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import QualityQcForm, { QcPointExtended } from "./qualityQcForm";
-import QualityQcDetail from "./qualityQcDetail"; // 👈 นำเข้า Component หน้าต่างรายละเอียด
+import QualityQcDetail from "./qualityQcDetail";
 
 export interface InspectionRecord {
   inspectionID: string;
@@ -41,8 +41,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
   const [loading, setLoading] = useState(false);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
-  
-  // 👈 เพิ่ม State สำหรับควบคุมหน้าต่างรายละเอียด
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedInspectionID, setSelectedInspectionID] = useState<string>("");
 
@@ -97,7 +96,6 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
       ? inspections
       : inspections.filter((item) => item.inspectionPointID === selectedPoint);
 
-  // 👈 ฟังก์ชันเปิดหน้าต่างรายละเอียด
   const handleOpenDetail = (inspectionID: string) => {
     setSelectedInspectionID(inspectionID);
     setDetailOpen(true);
@@ -254,7 +252,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
                       size="small"
                       variant="outlined"
                       sx={{ textTransform: "none", borderRadius: 1.5 }}
-                      onClick={() => handleOpenDetail(row.inspectionID)} // 👈 เรียกใช้งานที่นี่
+                      onClick={() => handleOpenDetail(row.inspectionID)}
                     >
                       รายละเอียด
                     </Button>

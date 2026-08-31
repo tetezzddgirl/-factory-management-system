@@ -4,7 +4,7 @@ import { Edit as EditIcon } from "@mui/icons-material";
 
 interface ProductionFixFormCorrectionProps {
   correction: any;
-  inspectionStatus: string; // 👈 เพิ่ม Prop รับค่าสถานะของ Inspection
+  inspectionStatus: string;
   isEditing: boolean;
   setIsEditing: (val: boolean) => void;
   formData: { action: string; correctedBy: string; remark: string };
@@ -20,7 +20,6 @@ export default function ProductionFixFormCorrection({
   handleFormChange
 }: ProductionFixFormCorrectionProps) {
 
-  // โหมดแสดงผล (เมื่อสถานะเป็น Completed และไม่ได้กดแก้ไข)
   const isCompleted = inspectionStatus === "Completed" || inspectionStatus === "Pass";
 
   if (isCompleted && !isEditing) {
@@ -99,7 +98,6 @@ export default function ProductionFixFormCorrection({
     );
   }
 
-  // โหมดฟอร์ม (เมื่อสถานะยังเป็น Pending หรือกดปุ่ม แก้ไขข้อมูล)
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, bgcolor: "#fff" }}>
       <Typography sx={{ fontWeight: 700, mb: 3, color: "#1e293b" }}>

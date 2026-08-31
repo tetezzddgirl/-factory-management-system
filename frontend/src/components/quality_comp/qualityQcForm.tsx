@@ -164,7 +164,6 @@ export default function QualityQcForm({
         };
       });
 
-      // 2. บันทึกผลตรวจ (Inspection)
       const inspectionPayload = {
         orderID: orderID,
         inspectionPointID: formData.inspectionPointID,
@@ -174,7 +173,7 @@ export default function QualityQcForm({
         inspectedBy: formData.inspectedBy,
         inspectionDateTime: new Date().toISOString(),
         status: formData.overallResult === "Fail" ? "Pending" : formData.overallResult,
-        items: itemsPayload, // ส่งรายการย่อยเข้าไปให้ Backend วน Loop บันทึกลงตาราง inspection_items
+        items: itemsPayload,
       };
 
       const resInspection = await fetch(`http://localhost:8090/api/quality/inspections`, {
@@ -189,25 +188,6 @@ export default function QualityQcForm({
       if (!resInspection.ok) throw new Error("บันทึกข้อมูล Inspection ไม่สำเร็จ");
 
       const inspectionData = await resInspection.json();
-
-      // 3. ถ้าไม่ผ่าน สร้าง Correction Record
-      if (formData.overallResult === "Fail" && inspectionData.inspectionID) {
-        const correctionPayload = {
-          inspectionID: inspectionData.inspectionID,
-          // ไม่ส่ง correctionDateTime ตามที่กำหนด
-        };
-
-        const resCorrection = await fetch(`http://localhost:8090/api/quality/corrections`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(correctionPayload),
-        });
-
-        if (!resCorrection.ok) console.error("สร้าง Correction Record ไม่สำเร็จ");
-      }
 
       onSuccess();
       onClose();

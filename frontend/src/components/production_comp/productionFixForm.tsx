@@ -14,7 +14,6 @@ import {
   Tab
 } from "@mui/material";
 
-// เรียกใช้ Component ที่แยกออกมา
 import ProductionFixFormDetails from "./productionFixFormDetails";
 import ProductionFixFormCorrection from "./productionFixFormCorrection";
 
@@ -83,7 +82,7 @@ export default function ProductionFixForm({
         localStorage.getItem("ff:token") ||
         localStorage.getItem("auth_token") ||
         localStorage.getItem("token") ||
-        "";
+        ";";
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resInsp, resItems, resCorr] = await Promise.all([
@@ -95,8 +94,6 @@ export default function ProductionFixForm({
       if (resInsp.ok) {
         const inspData = await resInsp.json();
         setInspection(inspData);
-        // 👈 กำหนดโหมดตาม status ถ้าเป็น Completed จะให้ isEditing = false (โหมดข้อมูล) 
-        // ถ้าเป็น Pending จะเป็น true (โหมดฟอร์ม)
         setIsEditing(inspData.status !== "Completed" && inspData.status !== "Pass");
       }
 
@@ -148,15 +145,15 @@ export default function ProductionFixForm({
           action: formData.action,
           correctedBy: formData.correctedBy,
           remark: formData.remark,
-          status: "Completed" // 👈 ส่งไปย้ำให้มั่นใจว่าเสร็จสิ้นแล้ว (ใช้สำหรับฝั่ง API)
+          status: "Pass"
         }),
       });
 
       if (!res.ok) throw new Error("บันทึกข้อมูลการแก้ไขไม่สำเร็จ");
 
       alert("บันทึกผลการแก้ไขเรียบร้อยแล้ว");
-      setIsEditing(false); // ปิดโหมด Edit
-      await fetchDetailData(); // รีเฟรชข้อมูล (ดึง Status ที่อัปเดตเป็น Completed มาใหม่)
+      setIsEditing(false);
+      await fetchDetailData();
     } catch (error: any) {
       console.error(error);
       alert(error.message);
@@ -218,7 +215,7 @@ export default function ProductionFixForm({
             <CustomTabPanel value={tabValue} index={1}>
               <ProductionFixFormCorrection
                 correction={correction}
-                inspectionStatus={inspection.status} // 👈 โยน Status ลงไปให้คอมโพเนนต์ลูก
+                inspectionStatus={inspection.status}
                 isEditing={isEditing}
                 setIsEditing={setIsEditing}
                 formData={formData}
