@@ -9,8 +9,8 @@ import { useRole } from "@/lib/roles";
 import { getSession } from "@/lib/auth";
 import { WipLocationsTable, LOCATION_MASTER } from "@/components/wip-locations-table";
 import {
-  wipApi, wipLocationsApi, wipRecordsApi, requisitionsApi, workOrdersApi,
-  type ApiWorkInProcess, type ApiWipRecord, type ApiRequisitionSlip, type ApiWipLocation, type ApiWorkOrder,
+  wipApi, wipLocationsApi, wipRecordsApi, requisitionsApi, workOrdersApi, personnelApi,
+  type ApiWorkInProcess, type ApiWipRecord, type ApiRequisitionSlip, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel,
 } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -37,28 +37,35 @@ function WipPage() {
   const [workInProcess, setWorkInProcess] = useState<ApiWorkInProcess[]>([]);
   const [workInProcessRecord, setWorkInProcessRecord] = useState<ApiWipRecord[]>([]);
   const [wipLocations, setWipLocations] = useState<ApiWipLocation[]>([]);
-  const [, setRequisitionSlips] = useState<ApiRequisitionSlip[]>([]);
+  const [slips, setRequisitionSlips] = useState<ApiRequisitionSlip[]>([]);
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+
+  const personnelOptions = personnel.length
+  ? personnel.map((p) => `${p.id} — ${p.name}`)
+  : [];
 
   async function loadAll() {
     setLoading(true);
     setError(null);
     try {
-      const [wip, records, slips, locs, orders] = await Promise.all([
+      const [wip, records, slips, locs, orders, people] = await Promise.all([
         wipApi.list(),
         wipRecordsApi.list(),
         requisitionsApi.list(),
         wipLocationsApi.list(),
         workOrdersApi.list(),
+        personnelApi.list(),
       ]);
       setWorkInProcess(wip ?? []);
       setWorkInProcessRecord(records ?? []);
       setRequisitionSlips(slips ?? []);
       setWipLocations(locs ?? []);
       setWorkOrders(orders ?? []);
+      setPersonnel(people ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหลดข้อมูล WIP ไม่สำเร็จ");
     } finally {
@@ -76,7 +83,12 @@ function WipPage() {
     : ["-"];
 
   // ชื่อผู้บันทึกรายการ เติมจากบัญชีที่ล็อกอินอยู่ให้เองทุกฟอร์ม (ยังแก้ไขเองได้)
-  const currentHandler = getSession()?.email ?? "";
+  const currentUserEmail = getSession()?.email ?? "";
+  const currentWarehouse = personnel.find(
+    (p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
+  const currentHandler = currentWarehouse
+    ? `${currentWarehouse.id} — ${currentWarehouse.name}` : "";
+
 
   /** เลือกสินค้าระหว่างผลิต -> เติมหน่วยให้เอง, พิมพ์ Pallet Number ที่มีอยู่แล้ว -> ดึง Location/Lot/รายการให้เอง */
   function autoFillRecord(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
@@ -200,6 +212,7 @@ function WipPage() {
           {role === "warehouse" && (
             <>
               <AddItemDialog
+                key={`new-wip-${currentHandler}`}
                 title="เพิ่มสินค้าระหว่างผลิตในรายการ"
                 description="ประเภทรายการถูกกำหนดเป็น 'รับเข้า' โดยระบบ"
                 successMessage="เพิ่มสินค้าระหว่างผลิตแล้ว"
@@ -215,13 +228,14 @@ function WipPage() {
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
                   { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                  { name: "handler", label: "ผู้บันทึกรายการ", placeholder: "PSN-001 — สมชาย ใจดี", defaultValue: currentHandler },
+                  { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
                   { name: "agency", label: "แผนกต้นทาง", defaultValue: "ฝ่ายผลิต" },
                 ]}
                 onAutoFill={autoFillNewWip}
                 onSubmit={handleAddNew}
               />
               <AddItemDialog
+                key={`record-wip-${currentHandler}`}
                 title="บันทึกรายการสินค้าระหว่างผลิต"
                 description="เลือกประเภทรายการและสินค้าในระบบ แล้วกรอกจำนวน"
                 successMessage="บันทึกรายการสำเร็จ"
@@ -235,7 +249,7 @@ function WipPage() {
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
                   { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", placeholder: "PSN-001 — สมชาย ใจดี", defaultValue: currentHandler },
+                  { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
                   { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
                 ]}
                 onAutoFill={autoFillRecord}

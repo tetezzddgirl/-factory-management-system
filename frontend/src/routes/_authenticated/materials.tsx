@@ -36,6 +36,10 @@ function MaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const personnelOptions = personnel.length
+  ? personnel.map((p) => `${p.id} — ${p.name}`)
+  : [];
+
   async function loadAll() {
     setLoading(true);
     setError(null);
@@ -74,7 +78,12 @@ function MaterialsPage() {
 
   // ชื่อผู้บันทึกรายการ เติมจากบัญชีที่ล็อกอินอยู่ให้เองทุกฟอร์ม (ยังแก้ไขเองได้)
   // ถ้าบัญชีนี้ผูกกับรายชื่อในหน้า "บุคลากร" ไว้แล้ว (email ตรงกัน) จะใช้ชื่อ-สกุลจริงแทน email
-  const currentHandler = resolveHandlerName(personnel, getSession()?.email);
+  // const currentHandler = resolveHandlerName(personnel, getSession()?.email);
+  const currentUserEmail = getSession()?.email ?? "";
+  const currentWarehouse = personnel.find(
+    (p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
+  const currentHandler = currentWarehouse
+    ? `${currentWarehouse.id} — ${currentWarehouse.name}` : "";
 
   // วัตถุดิบที่ต้องใช้ต่อ "ใบสั่งผลิต" แต่ละใบ (คำนวณจากสูตรการผลิต x จำนวนที่สั่งผลิต) — เอาไว้โชว์เหนือรายการเคลื่อนไหว
   // เฉพาะใบสั่งที่ยังไม่เสร็จ/ยกเลิก เพราะเป็นตัวที่คลังต้องเตรียมของจริง
@@ -132,6 +141,14 @@ function MaterialsPage() {
     }
   }
 
+  // ยอดที่เบิกจ่ายไปแล้วจริง (จากบันทึกรายการ ประเภท "เบิกจ่าย") ของวัตถุดิบหนึ่งตัว ต่อใบสั่งผลิตหนึ่งใบ
+  // รวมทุกรายการเบิกจ่ายที่มี orderID+rmID ตรงกัน เผื่อเบิกหลายรอบกว่าจะครบ
+  function withdrawnFor(orderID: string, rmID: string): number {
+    return rawMaterialRecord
+      .filter((r) => r.orderID === orderID && r.rmID === rmID && r.type === "เบิกจ่าย")
+      .reduce((sum, r) => sum + r.amount, 0);
+  }
+
   return (
     <PageShell
       title="จัดการวัตถุดิบ"
@@ -141,6 +158,7 @@ function MaterialsPage() {
         role === "warehouse" && (
         <>
           <AddItemDialog
+            key={`new-material-${currentHandler}`}
             title="เพิ่มวัตถุดิบในรายการ"
             description="ประเภทรายการถูกกำหนดเป็น 'รับเข้า' โดยระบบ"
             successMessage="เพิ่มวัตถุดิบแล้ว"
@@ -157,7 +175,7 @@ function MaterialsPage() {
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-              { name: "handler", label: "ผู้บันทึกรายการ", placeholder: "PSN-001 — สมชาย ใจดี", defaultValue: currentHandler },
+              { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
               { name: "agency", label: "แผนกต้นทาง", defaultValue: "Supplier A" },
             ]}
             onAutoFill={autoFillNewItem}
@@ -177,7 +195,7 @@ function MaterialsPage() {
                   palletNumber: v.palletNumber, lotNumber: v.lotNumber,
                 });
                 const rec = await materialRecordsApi.create({
-                  rmID: v.rmID, orderID: v.orderID, type: "รับเข้า", amount,
+                  rmID: v.rmID, orderID: v.orderID.split(" - ")[0], type: "รับเข้า", amount,
                   leftAmount: amount, handler: v.handler, agency: v.agency,
                   rmLocationID: loc.rmLocationID,
                 });
@@ -189,6 +207,7 @@ function MaterialsPage() {
             }}
           />
           <AddItemDialog
+            key={`record-material-${currentHandler}`}
             title="บันทึกรายการวัตถุดิบ"
             description="บันทึกการรับเข้า เบิกจ่าย หรือคืนวัตถุดิบ"
             successMessage="บันทึกรายการสำเร็จ"
@@ -202,7 +221,7 @@ function MaterialsPage() {
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ" }, // หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมั
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-              { name: "handler", label: "ผู้บันทึกรายการ", placeholder: "PSN-001 — สมชาย ใจดี", defaultValue: currentHandler, },
+              { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler, },
               { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
             ]}
             onAutoFill={autoFillRecord}
@@ -232,7 +251,7 @@ function MaterialsPage() {
                   rmLocationID = loc.rmLocationID;
                 }
                 const rec = await materialRecordsApi.create({
-                  rmID: code, orderID: v.orderID, type: v.type, amount: qty,
+                  rmID: code, orderID: v.orderID.split(" - ")[0], type: v.type, amount: qty,
                   leftAmount: newAmount, handler: v.handler, agency: v.agency, rmLocationID,
                 });
                 setRawMaterialRecord((prev) => [rec, ...prev]);
@@ -308,10 +327,17 @@ function MaterialsPage() {
                         <Stack spacing={0.5}>
                           {materials.map((m) => {
   const isEnough = m.available >= m.required; // เช็คว่าวัตถุดิบมีพอใช้งานหรือไม่
+  const withdrawn = withdrawnFor(order.orderID, m.rmID); // ยอดที่เบิกจ่ายไปแล้วจริงของวัตถุดิบนี้ในใบสั่งนี้
+  const fulfilled = withdrawn >= m.required; // เบิกครบตามที่สูตรกำหนดแล้ว -> ขีดฆ่า
 
   return (
     <Stack key={m.rmID} direction="row" spacing={1} sx={{ justifyContent: "space-between" }}>
-      <Typography variant="caption" color="text.secondary" noWrap>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        noWrap
+        sx={fulfilled ? { textDecoration: "line-through", opacity: 0.5 } : undefined}
+      >
         {m.name}
       </Typography>
       <Typography
@@ -321,6 +347,7 @@ function MaterialsPage() {
           // 🛠️ ถ้าพอใช้ให้เป็นสีเขียว (success.main) ถ้าไม่พอให้เป็นสีแดง (error.main)
           color: isEnough ? "success.main" : "error.main",
           whiteSpace: "nowrap",
+          ...(fulfilled ? { textDecoration: "line-through", opacity: 0.5 } : {}),
         }}
       >
         {m.available.toLocaleString()} / {m.required.toLocaleString()} {m.unit}
