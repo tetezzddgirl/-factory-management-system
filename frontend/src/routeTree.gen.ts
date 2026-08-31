@@ -17,17 +17,12 @@ import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedPersonnelRouteImport } from './routes/_authenticated/personnel'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
-<<<<<<< HEAD
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedWipRouteImport } from './routes/_authenticated/wip'
 import { Route as AuthenticatedWorkOrdersRouteImport } from './routes/_authenticated/work-orders'
 import { Route as AuthenticatedSubProductionManagementRouteImport } from './routes/_authenticated/sub/productionManagement'
 import { Route as AuthenticatedSubQualityManagementRouteImport } from './routes/_authenticated/sub/qualityManagement'
-=======
-import { Route as AuthenticatedWipRouteImport } from './routes/_authenticated/wip'
-import { Route as AuthenticatedWorkOrdersRouteImport } from './routes/_authenticated/work-orders'
->>>>>>> origin/View-Code-Ver2.8
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -68,7 +63,6 @@ const AuthenticatedPlanningRoute = AuthenticatedPlanningRouteImport.update({
   path: '/planning',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-<<<<<<< HEAD
 const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
   id: '/production',
   path: '/production',
@@ -79,8 +73,6 @@ const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
   path: '/quality',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-=======
->>>>>>> origin/View-Code-Ver2.8
 const AuthenticatedWipRoute = AuthenticatedWipRouteImport.update({
   id: '/wip',
   path: '/wip',
@@ -91,7 +83,6 @@ const AuthenticatedWorkOrdersRoute = AuthenticatedWorkOrdersRouteImport.update({
   path: '/work-orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-<<<<<<< HEAD
 const AuthenticatedSubProductionManagementRoute =
   AuthenticatedSubProductionManagementRouteImport.update({
     id: '/sub/productionManagement',
@@ -104,8 +95,6 @@ const AuthenticatedSubQualityManagementRoute =
     path: '/sub/qualityManagement',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-=======
->>>>>>> origin/View-Code-Ver2.8
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -115,17 +104,12 @@ export interface FileRoutesByFullPath {
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
-<<<<<<< HEAD
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
   '/sub/qualityManagement': typeof AuthenticatedSubQualityManagementRoute
-=======
-  '/wip': typeof AuthenticatedWipRoute
-  '/work-orders': typeof AuthenticatedWorkOrdersRoute
->>>>>>> origin/View-Code-Ver2.8
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -134,7 +118,6 @@ export interface FileRoutesByTo {
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
-<<<<<<< HEAD
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/wip': typeof AuthenticatedWipRoute
@@ -142,11 +125,6 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
   '/sub/qualityManagement': typeof AuthenticatedSubQualityManagementRoute
-=======
-  '/wip': typeof AuthenticatedWipRoute
-  '/work-orders': typeof AuthenticatedWorkOrdersRoute
-  '/': typeof AuthenticatedIndexRoute
->>>>>>> origin/View-Code-Ver2.8
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -157,7 +135,6 @@ export interface FileRoutesById {
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/personnel': typeof AuthenticatedPersonnelRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
-<<<<<<< HEAD
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/wip': typeof AuthenticatedWipRoute
@@ -165,11 +142,6 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
   '/_authenticated/sub/qualityManagement': typeof AuthenticatedSubQualityManagementRoute
-=======
-  '/_authenticated/wip': typeof AuthenticatedWipRoute
-  '/_authenticated/work-orders': typeof AuthenticatedWorkOrdersRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
->>>>>>> origin/View-Code-Ver2.8
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,17 +153,12 @@ export interface FileRouteTypes {
     | '/materials'
     | '/personnel'
     | '/planning'
-<<<<<<< HEAD
     | '/production'
     | '/quality'
     | '/wip'
     | '/work-orders'
     | '/sub/productionManagement'
     | '/sub/qualityManagement'
-=======
-    | '/wip'
-    | '/work-orders'
->>>>>>> origin/View-Code-Ver2.8
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -200,7 +167,6 @@ export interface FileRouteTypes {
     | '/materials'
     | '/personnel'
     | '/planning'
-<<<<<<< HEAD
     | '/production'
     | '/quality'
     | '/wip'
@@ -208,11 +174,6 @@ export interface FileRouteTypes {
     | '/'
     | '/sub/productionManagement'
     | '/sub/qualityManagement'
-=======
-    | '/wip'
-    | '/work-orders'
-    | '/'
->>>>>>> origin/View-Code-Ver2.8
   id:
     | '__root__'
     | '/_authenticated'
@@ -222,7 +183,6 @@ export interface FileRouteTypes {
     | '/_authenticated/materials'
     | '/_authenticated/personnel'
     | '/_authenticated/planning'
-<<<<<<< HEAD
     | '/_authenticated/production'
     | '/_authenticated/quality'
     | '/_authenticated/wip'
@@ -230,11 +190,6 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/sub/productionManagement'
     | '/_authenticated/sub/qualityManagement'
-=======
-    | '/_authenticated/wip'
-    | '/_authenticated/work-orders'
-    | '/_authenticated/'
->>>>>>> origin/View-Code-Ver2.8
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -300,7 +255,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanningRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-<<<<<<< HEAD
     '/_authenticated/production': {
       id: '/_authenticated/production'
       path: '/production'
@@ -315,8 +269,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQualityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-=======
->>>>>>> origin/View-Code-Ver2.8
     '/_authenticated/wip': {
       id: '/_authenticated/wip'
       path: '/wip'
@@ -331,7 +283,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-<<<<<<< HEAD
     '/_authenticated/sub/productionManagement': {
       id: '/_authenticated/sub/productionManagement'
       path: '/sub/productionManagement'
@@ -346,8 +297,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSubQualityManagementRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-=======
->>>>>>> origin/View-Code-Ver2.8
   }
 }
 
@@ -357,7 +306,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPersonnelRoute: typeof AuthenticatedPersonnelRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
-<<<<<<< HEAD
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
   AuthenticatedWipRoute: typeof AuthenticatedWipRoute
@@ -365,11 +313,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedSubProductionManagementRoute: typeof AuthenticatedSubProductionManagementRoute
   AuthenticatedSubQualityManagementRoute: typeof AuthenticatedSubQualityManagementRoute
-=======
-  AuthenticatedWipRoute: typeof AuthenticatedWipRoute
-  AuthenticatedWorkOrdersRoute: typeof AuthenticatedWorkOrdersRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
->>>>>>> origin/View-Code-Ver2.8
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -378,7 +321,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPersonnelRoute: AuthenticatedPersonnelRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
-<<<<<<< HEAD
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
   AuthenticatedWipRoute: AuthenticatedWipRoute,
@@ -388,11 +330,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedSubProductionManagementRoute,
   AuthenticatedSubQualityManagementRoute:
     AuthenticatedSubQualityManagementRoute,
-=======
-  AuthenticatedWipRoute: AuthenticatedWipRoute,
-  AuthenticatedWorkOrdersRoute: AuthenticatedWorkOrdersRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
->>>>>>> origin/View-Code-Ver2.8
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -24,7 +24,7 @@ export interface TransferRecord {
 
 interface ProductionWipDetailProps {
   transferData: TransferRecord | null;
-  paletteNumber: string;
+  PalletNumber: string;
   wipName: string;
   amount: number;
   orderID?: string;
@@ -34,7 +34,7 @@ interface ProductionWipDetailProps {
 
 export default function ProductionWipDetails({
   transferData,
-  paletteNumber,
+  PalletNumber,
   wipName,
   amount,
   orderID,
@@ -114,7 +114,7 @@ export default function ProductionWipDetails({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">รหัสพาเลท (Palette)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {paletteNumber || "-"}
+              {PalletNumber || "-"}
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

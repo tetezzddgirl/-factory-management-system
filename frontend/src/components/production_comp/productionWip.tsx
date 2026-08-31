@@ -32,7 +32,7 @@ interface TransferRecord {
 interface WipLocationItem {
   wipLocationID: string; // Primary Key ของตาราง Location
   location: string;
-  paletteNumber: string;
+  PalletNumber: string;
   lotNumber: string;
   amount: number;
   wipID: string;         // FK ที่ชี้ไปหาชื่อสินค้า
@@ -197,7 +197,7 @@ const getStatusChip = (status?: string) => {
                 return (
                   <TableRow key={transfer.transferID} hover>
                     <TableCell align="center" sx={{ fontWeight: 500 }}>
-                      {locationData.paletteNumber || "-"}
+                      {locationData.PalletNumber || "-"}
                     </TableCell>
                     
                     <TableCell align="center">
@@ -265,7 +265,7 @@ const getStatusChip = (status?: string) => {
           return (
             <ProductionWipDetails
               transferData={selectedTransfer}
-              paletteNumber={locationData.paletteNumber || "-"}
+              PalletNumber={locationData.PalletNumber || "-"}
               wipName={productName}
               amount={locationData.amount || 0}
               orderID={orderID}

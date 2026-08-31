@@ -40,7 +40,7 @@ export default function ProductionWipForm({
 
   // Form States
   const [formData, setFormData] = useState({
-    paletteNumber: "",
+    PalletNumber: "",
     wipID: "",
     amount: "",
     createdBy: "",
@@ -83,7 +83,7 @@ export default function ProductionWipForm({
 
   const resetForm = () => {
     setFormData({
-      paletteNumber: "",
+      PalletNumber: "",
       wipID: "",
       amount: "",
       createdBy: "",
@@ -106,7 +106,7 @@ export default function ProductionWipForm({
       // 1. บันทึกตาราง WIP Location
       // -----------------------------------------------------------
       const locationPayload = {
-        paletteNumber: formData.paletteNumber,
+        PalletNumber: formData.PalletNumber,
         lotNumber: orderID,
         orderID: orderID,
         amount: Number(formData.amount),
@@ -228,8 +228,8 @@ export default function ProductionWipForm({
               required
               fullWidth
               label="รหัสพาเลท (Palette Number)"
-              name="paletteNumber"
-              value={formData.paletteNumber}
+              name="PalletNumber"
+              value={formData.PalletNumber}
               onChange={handleChange}
               placeholder="เช่น PLT-001"
             />
