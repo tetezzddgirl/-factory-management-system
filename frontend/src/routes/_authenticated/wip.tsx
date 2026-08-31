@@ -273,6 +273,7 @@ function WipPage() {
 
           {role === "operator" && (
             <AddItemDialog
+              key={`slip-${currentHandler}`}
               title="สร้างใบเบิกจ่าย"
               description="บันทึกคำขอเบิกวัตถุดิบ/สินค้าระหว่างผลิตไปยังฝ่ายผลิต"
               successMessage="สร้างใบเบิกจ่ายแล้ว"
@@ -284,16 +285,10 @@ function WipPage() {
                 { name: "unit", label: "หน่วย", defaultValue: "ชิ้น",  }, // "เติม unit อัตโนมัติตามรายการที่เลือก"
                 { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
                 { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                { name: "handler", label: "ผู้ขอเบิก", placeholder: "PSN-001 — สมชาย ใจดี", defaultValue: currentHandler },
+                { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
                 { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
               ]}
-              onAutoFill={(values, changed) => {
-                if (changed === "item") {
-                  const code = values.item.split(" — ")[0];
-                  const found = workInProcess.find((m) => m.wipID === code);
-                  if (found) return { unit: found.unit };
-                }
-              }}
+              onAutoFill={autoFillRecord}
               onSubmit={handleRequisition}
             />
           )}
