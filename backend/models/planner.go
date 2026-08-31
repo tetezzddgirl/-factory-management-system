@@ -37,6 +37,13 @@ type ProductionOrder struct {
 	PlanID    string    `json:"planID" gorm:"column:plan_id"`
 	// RefBomID สืบทอดมาจาก ProductionPlan ต้นทางตอนสร้างใบสั่งผลิต (ดู CreateWorkOrder)
 	RefBomID string `json:"refBomID" gorm:"column:ref_bom_id"`
+
+	InspectionPoints        []InspectionPoint         `gorm:"foreignKey:OrderID" json:"inspectionPoints"`
+	ProductionStatusHistory []ProductionStatusHistory `gorm:"foreignKey:OrderID" json:"statusHistory"`
+	ProductionEvents        []ProductionEvent         `gorm:"foreignKey:OrderID" json:"events"`
+	ProductionReport        *ProductionReport         `gorm:"foreignKey:OrderID" json:"report"`
+	WIPLocations            []WIPLocation             `gorm:"foreignKey:OrderID" json:"wipLocations"`
+	TransferRecords         []TransferRecord          `gorm:"foreignKey:OrderID" json:"transferRecords"`
 }
 
 type Resources struct {

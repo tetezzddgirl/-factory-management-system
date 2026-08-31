@@ -37,10 +37,13 @@ func main() {
 	wipHandler := handlers.NewWipHandler(db)
 	workOrderHandler := handlers.NewWorkOrderHandler(db)
 
+	productionHandler := handlers.NewProductionHandler(db)
+	qualityHandler := handlers.NewQualityHandler(db)
+
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.CORSOrigin},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}))
@@ -120,6 +123,42 @@ func main() {
 		api.POST("/work-orders/work", workOrderHandler.CreateWork)
 		api.DELETE("/work-orders/work/:id", workOrderHandler.DeleteWork)
 		api.PUT("/work-orders/work/:id", workOrderHandler.UpdateWork)
+
+		// Production
+		api.GET("/production/orders", productionHandler.ListOrders)
+		api.GET("/production/orders/:id", productionHandler.GetOrderByID)
+		api.POST("/production/orders", productionHandler.CreateOrder)
+		api.PATCH("/production/orders/:id/status", productionHandler.UpdateOrderStatus)
+		api.GET("/production/orders/:id/status-history", productionHandler.GetStatusHistoryByOrderID)
+
+		api.GET("/production/orders/:id/events", productionHandler.GetEventsByOrderID)
+		api.POST("/production/events", productionHandler.CreateEvent)
+
+		api.GET("/production/orders/:id/reports", productionHandler.GetReportsByOrderID)
+		api.POST("/production/reports", productionHandler.CreateReport)
+		api.PATCH("/production/reports/:reportId", productionHandler.UpdateReport)
+
+		api.GET("/production/orders/:id/transfers", productionHandler.GetTransfersByOrderID)
+		api.POST("/production/transfers", productionHandler.CreateTransfer)
+
+		api.DELETE("/production/transfers/:id", productionHandler.DeleteTransfer)
+
+		// Quality
+		api.GET("/quality/requirements", qualityHandler.ListRequirements)
+		api.POST("/quality/requirements", qualityHandler.CreateRequirement)
+
+		api.POST("/quality/points", qualityHandler.CreatePoint)
+		api.GET("/quality/orders/:id/points", qualityHandler.GetPointsByOrderID)
+
+		api.POST("/quality/inspections", qualityHandler.CreateInspection)
+		api.GET("/quality/points/:pointId/inspections", qualityHandler.GetInspectionsByPointID)
+		api.GET("/quality/orders/:id/inspections", qualityHandler.GetInspectionsByOrderID)
+		api.POST("/quality/corrections", qualityHandler.CreateCorrection)
+		
+		api.GET("/quality/inspections/:id", qualityHandler.GetInspectionByID)
+		api.GET("/quality/inspections/:id/items", qualityHandler.GetInspectionItems)
+		api.GET("/quality/corrections/inspection/:inspectionId", qualityHandler.GetCorrectionByInspectionID)
+
 	}
 
 	log.Println("listening on :" + cfg.ServerPort)

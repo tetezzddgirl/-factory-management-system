@@ -40,6 +40,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Resources{},
 		&models.Work{},
 		&models.Issue{},
+		&models.Inventory{},
 
 		// บุคลากร (Personnel)
 		&models.Personnel{},
@@ -52,5 +53,19 @@ func Migrate(db *gorm.DB) error {
 		&models.WIPLocation{},
 		&models.WorkInProcessRecord{},
 		&models.RequisitionSlip{},
+
+		// ฝ่ายผลิต (Production)
+		&models.ProductionStatusHistory{},
+		&models.ProductionEvent{},
+		&models.ProductionReport{},
+		&models.TransferRecord{},
+
+		// ฝ่ายควบคุมคุณภาพ (Quality)
+		&models.InspectionPoint{},
+		&models.InspectionParameter{},
+		&models.InspectionRequirement{},
+		&models.Inspection{},
+		&models.InspectionItem{},
+		&models.CorrectionRecord{},
 	)
 }
