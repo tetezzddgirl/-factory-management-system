@@ -268,8 +268,6 @@ func (h *QualityHandler) CreateInspection(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Printf("🎯 STATUS RECEIVED FROM FRONTEND: '%s'\n", req.Status)
-    fmt.Printf("🎯 OVERALL RESULT: '%s'\n", req.OverallResult)
 
 	tx := h.db.WithContext(c.Request.Context()).Begin()
 
