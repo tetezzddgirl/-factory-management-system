@@ -112,7 +112,7 @@ function MaterialsPage() {
         return {
           location: loc.location,
           lotNumber: loc.lotNumber,
-          ...(mat && !values.item ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
+          ...(mat  ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
         };
       }
     }
@@ -127,7 +127,7 @@ function MaterialsPage() {
         return {
           palletNumber: loc.palletNumber,
           lotNumber: loc.lotNumber,
-          ...(mat && !values.item ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
+          ...(mat ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
         };
       }
     }
@@ -135,11 +135,24 @@ function MaterialsPage() {
 
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
   function autoFillNewItem(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
-    if (changed === "rmID" && values.rmID) {
-      const found = rawMaterial.find((m) => m.rmID.trim().toLowerCase() === values.rmID.trim().toLowerCase());
-      if (found) return { rawMaterial: found.rawMaterial, unit: found.unit, max: String(found.max), min: String(found.min) };
+  if (changed === "rmID" && values.rmID) {
+    const found = rawMaterial.find((m) => m.rmID.trim().toLowerCase() === values.rmID.trim().toLowerCase());
+    if (found) return { rawMaterial: found.rawMaterial, unit: found.unit, max: String(found.max), min: String(found.min) };
+  }
+  if (changed === "palletNumber" && values.palletNumber) {
+    const loc = rawMaterialLocation.find(
+      (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
+    );
+    if (loc) {
+      const mat = rawMaterial.find((m) => m.rmID === loc.rmID);
+      return {
+        location: loc.location,
+        lotNumber: loc.lotNumber,
+        ...(mat ? { rmID: mat.rmID, rawMaterial: mat.rawMaterial, unit: mat.unit, max: String(mat.max), min: String(mat.min) } : {}),
+      };
     }
   }
+}
 
   // ยอดที่เบิกจ่ายไปแล้วจริง (จากบันทึกรายการ ประเภท "เบิกจ่าย") ของวัตถุดิบหนึ่งตัว ต่อใบสั่งผลิตหนึ่งใบ
   // รวมทุกรายการเบิกจ่ายที่มี orderID+rmID ตรงกัน เผื่อเบิกหลายรอบกว่าจะครบ
@@ -173,38 +186,90 @@ function MaterialsPage() {
               { name: "max", label: "จำนวนสูงสุดที่เก็บได้", type: "number", defaultValue: "10000" },
               { name: "min", label: "จำนวนที่ต้องสำรอง", type: "number", defaultValue: "0" },
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-              { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
+              { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ"},
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
               { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
               { name: "agency", label: "แผนกต้นทาง", defaultValue: "Supplier A" },
             ]}
-            onAutoFill={autoFillNewItem}
-            onSubmit={async (v) => {
-              const amount = Number(v.amount) || 0;
-              const max = Number(v.max) || 0;
-              const min = Number(v.min) || 0;
+            onAutoFill={autoFillRecord}
+onSubmit={async (v) => {
+  const qty = Number(v.amount) || 0;
+  const code = v.item.split(" — ")[0];
+  const target = rawMaterial.find((i) => i.rmID === code);
+  const sign = v.type === "เบิกจ่าย" ? -1 : v.type === "โอนย้าย" ? 0 : 1;
 
-              try {
-                const created = await materialsApi.create({
-                  rmID: v.rmID, rawMaterial: v.rawMaterial, amount, unit: v.unit, max, min,
-                });
-                setRawMaterial((prev) => [created, ...prev.filter((i) => i.rmID !== created.rmID)]);
+  if (sign === -1 && target && qty > target.amount) {
+    toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
+    return false;
+  }
 
-                const loc = await materialLocationsApi.create({
-                  rmID: v.rmID, amount, location: v.location,
-                  palletNumber: v.palletNumber, lotNumber: v.lotNumber,
-                });
-                const rec = await materialRecordsApi.create({
-                  rmID: v.rmID, orderID: v.orderID.split(" - ")[0], type: "รับเข้า", amount,
-                  leftAmount: amount, handler: v.handler, agency: v.agency,
-                  rmLocationID: loc.rmLocationID,
-                });
-                setRawMaterialRecord((prev) => [rec, ...prev]);
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "เพิ่มวัตถุดิบไม่สำเร็จ");
-                return false;
-              }
-            }}
+  const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
+
+  // หา location เดิมของวัตถุดิบตัวนี้ที่ pallet ตรงกับที่กรอก (ถ้ากรอก pallet มา)
+  const existingLoc = v.palletNumber
+    ? rawMaterialLocation.find(
+        (l) => l.rmID === code && l.palletNumber.trim().toLowerCase() === v.palletNumber.trim().toLowerCase(),
+      )
+    : undefined;
+
+  try {
+    await materialsApi.updateStock(code, newAmount);
+    setRawMaterial((prev) => prev.map((i) => (i.rmID === code ? { ...i, amount: newAmount } : i)));
+
+    let rmLocationID = "";
+
+    if (v.type === "เบิกจ่าย") {
+      // เบิกจ่าย: ลดจำนวนที่ pallet เดิม ไม่สร้าง location ใหม่
+      if (existingLoc) {
+        const updated = Math.max(0, existingLoc.amount - qty);
+        await materialLocationsApi.update(existingLoc.rmLocationID, updated, existingLoc.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, amount: updated } : l)),
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      } else if (v.palletNumber) {
+        toast.error("ไม่พบ Pallet นี้ในระบบ ไม่ได้อัปเดตตำแหน่งจัดเก็บ");
+      }
+    } else if (v.type === "โอนย้าย") {
+      // โอนย้าย: ย้าย pallet เดิมไป location ใหม่ จำนวนไม่เปลี่ยน
+      if (existingLoc) {
+        await materialLocationsApi.update(existingLoc.rmLocationID, existingLoc.amount, v.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, location: v.location } : l)),
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      } else if (v.palletNumber) {
+        toast.error("ไม่พบ Pallet นี้ในระบบ ไม่ได้อัปเดตตำแหน่งจัดเก็บ");
+      }
+    } else if (v.location) {
+      // รับเข้า / คืน: ถ้า pallet นี้มีอยู่แล้วให้บวกเพิ่ม ไม่สร้างซ้ำ
+      if (existingLoc) {
+        const updated = existingLoc.amount + qty;
+        await materialLocationsApi.update(existingLoc.rmLocationID, updated, v.location);
+        setRawMaterialLocation((prev) =>
+          prev.map((l) => (l.rmLocationID === existingLoc.rmLocationID ? { ...l, amount: updated, location: v.location } : l)),
+        );
+        rmLocationID = existingLoc.rmLocationID;
+      } else {
+        const loc = await materialLocationsApi.create({
+          rmID: code, amount: qty, location: v.location,
+          palletNumber: v.palletNumber, lotNumber: v.lotNumber,
+        });
+        setRawMaterialLocation((prev) => [loc, ...prev]);
+        rmLocationID = loc.rmLocationID;
+      }
+    }
+
+    const rec = await materialRecordsApi.create({
+      rmID: code, orderID: v.orderID.split(" - ")[0], type: v.type, amount: qty,
+      leftAmount: newAmount, handler: v.handler, agency: v.agency, rmLocationID,
+    });
+    setRawMaterialRecord((prev) => [rec, ...prev]);
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "บันทึกรายการไม่สำเร็จ");
+    return false;
+  }
+}}
           />
           <AddItemDialog
             key={`record-material-${currentHandler}`}

@@ -106,7 +106,7 @@ function WipPage() {
         return {
           location: loc.location,
           lotNumber: loc.lotNumber,
-          ...(mat && !values.item ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
+          ...(mat ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
         };
       }
     }
@@ -117,6 +117,19 @@ function WipPage() {
     if (changed === "wipID" && values.wipID) {
       const found = workInProcess.find((m) => m.wipID.trim().toLowerCase() === values.wipID.trim().toLowerCase());
       if (found) return { wip: found.wip, unit: found.unit, max: String(found.max) };
+    }
+    if (changed === "palletNumber" && values.palletNumber) {
+    const loc = wipLocations.find(
+      (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
+    );
+    if (loc) {
+      const mat = workInProcess.find((m) => m.wipID === loc.wipID);
+      return {
+        location: loc.location,
+        lotNumber: loc.lotNumber,
+        ...(mat ? { wipID: mat.wipID, workInProcess: mat.wip, unit: mat.unit, max: String(mat.max) } : {}),
+      };
+    }
     }
   }
 
