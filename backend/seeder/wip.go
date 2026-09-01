@@ -1,7 +1,6 @@
 package main
 
 import (
-	"time"
 
 	"factoryflow/models"
 
@@ -10,7 +9,6 @@ import (
 
 // SeedWip ใส่ข้อมูลสินค้าระหว่างผลิต (WIP) + ตำแหน่ง + ประวัติเคลื่อนไหว + ใบเบิกจ่าย
 func SeedWip(db *gorm.DB) {
-	now := time.Now()
 
 	upsert(db, "wip_id", []models.WorkInProcess{
 		{WipID: "WIP-001", Wip: "ขวดเป่าขึ้นรูป", InStage: "หลังเป่าขึ้นรูป", Amount: 3200, Unit: "ชิ้น", Max: 5000},
@@ -26,12 +24,4 @@ func SeedWip(db *gorm.DB) {
 		{WipLocationID: "WLO-004", Location: "A-04-01", PalletNumber: "PLT-204", LotNumber: "LOT-3004", Amount: 150, WipID: "WIP-004"},
 	})
 
-	upsert(db, "wip_record_id", []models.WorkInProcessRecord{
-		{Timestamp: now.Add(-3 * time.Hour), WipRecordID: "WR-001", Type: "รับเข้า", InStage: "หลังเป่าขึ้นรูป", Amount: 500, LeftAmount: 3200, Handler: "สมชาย ใจดี", Agency: "ฝ่ายผลิต", OrderID: "WO-1042", WipID: "WIP-001", WipLocationID: "WLO-001"},
-		{Timestamp: now.Add(-1 * time.Hour), WipRecordID: "WR-002", Type: "โอนย้าย", InStage: "หลังบรรจุ", Amount: 300, LeftAmount: 1800, Handler: "มาลี ศรีสุข", Agency: "ฝ่ายคลัง WIP", OrderID: "WO-1042", WipID: "WIP-002", WipLocationID: "WLO-002"},
-	})
-
-	upsert(db, "slip_id", []models.RequisitionSlip{
-		{Timestamp: now.Add(-4 * time.Hour), SlipID: "SID-001", Amount: 500, Status: "รออนุมัติ", Handler: "มาลี ศรีสุข", OrderID: "WO-1042", WipLocationID: "WLO-001"},
-	})
 }

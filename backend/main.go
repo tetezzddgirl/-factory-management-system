@@ -76,6 +76,7 @@ func main() {
 		api.GET("/materials", warehouseHandler.ListRawMaterials)
 		api.POST("/materials", warehouseHandler.CreateMaterial)
 		api.PUT("/materials/:rmID", warehouseHandler.UpdateStock)
+		api.GET("/materials/:rmID/detail", warehouseHandler.GetRawMaterial)
 
 		// ตำแหน่งจัดเก็บวัตถุดิบ (RawMaterialLocation)
 		api.GET("/materials/locations", warehouseHandler.ListLocations)
@@ -100,6 +101,7 @@ func main() {
 		api.GET("/wip", wipHandler.ListWorkInProcess)
 		api.POST("/wip", wipHandler.CreateWorkInProcess)
 		api.PUT("/wip/:wipID", wipHandler.UpdateWorkInProcessAmount)
+		api.GET("/wip/:wipID/detail", wipHandler.GetWorkInProcess)
 
 		api.GET("/wip/locations", wipHandler.ListWipLocations)
 		api.POST("/wip/locations", wipHandler.CreateWipLocation)
@@ -115,6 +117,7 @@ func main() {
 		api.GET("/work-orders", workOrderHandler.ListWorkOrders)
 		api.POST("/work-orders", workOrderHandler.CreateWorkOrder)
 		api.PUT("/work-orders/:id", workOrderHandler.UpdateWorkOrderStatus)
+		api.GET("/work-orders/:id/detail", workOrderHandler.GetWorkOrder)
 
 		api.GET("/work-orders/work", workOrderHandler.ListWork)
 		api.POST("/work-orders/work", workOrderHandler.CreateWork)

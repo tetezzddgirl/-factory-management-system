@@ -31,6 +31,18 @@ func (h *WarehouseHandler) ListRawMaterials(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
+// GetRawMaterial คืนวัตถุดิบ 1 ตัว พร้อม Locations/Records ที่ผูกอยู่ (path: /api/materials/:rmID/detail)
+func (h *WarehouseHandler) GetRawMaterial(c *gin.Context) {
+	rmID := c.Param("rmID")
+	var rm models.RawMaterial
+	if err := h.db.Preload("Locations").Preload("Records").
+		Where("rm_id = ?", rmID).First(&rm).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, rm)
+}
+
 // CreateMaterial เพิ่มวัตถุดิบใหม่เข้าคลัง (รับเข้า) หรืออัปเดตถ้ามี rmID ซ้ำอยู่แล้ว
 func (h *WarehouseHandler) CreateMaterial(c *gin.Context) {
 	var rm models.RawMaterial

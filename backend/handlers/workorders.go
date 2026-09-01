@@ -81,6 +81,23 @@ func (h *WorkOrderHandler) ListWorkOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
+func (h *WorkOrderHandler) GetWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+	var o models.ProductionOrder
+	if err := h.db.
+		Preload("Work").
+		Preload("Resources").
+		Preload("Issues").
+		Preload("RawMaterialRecords").
+		Preload("WorkInProcessRecords").
+		Preload("RequisitionSlips").
+		Where("order_id = ?", id).First(&o).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, o)
+}
+
 // CreateWorkOrder สร้างใบสั่งผลิตใหม่ — RefBomID ไม่ได้รับมาจาก frontend ตรงๆ (ApiWorkOrder ฝั่ง frontend
 // ไม่มี field นี้) แต่สืบทอดมาจาก ProductionPlan ต้นทางผ่าน PlanID ที่ frontend ส่งมาอยู่แล้ว
 func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
