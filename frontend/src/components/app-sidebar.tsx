@@ -16,8 +16,8 @@ import { useRole, canAccess } from "@/lib/roles";
 
 const items = [
   // { title: "แดชบอร์ด", url: "/", icon: DashboardIcon },
-  { title: "วางแผนการผลิต", url: "/planning", icon: CalendarMonth },
-  { title: "สร้างใบสั่งผลิต", url: "/work-orders", icon: Assignment },
+  { title: "แผนการผลิต", url: "/planning", icon: CalendarMonth },
+  { title: "ใบสั่งผลิต", url: "/work-orders", icon: Assignment },
   { title: "ผลิตภัณฑ์ & BOM", url: "/products", icon: Category },
   { title: "วัตถุดิบ", url: "/materials", icon: Inventory2 },
   { title: "สินค้าระหว่างผลิต", url: "/wip", icon: Layers },
