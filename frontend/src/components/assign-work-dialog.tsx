@@ -117,7 +117,9 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
   });
   };
 
-  const valid = tasks.every((t) => t.work.trim() && t.start.trim() && t.due.trim());
+  // แต่ละงานต้องกรอกครบ และวันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่ม
+  const taskDateError = (t: AssignWorkResult) => Boolean(t.start && t.due && t.due < t.start);
+  const valid = tasks.every((t) => t.work.trim() && t.start.trim() && t.due.trim() && !taskDateError(t));
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -231,6 +233,8 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
                       fullWidth label="กำหนดเสร็จ" type="date"
                       value={v.due} onChange={(e) => set(i, "due", e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
+                      error={taskDateError(v)}
+                      helperText={taskDateError(v) ? "ต้องไม่มาก่อนวันที่เริ่ม" : undefined}
                     />
                   </Stack>
                 </Stack>
