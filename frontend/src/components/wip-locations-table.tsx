@@ -19,7 +19,7 @@ export const LOCATION_MASTER = [
 ];
 
 type Row = {
-  key: string; wipID: string; wip: string; unit: string; amount: number | null;
+  key: string; wipID: string; wip: string; unit: string; amount: number | null; palletNumber: string | null;
   location: string | null; pending: boolean; unallocated: number; wipLocationID?: string;
 };
 
@@ -48,14 +48,14 @@ export function WipLocationsTable({
       for (const a of mine) {
         out.push({
           key: a.wipLocationID, wipID: s.wipID, wip: s.wip, unit: s.unit,
-          amount: a.amount, location: a.location, pending: false,
+          amount: a.amount, palletNumber:a.palletNumber, location: a.location, pending: false,
           unallocated: remaining, wipLocationID: a.wipLocationID,
         });
       }
       if (remaining > 0) {
         out.push({
           key: `draft-${s.wipID}`, wipID: s.wipID, wip: s.wip, unit: s.unit,
-          amount: null, location: null, pending: true, unallocated: remaining,
+          amount: null, palletNumber: null, location: null, pending: true, unallocated: remaining,
         });
       }
     }
@@ -125,6 +125,7 @@ export function WipLocationsTable({
               <TableCell sx={{ width: 120 }}>WIP ID</TableCell>
               <TableCell>WIP (ชื่อสินค้า)</TableCell>
               <TableCell sx={{ width: 190 }}>จำนวนที่เก็บใน location</TableCell>
+              <TableCell sx={{ width: 190 }}>หมายเลข pallet</TableCell>
               <TableCell sx={{ width: 230 }}>ตำแหน่งที่เก็บ</TableCell>
             </TableRow>
           </TableHead>
@@ -153,6 +154,9 @@ export function WipLocationsTable({
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{qtyValue(row)}</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.palletNumber}</Typography>
                 </TableCell>
                 <TableCell>
                   <Autocomplete
