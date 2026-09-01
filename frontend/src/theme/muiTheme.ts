@@ -12,7 +12,7 @@ export const muiTheme = createTheme({
     secondary: { main: secondary, contrastText: "#fff" },
     background: { default: "#F4F9FE", paper: "#FFFFFF" },
     text: { primary: "#1E293B", secondary: "#64748B" },
-    success: { main: "#10B981" },
+    success: { main: "#10B981", contrastText: "#fff" },
     warning: { main: "#F59E0B" },
     error: { main: "#EF4444" },
     info: { main: "#4A90E2" },
