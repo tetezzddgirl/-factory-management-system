@@ -59,6 +59,9 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
   const set = <K extends keyof WorkOrderResult>(k: K, val: WorkOrderResult[K]) =>
     setV((s) => ({ ...s, [k]: val }));
 
+  // วันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่มผลิต
+  const dateError = Boolean(v.startDate && v.due && v.due < v.startDate);
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: 700 }}>
@@ -102,6 +105,8 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
                 fullWidth label="กำหนดเสร็จ" type="date" value={v.due}
                 onChange={(e) => set("due", e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                error={dateError}
+                helperText={dateError ? "ต้องไม่มาก่อนวันที่เริ่มผลิต" : undefined}
               />
             </Stack>
             <TextField select label="ลำดับความสำคัญ" value={v.priority} onChange={(e) => set("priority", e.target.value)}>
@@ -128,7 +133,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim()}
+          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
           onClick={() => onSubmit(v)}
         >
           ถัดไป: ตรวจสอบทรัพยากร

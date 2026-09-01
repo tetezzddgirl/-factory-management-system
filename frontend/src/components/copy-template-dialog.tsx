@@ -90,6 +90,9 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
     recomputeMaterials(product, v);
   }
 
+  // วันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่มผลิต
+  const dateError = Boolean(start && due && due < start);
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: 700 }}>ปรับแต่งแผนการผลิตเดิม (Copy as Template)</DialogTitle>
@@ -130,6 +133,8 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
             fullWidth label="กำหนดเสร็จ" type="date" value={due}
             onChange={(e) => setDue(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
+            error={dateError}
+            helperText={dateError ? "ต้องไม่มาก่อนวันที่เริ่มผลิต" : undefined}
           />
         </Stack>
       </DialogContent>
@@ -137,7 +142,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!sourceId || !product || !target}
+          disabled={!sourceId || !product || !target || dateError}
           onClick={() => onSubmit({ planID, name, product, bom: bomIDFromOption(bom), target: Number(target) || 0, priority, start, due })}
         >
           บันทึก
