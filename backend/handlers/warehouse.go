@@ -77,6 +77,17 @@ func (h *WarehouseHandler) ListLocations(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
+func (h *WarehouseHandler) GetRawMaterial(c *gin.Context) {
+	rmID := c.Param("rmID")
+	var rm models.RawMaterial
+	if err := h.db.Preload("Locations").Preload("Records").
+		Where("rm_id = ?", rmID).First(&rm).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, rm)
+}
+
 // CreateLocation สร้างการจัดเก็บวัตถุดิบตำแหน่งใหม่ (rmLocationID ว่างได้ ระบบจะ gen ให้)
 func (h *WarehouseHandler) CreateLocation(c *gin.Context) {
 	var loc models.RawMaterialLocation

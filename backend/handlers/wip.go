@@ -21,6 +21,17 @@ func NewWipHandler(db *gorm.DB) *WipHandler {
 	return &WipHandler{db: db}
 }
 
+func (h *WipHandler) GetWorkInProcess(c *gin.Context) {
+	wipID := c.Param("wipID")
+	var w models.WorkInProcess
+	if err := h.db.Preload("Locations").Preload("Records").
+		Where("wip_id = ?", wipID).First(&w).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, w)
+}
+
 // ---- ยอดคงเหลือ WIP ----
 
 // ListWorkInProcess คืนยอดคงเหลือสินค้าระหว่างผลิตทั้งหมด
