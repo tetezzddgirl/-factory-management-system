@@ -14,7 +14,8 @@ import {
   FormControl,
   Select,
   MenuItem,
-  InputLabel
+  InputLabel,
+  Dialog
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import QualityQcForm, { QcPointExtended } from "./qualityQcForm";
@@ -41,7 +42,6 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
   const [loading, setLoading] = useState(false);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
-
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedInspectionID, setSelectedInspectionID] = useState<string>("");
 
@@ -270,24 +270,44 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
         </Table>
       </TableContainer>
 
-      <QualityQcForm
+      {/* Popup Form บันทึกผลตรวจคุณภาพ */}
+      <Dialog
         open={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        orderID={orderID}
-        orderName={orderName}
-        points={points}
-        initialPointID={selectedPoint}
-        onSuccess={fetchData}
-      />
+        maxWidth="md"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <QualityQcForm
+          open={isFormOpen}
+          orderID={orderID}
+          orderName={orderName}
+          points={points}
+          initialPointID={selectedPoint}
+          onSuccess={() => {
+            fetchData();
+            setIsFormOpen(false);
+          }}
+          onClose={() => setIsFormOpen(false)}
+        />
+      </Dialog>
 
-      {/* 👈 เพิ่ม Component นี้ไว้ด้านล่างสุด */}
-      <QualityQcDetail
+      {/* Popup Detail รายละเอียดผลตรวจคุณภาพ */}
+      <Dialog
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        orderID={orderID}
-        orderName={orderName}
-        inspectionID={selectedInspectionID}
-      />
+        maxWidth="md"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <QualityQcDetail
+          open={detailOpen}
+          orderID={orderID}
+          orderName={orderName}
+          inspectionID={selectedInspectionID}
+          onClose={() => setDetailOpen(false)}
+        />
+      </Dialog>
     </Box>
   );
 }

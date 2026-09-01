@@ -193,7 +193,7 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
         onClose={() => setDetailDialogOpen(false)} 
         maxWidth="md" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         <QualityQcPointDetails
           pointData={selectedPoint} 

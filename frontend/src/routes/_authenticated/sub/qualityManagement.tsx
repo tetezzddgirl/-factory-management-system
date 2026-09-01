@@ -9,7 +9,6 @@ import { PageShell } from "@/components/page-shell";
 import QualityQcPoint from "@/components/quality_comp/qualityQcPoint";
 import QualityQc from "@/components/quality_comp/qualityQc";
 
-// --- Types ---
 interface ProductionReport {
   reportId?: string;
   goodQuantity?: number;
@@ -22,12 +21,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "Pending"      
-    | "Preparing"    
-    | "InProgress"   
-    | "Paused"       
-    | "Completed"    
-    | "Cancelled";   
+    | "success"   // เสร็จสิ้น
+    | "info"      // กำลังผลิต
+    | "default"   // รอมอบหมาย
+    | "warning"   // หยุดชั่วคราว
+    | "error";    // error  
   amount: number;
   machines: string;
   startDate: string;
@@ -93,15 +91,16 @@ function RouteComponent() {
 
   const getStatusChipProps = (status: string) => {
     switch (status) {
-      case "InProgress": 
+      case "info": 
         return { label: "กำลังผลิต", sx: { bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Paused": 
+      case "warning": 
         return { label: "หยุดชั่วคราว", sx: { bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Completed": 
+      case "success": 
         return { label: "เสร็จสิ้น", sx: { bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Cancelled":
-      default: 
-        return { label: "ยกเลิก", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      case "error":
+        return { label: "ยกเลิก", sx: { bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      default:
+        return { label: "รอมอบหมาย", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };
     }
   };
 
@@ -131,8 +130,7 @@ function RouteComponent() {
   return (
     <PageShell title="" description="">
       <Box sx={{ p: 2 }}>
-        
-        {/* --- Header Section (ปรับ Layout Flexbox ตามแบบ) --- */}
+
         <Box 
           sx={{ 
             mt: -6, 
@@ -144,7 +142,6 @@ function RouteComponent() {
           }}
         >
           
-          {/* ฝั่งซ้าย: ข้อมูลสินค้า (ขนาดตามเนื้อหา) */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
             <Avatar sx={{ bgcolor: '#E3F2FD', width: 52, height: 52 }}> 
               <VerifiedUser sx={{ color: 'primary.main', fontSize: 28 }} /> 
@@ -166,7 +163,6 @@ function RouteComponent() {
             </Box>
           </Box>
 
-          {/* ฝั่งขวา: แถบความคืบหน้า (ยืดเต็มพื้นที่ที่เหลือ) */}
           <Box sx={{ flexGrow: 1, width: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="text.secondary">ความคืบหน้า</Typography>
@@ -191,7 +187,6 @@ function RouteComponent() {
 
         </Box>
 
-        {/* --- Tabs Section --- */}
         <Box sx={{ mb: -1, borderBottom: 1, borderColor: 'divider', mt: 2 }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="quality management tabs">
             <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 'bold' : 'normal' }} />
@@ -200,7 +195,6 @@ function RouteComponent() {
           </Tabs>
         </Box>
 
-        {/* --- Content Section --- */}
         <Box sx={{ pt: 3 }}>
           {tabValue === 0 && (
             <Box>

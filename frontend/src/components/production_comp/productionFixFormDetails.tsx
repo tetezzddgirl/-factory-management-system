@@ -38,7 +38,7 @@ export default function ProductionFixFormDetails({ inspection, items }: Producti
         <Typography sx={{ fontWeight: 600, color: "#1e293b", mb: 1.5 }}>
           ข้อมูลทั่วไป
         </Typography>
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: "#fff" }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: "#fff" }}>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               รหัสจุดตรวจ:{" "}
@@ -92,7 +92,7 @@ export default function ProductionFixFormDetails({ inspection, items }: Producti
         <Typography sx={{ fontWeight: 600, color: "#1e293b", mb: 1.5 }}>
           รายการตรวจสอบ ({items.length} รายการ)
         </Typography>
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
           <Table size="small">
             <TableHead sx={{ bgcolor: "#f8fafc" }}>
               <TableRow>

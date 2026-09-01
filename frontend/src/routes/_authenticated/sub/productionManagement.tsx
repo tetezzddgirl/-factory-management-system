@@ -7,7 +7,6 @@ import {
 import { Factory, Person, Settings as CogIcon } from '@mui/icons-material';
 import { PageShell } from "@/components/page-shell";
 
-// --- Import Components ---
 import ProductionDetails from "@/components/production_comp/productionDetails";
 import ProductionFix from "@/components/production_comp/productionFix";
 import ProductionEven from "@/components/production_comp/productionEven";
@@ -16,7 +15,6 @@ import ProductionStatus from "@/components/production_comp/productionStatus";
 import ProductionWip from "@/components/production_comp/productionWip";
 import ProductionFg from "@/components/production_comp/productionFg";
 
-// --- Types ---
 interface ProductionReport {
   reportId?: string;
   goodQuantity?: number;
@@ -29,12 +27,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "Pending"      // รอเริ่ม
-    | "Preparing"    // กำลังเตรียมการ
-    | "InProgress"   // กำลังดำเนินการ
-    | "Paused"       // หยุดชั่วคราว
-    | "Completed"    // เสร็จสิ้น
-    | "Cancelled";   // ยกเลิก
+    | "success"   // เสร็จสิ้น
+    | "info"      // กำลังผลิต
+    | "default"   // รอมอบหมาย
+    | "warning"   // หยุดชั่วคราว
+    | "error";    // error
   amount: number;
   machines: string;
   startDate: string;
@@ -42,7 +39,6 @@ interface ProductionOrder {
   report?: ProductionReport;
 }
 
-// 1. กำหนดโครงสร้าง Search Params เพื่อรับ id จาก URL
 type ProductionManagementSearch = {
   id: string;
 };
@@ -57,17 +53,14 @@ export const Route = createFileRoute('/_authenticated/sub/productionManagement')
 });
 
 function RouteComponent() {
-  // ดึง orderID มาจาก URL Params
   const { id: orderID } = useSearch({ from: '/_authenticated/sub/productionManagement' });
 
-  // States
   const [order, setOrder] = useState<ProductionOrder | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
 
-  // 2. ฟังก์ชันดึงข้อมูล Order เดี่ยวจาก API
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
     try {
@@ -89,7 +82,6 @@ function RouteComponent() {
     }
   }, [orderID]);
 
-  // 3. ทำ Polling อัปเดตข้อมูลทุกๆ 3 วินาที
   useEffect(() => {
     if (orderID) {
       fetchOrderDetails(false);
@@ -100,7 +92,6 @@ function RouteComponent() {
     }
   }, [orderID, fetchOrderDetails]);
 
-  // 4. ฟังก์ชันบันทึกสถานะใหม่ไปยัง API
   const handleSaveStatus = async (newStatus: string) => {
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
@@ -113,13 +104,12 @@ function RouteComponent() {
         body: JSON.stringify({
           status: newStatus,
           reason: `Updated to ${newStatus} via Management UI`,
-          changedBy: "Operator", // ในอนาคตอาจดึงชื่อจริงจาก token
+          changedBy: "Operator",
         }),
       });
 
       if (!res.ok) throw new Error("อัปเดตสถานะไม่สำเร็จ");
       
-      // อัปเดตข้อมูลบนหน้าจอทันที ไม่ต้องรอ Polling รอบถัดไป
       setOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       setOpenStatusDialog(false); 
     } catch (err: any) {
@@ -131,22 +121,21 @@ function RouteComponent() {
     setTabValue(newValue);
   };
 
-  // ปรับการกำหนดสีให้ตรงกับโทนสีที่ให้มา (ส่งเป็น sx object กลับไป)
   const getStatusChipProps = (status: string) => {
     switch (status) {
-      case "InProgress": 
+      case "info": 
         return { label: "กำลังผลิต", sx: { bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Paused": 
+      case "warning": 
         return { label: "หยุดชั่วคราว", sx: { bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Completed": 
+      case "success": 
         return { label: "เสร็จสิ้น", sx: { bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "Cancelled":
-      default: 
-        return { label: "ยกเลิก", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      case "error":
+        return { label: "ยกเลิก", sx: { bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 } };
+      default:
+        return { label: "รอมอบหมาย", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };
     }
   };
 
-  // รอโหลดข้อมูลครั้งแรก
   if (loading) {
     return (
       <PageShell title="จัดการผลิต" description="" icon={<Factory />}>
@@ -157,7 +146,6 @@ function RouteComponent() {
     );
   }
 
-  // กรณีหาข้อมูลไม่เจอ
   if (error || !order) {
     return (
       <PageShell title="จัดการผลิต" description="" icon={<Factory />}>
@@ -166,22 +154,18 @@ function RouteComponent() {
     );
   }
 
-  // คำนวณความคืบหน้าจากข้อมูลจริง
   const done = 0;
   const target = order.amount || 1;
   const progressPct = Math.min(100, Math.round((done / target) * 100));
-  
-  // เรียกใช้งาน Get Chip Props
+
   const chipProps = getStatusChipProps(order.status);
 
   return (
     <PageShell title="" description="">
       <Box sx={{ p: 2 }}>
         
-        {/* --- Header Section --- */}
         <Grid container spacing={3} sx={{ mt: -6, mb: 1, alignItems: 'flex-start' }}>
           
-          {/* ฝั่งซ้าย: ข้อมูลงาน */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Stack spacing={2}> 
               
@@ -192,21 +176,20 @@ function RouteComponent() {
                 <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Stack direction="row" spacing={2} sx={{ mb: 0.5, alignItems: 'center' }}>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {order.name} {/* 👈 ชื่อจริงจาก DB */}
+                      {order.name}
                     </Typography> 
                     <Chip 
                       label={chipProps.label} 
-                      sx={chipProps.sx} // นำ object sx มาใส่แทน
+                      sx={chipProps.sx}
                       size="small" 
                     />
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
-                    {order.orderID} {/* 👈 OrderID จริงจาก DB */}
+                    {order.orderID}
                   </Typography>
                 </Box>
               </Stack>
 
-              {/* ส่วนล่าง: แถบความคืบหน้า */}
               <Box>
                 <Stack direction="row" sx={{ mb: 1, justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">ความคืบหน้า</Typography>
@@ -231,7 +214,6 @@ function RouteComponent() {
             </Stack>
           </Grid>
 
-          {/* ฝั่งขวา: ปุ่ม Action */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 6 }}>
@@ -253,7 +235,6 @@ function RouteComponent() {
 
         </Grid>
 
-        {/* --- Tabs Section --- */}
         <Box sx={{ mb: -1, borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="production detail tabs">
             <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 'bold' : 'normal' }} />
@@ -265,7 +246,6 @@ function RouteComponent() {
           </Tabs>
         </Box>
 
-        {/* --- Content Section --- */}
         <Box sx={{ pt: 3 }}>
           {tabValue === 0 && <ProductionDetails />}
           {tabValue === 1 && (
@@ -302,13 +282,12 @@ function RouteComponent() {
 
       </Box>
 
-      {/* Popup เปลี่ยนสถานะ */}
       <Dialog
         open={openStatusDialog}
         onClose={() => setOpenStatusDialog(false)}
         maxWidth="sm"
         fullWidth
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         <ProductionStatus
           orderId={order.orderID}

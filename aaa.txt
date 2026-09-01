@@ -1,0 +1,38 @@
+const statusColor: Record<string, "success" | "info" | "default" | "warning" | "error"> = {
+  "เสร็จสิ้น": "success", 
+  "กำลังผลิต": "info", 
+  "รอมอบหมาย": "default", 
+  "หยุดชั่วคราว": "warning", 
+  "ยกเลิก": "error"
+};
+
+Pending
+Received || Completed
+Canceled
+
+
+Status Color Code
+
+Red
+HEX: #EF4444
+Critical, severe, alert, form error, emergency, urgent
+
+Orange
+HEX: #F59E0B
+Serious, distress, error, needs attention
+
+Green
+HEX: #10B981
+Normal, on, ok, fine, go, satisfactory
+
+Blue
+HEX: #4A90E2
+Standby, available, enabled
+
+Gray
+HEX: #A4ABB6
+Off, unavailable, disabled
+
+sx={{ width: 100, color: "#4a90e2"}}
+sx={{ width: 100 }}
+

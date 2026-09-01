@@ -61,7 +61,6 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
     setConfirmOpen(true);
   };
 
-  // ฟังก์ชันสำหรับเคลียร์ค่าในฟอร์ม
   const resetForm = () => {
     setFormData({
       eventType: "",
@@ -76,12 +75,12 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
   const handleConfirm = () => {
     setConfirmOpen(false);
     onSave(formData);
-    resetForm(); // 👈 เคลียร์ค่าหลังจากกดยืนยัน
+    resetForm();
   };
 
   const handleCancel = () => {
     onCancel();
-    resetForm(); // 👈 เคลียร์ค่าเมื่อกดยกเลิก
+    resetForm();
   };
 
   return (
@@ -93,10 +92,10 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
         <Divider />
         
         <DialogContent>
-          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
             <Stack direction="column" spacing={0.75}>
               <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-                คำสั่งผลิต:{" "}
+                ใบสั่งผลิต:{" "}
                 <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                   {orderName || "ไม่ระบุชื่อ"}
                 </Box>
@@ -155,7 +154,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               multiline
               rows={3}
               label="รายละเอียดเหตุการณ์"
-              name="description" // 👈 เปลี่ยนเป็น description
+              name="description"
               value={formData.description}
               onChange={handleChange}
               placeholder="อธิบายสิ่งที่เกิดขึ้น..."
@@ -176,7 +175,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               fullWidth
               disabled
               label="ผู้บันทึก"
-              name="recordedBy" // 👈 เปลี่ยนเป็น recordedBy
+              name="recordedBy"
               value={formData.recordedBy}
               slotProps={{ input: { readOnly: true } }}
               helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ"
@@ -186,43 +185,39 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={loading}>
+          <Button onClick={handleCancel} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
             ยกเลิก
           </Button>
           <Button 
             type="submit" 
             variant="contained" 
             disabled={loading}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
-            บันทึกข้อมูล
+            บันทึก
           </Button>
         </DialogActions>
       </Box>
 
-      {/* --- Popup ยืนยันการบันทึก --- */}
       <Dialog
         open={confirmOpen}
         onClose={() => !loading && setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 1 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
-          ยืนยันการบันทึก
-        </DialogTitle>
         <DialogContent>
           <Typography color="text.secondary">
-            คุณตรวจสอบข้อมูลครบถ้วนแล้ว และต้องการบันทึกเหตุการณ์นี้ใช่หรือไม่?
+            คุณต้องการบันทึกเหตุการณ์นี้ใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading}>
-            กลับไปแก้ไข
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+            ยกเลิก
           </Button>
           <Button
             onClick={handleConfirm}
             variant="contained"
             disabled={loading}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100,bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
           </Button>

@@ -15,9 +15,10 @@ import {
   Divider,
   Dialog,
   CircularProgress,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
-// --- Types ---
 export interface StatusHistory {
   historyId: string;
   previousStatus: string;
@@ -38,7 +39,7 @@ interface ProductionStatusProps {
 export default function ProductionStatus({
   orderId,
   orderName,
-  initialStatus = "InProgress",
+  initialStatus = "info",
   onSave,
   onCancel,
 }: ProductionStatusProps) {
@@ -47,7 +48,6 @@ export default function ProductionStatus({
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // ดึงประวัติจาก Backend (จาก ProductionOrder)
   useEffect(() => {
     const fetchHistory = async () => {
       if (!orderId) return;
@@ -60,7 +60,6 @@ export default function ProductionStatus({
 
         if (res.ok) {
           const data = await res.json();
-          // ดึงเฉพาะ array statusHistory มาแสดง ย้อนลำดับให้ล่าสุดอยู่บน
           const histories = data.statusHistory || [];
           setHistory(histories.reverse());
         }
@@ -74,26 +73,34 @@ export default function ProductionStatus({
     fetchHistory();
   }, [orderId]);
 
-  // Map รหัสสถานะ (English) เป็น ข้อความ/สี (Thai)
+  // Map รหัสสถานะเป็น ข้อความ/สี
   const getStatusDisplay = (status: string, isActive: boolean = true) => {
-    if (!isActive) return { label: status, bgcolor: "#f1f5f9", color: "#64748b", border: "1px solid #cbd5e1" };
+    // หา label พื้นฐานก่อน
+    let label = "รอมอบหมาย";
+    if (status === "info") label = "กำลังผลิต";
+    else if (status === "warning") label = "หยุดชั่วคราว";
+    else if (status === "success") label = "เสร็จสิ้น";
+    else if (status === "error") label = "ยกเลิก";
+
+    if (!isActive) {
+      return { label, bgcolor: "#f1f5f9", color: "#64748b", border: "1px solid #cbd5e1" };
+    }
 
     switch (status) {
-      case "InProgress":
+      case "info":
         return { label: "กำลังผลิต", bgcolor: "#10B981", color: "#fff", border: "1px solid #10B981" };
-      case "Paused":
+      case "warning":
         return { label: "หยุดชั่วคราว", bgcolor: "#F59E0B", color: "#fff", border: "1px solid #F59E0B" };
-      case "Completed":
+      case "success":
         return { label: "เสร็จสิ้น", bgcolor: "#4A90E2", color: "#fff", border: "1px solid #4A90E2" };
-      case "Cancelled":
+      case "error":
         return { label: "ยกเลิก", bgcolor: "#EF4444", color: "#fff", border: "1px solid #EF4444" };
       default:
-        return { label: status, bgcolor: "#A4ABB6", color: "#fff", border: "1px solid #A4ABB6" };
+        return { label: "รอมอบหมาย", bgcolor: "#A4ABB6", color: "#fff", border: "1px solid #A4ABB6" };
     }
   };
 
-  // ตัวเลือกสถานะที่กดได้ (ข้าม Cancelled ไปก่อน หรือใส่เพิ่มได้ถ้าต้องการ)
-  const availableStatuses = ["InProgress", "Paused", "Completed"];
+  const availableStatuses = ["info", "warning", "success", "error"];
 
   return (
     <Box sx={{ width: "100%", p: 0 }}>
@@ -142,11 +149,10 @@ export default function ProductionStatus({
           })}
         </Stack>
 
-        {/* ตารางประวัติการเปลี่ยนสถานะ */}
         <TableContainer
           component={Paper}
           sx={{
-            borderRadius: 3,
+            borderRadius: 1.5,
             border: "1px solid #e0e6ed",
             boxShadow: "none",
             maxHeight: 300,
@@ -211,66 +217,50 @@ export default function ProductionStatus({
 
       <Divider />
 
-      {/* ส่วนปุ่มกดยืนยันด้านล่าง */}
-      <Box sx={{ p: 2, display: "flex", justifyContent: "flex-end", gap: 2, bgcolor: "#fafafa" }}>
-        <Button onClick={onCancel} sx={{ fontWeight: 600, color: "#4a90e2", textTransform: "none" }}>
+      <Box sx={{ p: 2, display: "flex", justifyContent: "flex-end", gap: 1, bgcolor: "#fafafa" }}>
+        <Button onClick={onCancel} sx={{ width: 100, color: "#4a90e2"}}>
           ยกเลิก
         </Button>
         <Button
           variant="contained"
           disableElevation
           onClick={() => setConfirmOpen(true)}
-          disabled={selectedStatus === initialStatus} // ป้องกันการกดบันทึกถ้าไม่ได้เปลี่ยนสถานะ
-          sx={{
-            bgcolor: "#4a90e2",
-            color: "#fff",
-            borderRadius: 2,
-            fontWeight: 600,
-            px: 4,
-            textTransform: "none",
-            "&:hover": { bgcolor: "#357abd" },
-          }}
+          disabled={selectedStatus === initialStatus}
+          sx={{ width: 100 }}
         >
           บันทึก
         </Button>
       </Box>
 
-      {/* Dialog ยืนยันการบันทึก */}
-      <Dialog 
-        open={confirmOpen} 
+      <Dialog
+        open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 4, textAlign: "center", minWidth: 350 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, color: "#1b2559", mb: 4 }}>
-          คุณต้องการเปลี่ยนสถานะเป็น "{getStatusDisplay(selectedStatus, true).label}" ใช่หรือไม่?
-        </Typography>
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 3 }}>
+        <DialogContent>
+          <Typography color="text.secondary">
+            คุณต้องการเปลี่ยนสถานะเป็น "{getStatusDisplay(selectedStatus, true).label}" ใช่หรือไม่?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
           <Button 
             onClick={() => setConfirmOpen(false)} 
-            sx={{ fontWeight: 600, color: "#4a90e2", textTransform: "none", px: 3 }}
+            color="inherit" 
+            sx={{ width: 100, color: "#4a90e2" }}
           >
             ยกเลิก
           </Button>
           <Button
-            variant="contained"
-            disableElevation
             onClick={() => {
               setConfirmOpen(false);
               onSave(selectedStatus);
             }}
-            sx={{
-              bgcolor: "#4a90e2",
-              color: "#fff",
-              borderRadius: 2,
-              fontWeight: 600,
-              px: 4,
-              textTransform: "none",
-              "&:hover": { bgcolor: "#357abd" },
-            }}
+            variant="contained"
+            sx={{ width: 100, bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
           >
             ยืนยัน
           </Button>
-        </Box>
+        </DialogActions>
       </Dialog>
     </Box>
   );

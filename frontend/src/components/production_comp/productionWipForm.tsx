@@ -13,6 +13,7 @@ import {
   DialogActions,
   Divider,
   Alert,
+  InputAdornment, 
 } from "@mui/material";
 
 interface ProductionWipFormProps {
@@ -25,6 +26,7 @@ interface ProductionWipFormProps {
 interface WorkInProcessItem {
   wipID: string;
   wip: string;
+  unit?: string;
 }
 
 export default function ProductionWipForm({
@@ -38,12 +40,13 @@ export default function ProductionWipForm({
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Form States
+  // Form States (เพิ่ม remark)
   const [formData, setFormData] = useState({
     PalletNumber: "",
     wipID: "",
     amount: "",
     createdBy: "",
+    remark: "",
   });
 
   // ดึงข้อมูล Work In Process เพื่อทำเป็นตัวเลือก Dropdown
@@ -87,6 +90,7 @@ export default function ProductionWipForm({
       wipID: "",
       amount: "",
       createdBy: "",
+      remark: "", // รีเซ็ต remark
     });
   };
 
@@ -105,13 +109,20 @@ export default function ProductionWipForm({
       // -----------------------------------------------------------
       // 1. บันทึกตาราง WIP Location
       // -----------------------------------------------------------
+      const timestamp = Date.now();
+      const generatedLotNumber = `${orderID}-${timestamp}`; 
+
       const locationPayload = {
         PalletNumber: formData.PalletNumber,
-        lotNumber: orderID,
+        palletNumber: formData.PalletNumber, 
+        pallet_number: formData.PalletNumber, 
+        lotNumber: generatedLotNumber,
+        LotNumber: generatedLotNumber, 
+        lot_number: generatedLotNumber, 
         orderID: orderID,
         amount: Number(formData.amount),
         wipID: formData.wipID,
-        location: "", // ส่งค่าว่างสำหรับ location
+        location: "", 
       };
 
       const locRes = await fetch("http://localhost:8090/api/wip/locations", {
@@ -123,7 +134,6 @@ export default function ProductionWipForm({
       if (!locRes.ok) throw new Error("ไม่สามารถบันทึกข้อมูล WIP Location ได้");
       const locData = await locRes.json();
       
-      // ดึง ID ออกมาเก็บไว้เผื่อต้องใช้ Rollback (เช็กหลายรูปแบบ key)
       generatedWipLocationID = locData.wipLocationID || locData.WipLocationID || locData.wip_location_id || locData.id;
 
       // -----------------------------------------------------------
@@ -131,12 +141,13 @@ export default function ProductionWipForm({
       // -----------------------------------------------------------
       try {
         const transferPayload = {
-          transferID: `TRF-${Date.now()}`, // สร้างรหัสชั่วคราว
+          transferID: `TRF-${timestamp}`,
           transferType: "WIP",
           createdBy: formData.createdBy,
           createDateTime: new Date().toISOString(),
           status: "Pending",
-          remark: `นำเข้าจากคำสั่งผลิต ${orderID}`,
+          // ถ้าระบุหมายเหตุมา ให้ต่อท้ายประโยคเริ่มต้น
+          remark: formData.remark ? `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})` : `นำเข้าจากใบสั่งผลิต ${orderID}`,
           order_id: orderID,
           OrderID: orderID,
           wipLocationID: generatedWipLocationID,
@@ -154,16 +165,12 @@ export default function ProductionWipForm({
           throw new Error(`บันทึก Transfer Record ไม่สำเร็จ: ${errText}`);
         }
 
-        // หากสำเร็จทั้ง 2 ตาราง
         setConfirmOpen(false);
         resetForm();
         if (onSave) onSave();
         if (onClose) onClose();
 
       } catch (transferError: any) {
-        // -----------------------------------------------------------
-        // 3. Rollback: ถ้ายิง API ที่ 2 พลาด ให้ทำการลบข้อมูลที่ 1 ทิ้ง
-        // -----------------------------------------------------------
         if (generatedWipLocationID) {
           await fetch(`http://localhost:8090/api/wip/locations/${generatedWipLocationID}`, {
             method: "DELETE",
@@ -189,11 +196,14 @@ export default function ProductionWipForm({
     resetForm();
   };
 
+  const selectedWip = wipOptions.find((w) => w.wipID === formData.wipID);
+  const displayUnit = selectedWip?.unit || "";
+
   return (
     <>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
-          บันทึกข้อมูลสินค้าระหว่างผลิต (WIP)
+          เพิ่มสินค้าระหว่างผลิต (WIP)
         </DialogTitle>
         <Divider />
 
@@ -204,11 +214,10 @@ export default function ProductionWipForm({
             </Alert>
           )}
 
-          {/* กล่องอ้างอิงข้อมูล */}
-          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
             <Stack direction="column" spacing={0.75}>
               <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-                คำสั่งผลิต:{" "}
+                ใบสั่งผลิต:{" "}
                 <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                   {orderName || "ไม่ระบุชื่อ"}
                 </Box>
@@ -222,12 +231,11 @@ export default function ProductionWipForm({
             </Stack>
           </Box>
 
-          {/* ช่องกรอกข้อมูล */}
           <Stack spacing={2.5}>
             <TextField
               required
               fullWidth
-              label="รหัสพาเลท (Palette Number)"
+              label="รหัสพาเลท"
               name="PalletNumber"
               value={formData.PalletNumber}
               onChange={handleChange}
@@ -238,7 +246,7 @@ export default function ProductionWipForm({
               select
               required
               fullWidth
-              label="ชื่อสินค้า (WIP Name)"
+              label="ชื่อสินค้า"
               name="wipID"
               value={formData.wipID}
               onChange={handleChange}
@@ -257,64 +265,79 @@ export default function ProductionWipForm({
               required
               fullWidth
               type="number"
-              label="จำนวน (Amount)"
+              label="จำนวน"
               name="amount"
               value={formData.amount}
               onChange={handleChange}
               placeholder="ระบุจำนวน"
+              slotProps={{
+                input: {
+                  endAdornment: displayUnit ? (
+                    <InputAdornment position="end">{displayUnit}</InputAdornment>
+                  ) : undefined,
+                },
+              }}
             />
 
             <TextField
               required
               fullWidth
-              label="พนักงานรับผิดชอบ (Created By)"
+              label="พนักงานรับผิดชอบ"
               name="createdBy"
               value={formData.createdBy}
               onChange={handleChange}
               placeholder="ระบุชื่อพนักงาน"
+            />
+            
+            {/* ฟิลด์สำหรับกรอกหมายเหตุ */}
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              label="หมายเหตุ"
+              name="remark"
+              value={formData.remark}
+              onChange={handleChange}
+              placeholder="ระบุหมายเหตุ (ถ้ามี)"
             />
           </Stack>
         </DialogContent>
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting}>
+          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
             ยกเลิก
           </Button>
           <Button
             type="submit"
             variant="contained"
             disabled={isSubmitting}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
-            บันทึกข้อมูล
+            บันทึก
           </Button>
         </DialogActions>
       </Box>
 
-      {/* --- Popup ยืนยันการบันทึก --- */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 1 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
-          ยืนยันการบันทึก
-        </DialogTitle>
         <DialogContent>
           <Typography color="text.secondary">
-            คุณตรวจสอบข้อมูลครบถ้วนแล้ว และต้องการบันทึกข้อมูล WIP และสร้าง Transfer Record ใหม่ใช่หรือไม่?
+            คุณต้องการเพิ่ม WIP ใหม่ใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting}>
-            กลับไปแก้ไข
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+            ยกเลิก
           </Button>
           <Button
             onClick={handleConfirm}
             variant="contained"
             disabled={isSubmitting}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
             {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
           </Button>

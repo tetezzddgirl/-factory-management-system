@@ -92,11 +92,6 @@ export default function QualityQcPointDetails({
                 {pointData.pointName}
               </Typography>
             </Box>
-            <Chip 
-              label={pointData.status || "Active"} 
-              color={pointData.status === "Inactive" ? "default" : "success"} 
-              size="small" 
-            />
           </Box>
 
           <Divider />
@@ -177,7 +172,7 @@ export default function QualityQcPointDetails({
 
       <Divider />
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="contained" sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}>
+        <Button onClick={onClose} variant="contained">
           ปิดหน้าต่าง
         </Button>
       </DialogActions>
