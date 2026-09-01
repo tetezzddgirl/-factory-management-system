@@ -133,6 +133,45 @@ function MaterialsPage() {
     }
   }
 
+  /**
+ * หา Location/Pallet ที่ตรงกับค่าที่กรอกในฟอร์มตอนนี้
+ * ใช้ตรรกะเดียวกันทั้งตอนคำนวณ helper text (real-time) และตอน submit จริง
+ * เพื่อไม่ให้สองที่นี้ขัดกันเอง (เช่น helper text บอกไม่เกิน แต่ submit ดันฟ้อง error)
+ */
+function findFormLocation(values: Record<string, string>) {
+  const code = values.item ? values.item.split(" — ")[0] : "";
+  if (!code) return undefined;
+  return rawMaterialLocation.find((l) => {
+    if (values.palletNumber) {
+      return l.rmID === code && l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase();
+    }
+    return l.rmID === code && l.location === values.location;
+  });
+}
+
+/** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
+function amountHelperText(values: Record<string, string>): string | undefined {
+  if (values.type !== "เบิกจ่าย") return undefined;
+  const loc = findFormLocation(values);
+  if (!loc) return undefined;
+  const code = values.item.split(" — ")[0];
+  const unit = rawMaterial.find((m) => m.rmID === code)?.unit ?? "";
+  const qty = Number(values.amount) || 0;
+  const label = loc.palletNumber ? `Pallet ${loc.palletNumber}` : loc.location;
+  if (qty > loc.amount) {
+    return `${label} เก็บไว้แค่ ${loc.amount.toLocaleString()} ${unit} (เกิน ${(qty - loc.amount).toLocaleString()} ${unit})`;
+  }
+  return `ที่ ${label} เก็บไว้ ${loc.amount.toLocaleString()} ${unit}`;
+}
+
+/** true = จำนวนที่กรอกเกินยอดที่ Pallet/Location นั้นมี ให้ขึ้นช่องสีแดง */
+function amountIsOver(values: Record<string, string>): boolean {
+  if (values.type !== "เบิกจ่าย") return false;
+  const loc = findFormLocation(values);
+  if (!loc) return false;
+  return (Number(values.amount) || 0) > loc.amount;
+}
+
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
   function autoFillNewItem(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
   if (changed === "rmID" && values.rmID) {
@@ -281,7 +320,7 @@ onSubmit={async (v) => {
               { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "โอนย้าย", "เบิกจ่าย", "คืน"], defaultValue: "รับเข้า" },
               { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
               { name: "item", label: "รหัส / ชื่อวัตถุดิบ", type: "select", options: rawMaterial.map((i) => `${i.rmID} — ${i.rawMaterial}`), defaultValue: rawMaterial[0] ? `${rawMaterial[0].rmID} — ${rawMaterial[0].rawMaterial}` : "" },
-              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
+              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
               { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },    // ระบบจะเติม unit ให้โดยอัตโนมัติตามวัตถุดิบที่เลือก
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ" }, // หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมั
@@ -296,13 +335,6 @@ onSubmit={async (v) => {
   const target = rawMaterial.find((i) => i.rmID === code);
   const sign = v.type === "เบิกจ่าย" ? -1 : v.type === "โอนย้าย" ? 0 : 1;
 
-  if (sign === -1 && target && qty > target.amount) {
-    toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
-    return false;
-  }
-
-  const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
-
   // ค้นหา Location/Pallet เดิมก่อน
   const existingLoc = rawMaterialLocation.find((l) => {
     if (v.palletNumber) {
@@ -310,6 +342,29 @@ onSubmit={async (v) => {
     }
     return l.rmID === code && l.location === v.location;
   });
+
+    // (1) เบิกจ่าย/โอนย้าย ต้องระบุ pallet/location ที่มีอยู่จริงก่อนเสมอ ไม่งั้นไม่รู้จะตัดยอดจากไหน
+  if (v.type === "เบิกจ่าย" || v.type === "โอนย้าย") {
+    if (!existingLoc) {
+      toast.error("ไม่พบ Pallet/Location นี้ในระบบ กรุณาระบุ Pallet Number หรือ Location ที่มีวัตถุดิบนี้จัดเก็บอยู่จริง");
+      return false;
+    }
+  }
+
+  // (2) เช็คยอดที่ "ตำแหน่งนั้น" ไม่ใช่ยอดรวม
+  if (v.type === "เบิกจ่าย" && existingLoc && qty > existingLoc.amount) {
+    toast.error(
+      `เบิกจ่ายไม่สำเร็จ: ตำแหน่ง ${existingLoc.location}${existingLoc.palletNumber ? ` (Pallet ${existingLoc.palletNumber})` : ""} มีเพียง ${existingLoc.amount.toLocaleString()} ${target?.unit ?? ""} (ขอเบิก ${qty.toLocaleString()})`,
+    );
+    return false;
+  }
+  
+  if (sign === -1 && target && qty > target.amount) {
+    toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
+    return false;
+  }
+
+  const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
 
   try {
     await materialsApi.updateStock(code, newAmount);

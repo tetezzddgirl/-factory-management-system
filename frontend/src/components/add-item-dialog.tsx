@@ -14,7 +14,8 @@ export type Field = {
   required?: boolean;
   defaultValue?: string;
   /** ข้อความช่วยอธิบายใต้ช่อง เช่น บอกว่าค่านี้กรอกอัตโนมัติให้แล้ว (ยังแก้ไขเองได้) */
-  helperText?: string;
+  helperText?: string | ((values: Record<string, string>) => string | undefined);
+  error?: (values: Record<string, string>) => boolean;
 };
 
 interface AddItemDialogProps {
@@ -94,7 +95,11 @@ export function AddItemDialog({
           <DialogContent>
             {description && <DialogContentText sx={{ mb: 2 }}>{description}</DialogContentText>}
             <Stack spacing={2} sx={{ pt: 1 }}>
-              {fields.map((f) => (
+              {fields.map((f) => {
+                const resolvedHelperText = typeof f.helperText === "function" ? f.helperText(values) : f.helperText;
+                const resolvedError = f.error ? f.error(values) : undefined;
+
+              return(
                 <TextField
                   key={f.name}
                   label={f.label}
@@ -104,7 +109,7 @@ export function AddItemDialog({
                   multiline={f.type === "textarea"}
                   minRows={f.type === "textarea" ? 3 : undefined}
                   value={values[f.name]}
-                  helperText={f.helperText}
+                  helperText={resolvedHelperText}
                   slotProps={f.type === "date" ? { inputLabel: { shrink: true } } : undefined}
                   onChange={(e) => handleFieldChange(f.name, e.target.value)}
                 >
@@ -112,7 +117,8 @@ export function AddItemDialog({
                     <MenuItem key={o} value={o}>{o}</MenuItem>
                   ))}
                 </TextField>
-              ))}
+              );
+              })}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
