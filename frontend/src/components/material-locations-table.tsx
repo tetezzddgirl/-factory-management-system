@@ -17,7 +17,7 @@ export const LOCATION_MASTER = [
   "C-01-01", "C-02-01", "C-02-02",
 ];
 
-type Row = {  key: string;  rmID: string; rawMaterial: string; unit: string; amount: number | null; 
+type Row = {  key: string;  rmID: string; rawMaterial: string; unit: string; amount: number | null; palletNumber: string | null;
   location: string | null;  pending: boolean; unallocated: number;  rmLocationID?: string;  };
 
 export function RMLocationsTable({ stocks }: { stocks: RawMaterial[] }) {
@@ -62,7 +62,7 @@ export function RMLocationsTable({ stocks }: { stocks: RawMaterial[] }) {
       for (const a of mine) {
         out.push({
           key: a.rmLocationID, rmID: s.rmID, rawMaterial: s.rawMaterial, unit: s.unit,
-          amount: a.amount, location: a.location, pending: false,
+          amount: a.amount, palletNumber:a.palletNumber, location: a.location, pending: false,
           unallocated: remaining, rmLocationID: a.rmLocationID,
         });
       }
@@ -131,7 +131,7 @@ export function RMLocationsTable({ stocks }: { stocks: RawMaterial[] }) {
         setRawMaterialLocation((prev) => prev.map((a) => (a.rmLocationID === row.rmLocationID ? { ...a, amount: n, location } : a)));
       } else {
         const created = await materialLocationsApi.create({
-          rmID: row.rmID, amount: n, location, paletteNumber: "", lotNumber: "",
+          rmID: row.rmID, amount: n, location, palletNumber: "", lotNumber: "",
         });
         setRawMaterialLocation((prev) => [...prev, created]);
       }
@@ -159,6 +159,7 @@ export function RMLocationsTable({ stocks }: { stocks: RawMaterial[] }) {
               <TableCell sx={{ width: 120 }}>RM ID</TableCell>
               <TableCell>ชื่อวัตถุดิบ</TableCell>
               <TableCell sx={{ width: 190 }}>จำนวนที่เก็บใน location</TableCell>
+              <TableCell sx={{ width: 190 }}>หมายเลข pallet</TableCell>
               <TableCell sx={{ width: 230 }}>ตำแหน่งที่เก็บ</TableCell>
             </TableRow>
           </TableHead>
@@ -187,6 +188,9 @@ export function RMLocationsTable({ stocks }: { stocks: RawMaterial[] }) {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{qtyValue(row)}</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.palletNumber}</Typography>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.location}</Typography>
