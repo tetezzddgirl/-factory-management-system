@@ -41,6 +41,7 @@ func main() {
 	SeedPersonnel(db)
 	SeedWip(db)
 	SeedWorkOrders(db) // ต้องมาก่อน SeedIssues เพราะ Issue อ้างอิง orderID ที่ต้องมีอยู่แล้ว
+	SeedWarehouseRecord(db)
 	SeedIssues(db)
 
 	log.Println("ใส่ข้อมูลตัวอย่างเรียบร้อยแล้ว ✅")

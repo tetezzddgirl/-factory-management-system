@@ -12,6 +12,9 @@ type RawMaterial struct {
 	Unit        string `json:"unit"`
 	Max         int    `json:"max"`
 	Min         int    `json:"min"`
+
+	Locations []RawMaterialLocation `json:"locations,omitempty" gorm:"foreignKey:RmID"`
+	Records   []RawMaterialRecord   `json:"records,omitempty" gorm:"foreignKey:RmID"`
 }
 
 type RawMaterialLocation struct {
@@ -44,6 +47,9 @@ type WorkInProcess struct {
 	Amount  int    `json:"amount"`
 	Unit    string `json:"unit"`
 	Max     int    `json:"max"`
+
+	Locations []WIPLocation         `json:"locations,omitempty" gorm:"foreignKey:WipID"`
+	Records   []WorkInProcessRecord `json:"records,omitempty" gorm:"foreignKey:WipID"`
 }
 
 type WIPLocation struct {

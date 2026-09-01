@@ -14,6 +14,8 @@ type ProductionPlan struct {
 	// RefBomID อ้างอิงแถวใน RefBOM ที่บอกว่าแผนนี้เลือกใช้ product/bom คู่ไหน
 	// (ไม่เก็บ ProductID/BomID ตรงๆ อีกต่อไป — ต้อง join ผ่าน RefBOM เท่านั้น)
 	RefBomID string `json:"refBomID" gorm:"column:ref_bom_id"`
+
+	Orders []ProductionOrder `json:"orders,omitempty" gorm:"foreignKey:PlanID"`
 }
 
 // RefBOM คือ association entity ที่แท้จริงระหว่างสินค้า (Product) กับสูตรการผลิต (BOM/Formula)
@@ -37,6 +39,13 @@ type ProductionOrder struct {
 	PlanID    string    `json:"planID" gorm:"column:plan_id"`
 	// RefBomID สืบทอดมาจาก ProductionPlan ต้นทางตอนสร้างใบสั่งผลิต (ดู CreateWorkOrder)
 	RefBomID string `json:"refBomID" gorm:"column:ref_bom_id"`
+
+	Work                 []Work                `json:"work,omitempty" gorm:"foreignKey:OrderID"`
+	Resources            []Resources           `json:"resources,omitempty" gorm:"foreignKey:OrderID"`
+	Issues               []Issue               `json:"issues,omitempty" gorm:"foreignKey:OrderID"`
+	RawMaterialRecords   []RawMaterialRecord   `json:"rawMaterialRecords,omitempty" gorm:"foreignKey:OrderID"`
+	WorkInProcessRecords []WorkInProcessRecord `json:"workInProcessRecords,omitempty" gorm:"foreignKey:OrderID"`
+	RequisitionSlips     []RequisitionSlip     `json:"requisitionSlips,omitempty" gorm:"foreignKey:OrderID"`
 
 	InspectionPoints        []InspectionPoint         `gorm:"foreignKey:OrderID" json:"inspectionPoints"`
 	ProductionStatusHistory []ProductionStatusHistory `gorm:"foreignKey:OrderID" json:"statusHistory"`

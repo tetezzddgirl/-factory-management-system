@@ -367,6 +367,8 @@ export type ApiWork = { workID: string; work: string; description?: string; star
 
 export const workOrdersApi = {
   list: () => apiFetch<ApiWorkOrder[]>("/api/work-orders"),
+  getDetail: (orderID: string) =>
+    apiFetch<ApiWorkOrder>(`/api/work-orders/${encodeURIComponent(orderID)}/detail`),
   create: (o: Omit<ApiWorkOrder, "orderID" | "timestamp"> & { orderID?: string }) =>
     apiFetch<ApiWorkOrder>("/api/work-orders", { method: "POST", body: JSON.stringify(o) }),
   updateStatus: (orderID: string, status: string, machines?: string) =>
