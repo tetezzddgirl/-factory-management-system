@@ -46,7 +46,7 @@ function toWorkOrder(o: ApiWorkOrder, assignees: string[]): WorkOrder {
     line,
     // เก็บเป็น ISO ดิบไว้ก่อน (ใช้ต่อ API ได้ทันที) ค่อยแปลงเป็นข้อความไทยตอน render เท่านั้น
     startDate: o.startDate ?? "",
-    due: o.endDate ?? "",
+    dueDate: o.endDate ?? "",
     priority,
     status: (o.status as WorkOrder["status"]) || "รอมอบหมาย",
     assignees: assignees.length ? assignees : undefined,
@@ -77,7 +77,7 @@ function WorkOrdersPage() {
 
   /** ตรวจสอบทรัพยากรของใบสั่งผลิต — ถ้าสินค้านี้มีสูตรการผลิต (Formula) ในระบบ คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่สั่งผลิต
    *  เทียบกับยอดคงเหลือจริงในคลัง ถ้ายังไม่มีสูตร fallback เป็นตัวเลขประมาณการ (เดิม) เพื่อให้ demo flow ทำงานต่อได้ */
-  function buildCheck(product: string, target: number, due: string): ResourceCheckData {
+  function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
     const matchedProduct = products.find((p) => p.name === product);
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * 1.25));
     const materials = matchedProduct
@@ -90,7 +90,7 @@ function WorkOrdersPage() {
           { name: "ฉลาก", required: target, available: surplus(target), unit: "ชิ้น" },
         ];
     return {
-      product, target, due, materials,
+      product, target, dueDate, materials,
       machines: [
         { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
         { name: "สายการบรรจุ L-02", required: 1, available: 1, unit: "สาย" },
@@ -158,7 +158,7 @@ function WorkOrdersPage() {
         amount: r.qty,
         machines: encodeLine(r.line, r.priority),
         startDate: toISO(r.startDate),
-        endDate: toISO(r.due),
+        endDate: toISO(r.dueDate),
         planID: orderPlan?.planID ?? "-",
       });
       setOrderPlan(null);
@@ -172,7 +172,7 @@ function WorkOrdersPage() {
 
   function openCheck(wo: WorkOrder) {
     setActive(wo);
-    setCheckData(buildCheck(wo.product, wo.qty, formatThaiDate(wo.due)));
+    setCheckData(buildCheck(wo.product, wo.qty, formatThaiDate(wo.dueDate)));
     setCheckOpen(true);
   }
 
@@ -345,7 +345,7 @@ async function confirmAssignment(rs: AssignWorkResult[]) {
       />
       <AssignWorkDialog
         open={assignOpen}
-        data={active ? { product: active.product, target: active.qty, due: formatThaiDate(active.due), orderID: active.orderNo, materials: checkData?.materials, steps: stepsForProduct(active.product), existingTasks } : null}
+        data={active ? { product: active.product, target: active.qty, dueDate: formatThaiDate(active.dueDate), orderID: active.orderNo, materials: checkData?.materials ?? [], steps: stepsForProduct(active.product) ?? [], existingTasks } : null}
         onClose={() => setAssignOpen(false)}
         onConfirm={confirmAssignment}
       />
@@ -387,7 +387,7 @@ async function confirmAssignment(rs: AssignWorkResult[]) {
                       ) : null}
                       <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary", mt: 1 }}>
                         <TrendingUp sx={{ fontSize: 16 }} />
-                        <Typography variant="caption">กำหนดเสร็จ: {formatThaiDate(o.due)} • คลิกเพื่อตรวจสอบทรัพยากร</Typography>
+                        <Typography variant="caption">กำหนดเสร็จ: {formatThaiDate(o.dueDate)} • คลิกเพื่อตรวจสอบทรัพยากร</Typography>
                       </Stack>
                     </CardContent>
                   </CardActionArea>

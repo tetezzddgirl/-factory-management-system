@@ -9,7 +9,7 @@ import { AssignmentInd, Add, DeleteOutlined, ContentCopy, FormatListNumbered, Ex
 export type AssignWorkData = {
   product: string;
   target: number;
-  due: string;
+  dueDate: string;
   orderID: string;
   /** ขั้นตอนการผลิตตามสูตร (เรียงลำดับ) ไว้ให้ผู้มอบหมายงานอ้างอิงเวลาตั้งชื่อ/รายละเอียดงานแต่ละงาน */
   steps?: { stepNo: number; stepName: string; description: string; machine: string; durationMinutes: number }[];
@@ -47,12 +47,19 @@ draftStore.set("ฝาเกลียว__WO-1039", [
   { workID: "WORK-050", work: "ผลิตฝาเกลียวรอบเช้า", description: "สายการผลิต L-01 กะเช้า 08:00-16:00", start: "2025-07-01", due: "2025-07-03", },
 ]);
 
+function getToday() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset();
+  const localDate = new Date(today.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().split("T")[0];
+}
+const today = getToday();
 const emptyTask = (): AssignWorkResult => ({
   workID: `WORK-${String(workSeq++).padStart(3, "0")}`,
   work: "",
   description: "",
-  start: "",
-  due: "",
+  start: today,
+  due: today,
 });
 
 export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
@@ -129,7 +136,7 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
           <span>มอบหมายงานผลิต</span>
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400, mt: 0.5 }}>
-          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.due}
+          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.dueDate}
         </Typography>
       </DialogTitle>
       <DialogContent dividers>

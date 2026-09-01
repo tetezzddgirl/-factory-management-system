@@ -81,7 +81,7 @@ function PlanningPage() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
   const newPlanRef = useRef<HTMLButtonElement>(null);
-  const [pending, setPending] = useState<{ product: string; target: number; due: string; orderID: string } | null>(null);
+  const [pending, setPending] = useState<{ product: string; target: number; dueDate: string; orderID: string } | null>(null);
   const [checkData, setCheckData] = useState<ResourceCheckData | null>(null);
   // งานที่เคยมอบหมาย/บันทึกไว้แล้วของใบสั่งผลิตที่กำลังจะมอบหมาย — ดึงมาก่อนเปิด AssignWorkDialog เพื่อเติมฟอร์มให้อัตโนมัติ
   // และกันไม่ให้กด "มอบหมายงาน" ซ้ำแล้วสร้างงานซ้ำ (duplicate) ใน backend
@@ -90,7 +90,7 @@ function PlanningPage() {
   const { role } = useRole();
   const canAssign = role === "planner" || role === "supervisor" || role === "admin";
 
-  function buildCheck(product: string, target: number, due: string): ResourceCheckData {
+  function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * (1.15 + Math.random() * 0.25)));
     const matchedProduct = products.find((p) => p.name === product);
 
@@ -107,7 +107,7 @@ function PlanningPage() {
         ];
 
     return {
-      product, target, due,
+      product, target, dueDate,
       materials,
       machines: [
         { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
@@ -122,14 +122,14 @@ function PlanningPage() {
 
   /** สร้างแผนจริงที่ backend — name/amount/status/priority/productID/bomID/line/startDate/endDate persist ลง DB ทั้งหมดแล้ว */
   async function savePlan(
-    name: string, bom: string, amount: number, due: string, priority?: string,
+    name: string, bom: string, amount: number, dueDate: string, priority?: string,
     productID?: string, start?: string,
   ) {
     try {
       const apiPlan = await plansApi.create({
         name, amount, status: "รอเริ่ม", priority,
         productID, bomID: bom,
-        startDate: toISO(start ?? ""), endDate: toISO(due),
+        startDate: toISO(start ?? ""), dueDate: toISO(dueDate),
       });
       const created: PlanRow = fromApiPlan(apiPlan);
       setPlans((prev) => [created, ...prev]);
@@ -199,13 +199,13 @@ function PlanningPage() {
         amount: r.qty,
         machines: encodeLine(r.line, r.priority),
         startDate: toISO(r.startDate),
-        endDate: toISO(r.due),
+        endDate: toISO(r.dueDate),
         planID: orderPlan?.planID ?? "-",
       });
       setOrderPlan(null);
       setOrder(r);
-      setPending({ product: r.product, target: r.qty, due: r.due, orderID: created.orderID });
-      setCheckData(buildCheck(r.product, r.qty, r.due));
+      setPending({ product: r.product, target: r.qty, dueDate: r.dueDate, orderID: created.orderID });
+      setCheckData(buildCheck(r.product, r.qty, r.dueDate));
       setCheckOpen(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "บันทึกใบสั่งผลิตไม่สำเร็จ");
@@ -354,7 +354,7 @@ function PlanningPage() {
       />
       <AssignWorkDialog
         open={assignOpen}
-        data={pending ? { ...pending, materials: checkData?.materials, steps: stepsForProduct(pending.product), existingTasks } : null}
+        data={pending ? { ...pending, materials: checkData?.materials ?? [], steps: stepsForProduct(pending.product) ?? [], existingTasks } : null}
         onClose={() => setAssignOpen(false)}
         onConfirm={confirmAssignment}
       />

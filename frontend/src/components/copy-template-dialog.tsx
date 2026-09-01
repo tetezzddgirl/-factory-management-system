@@ -37,9 +37,17 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
 
   useEffect(() => {
     if (!open) return;
+    const today = getToday();
     setSourceId(""); setPlanID(""); setName("");  setProduct(""); setBom("");
-    setTarget("");  setStart(""); setDue(""); setRequiredMaterials("");
+    setTarget("");  setStart(today); setDue(today); setRequiredMaterials("");
   }, [open]);
+
+  function getToday() {
+    const today = new Date();
+    const offset = today.getTimezoneOffset();
+    const localDate = new Date(today.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split("T")[0];
+  }
 
   /** คำนวณวัตถุดิบที่ต้องใช้ใหม่ (เหมือนตอนสร้างแผนการผลิตใหม่) ทุกครั้งที่สินค้าหรือจำนวนที่ผลิตเปลี่ยน */
   function recomputeMaterials(productName: string, targetStr: string) {

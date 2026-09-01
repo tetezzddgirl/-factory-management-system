@@ -41,7 +41,7 @@ export type ApiProductionPlan = {
   amount: number;
   priority: string;
   startDate?: string | null;
-  endDate?: string | null;
+  dueDate?: string | null;
   productID?: string;
   bomID?: string;
 };

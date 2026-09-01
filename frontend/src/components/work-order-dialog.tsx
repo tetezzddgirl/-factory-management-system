@@ -15,7 +15,7 @@ export type WorkOrderResult = {
   qty: number;
   line: string;
   startDate: string;
-  due: string;
+  dueDate: string;
   priority: string;
   note: string;
 };
@@ -32,22 +32,30 @@ interface Props {
   onSubmit: (r: WorkOrderResult) => void;
 }
 
+function getToday() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset();
+  const localDate = new Date(today.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().split("T")[0];
+}
+
 export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit }: Props) {
   const LINES = productionLines && productionLines.length > 0 ? productionLines.map((l) => l.name) : FALLBACK_LINES;
   const [v, setV] = useState<WorkOrderResult>({
     orderNo: "", product: "", qty: 0, line: LINES[0],
-    startDate: "", due: "", priority: "ปกติ", note: "",
+    startDate: "", dueDate: "", priority: "ปกติ", note: "",
   });
 
   useEffect(() => {
     if (!open || !data) return;
+    const today = getToday();
     setV({
       orderNo: `WO-${String(Math.floor(Math.random() * 9000) + 1000)}`,
       product: data.name,
       qty: data.amount,
       line: LINES[0],
-      startDate: "",
-      due: "",
+      startDate: today,
+      dueDate: today,
       priority: "ปกติ",
       note: "",
     });
@@ -60,7 +68,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
     setV((s) => ({ ...s, [k]: val }));
 
   // วันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่มผลิต
-  const dateError = Boolean(v.startDate && v.due && v.due < v.startDate);
+  const dateError = Boolean(v.startDate && v.dueDate && v.dueDate < v.startDate);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -102,8 +110,8 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
                 slotProps={{ inputLabel: { shrink: true } }}
               />
               <TextField
-                fullWidth label="กำหนดเสร็จ" type="date" value={v.due}
-                onChange={(e) => set("due", e.target.value)}
+                fullWidth label="กำหนดเสร็จ" type="date" value={v.dueDate}
+                onChange={(e) => set("dueDate", e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
                 error={dateError}
                 helperText={dateError ? "ต้องไม่มาก่อนวันที่เริ่มผลิต" : undefined}
@@ -133,7 +141,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
+          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.dueDate.trim() || dateError}
           onClick={() => onSubmit(v)}
         >
           ถัดไป: ตรวจสอบทรัพยากร
