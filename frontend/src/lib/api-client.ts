@@ -43,7 +43,7 @@ export type ApiProductionPlan = {
   startDate?: string | null;
   endDate?: string | null;
   productID?: string;
-  bomID?: string;
+  formulaID?: string;
 };
 
 export type ApiRawMaterial = {
@@ -55,10 +55,10 @@ export type ApiRawMaterial = {
   min: number;
 };
 
-// ---- สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/BOM master data) ----
+// ---- สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/FOR master data) ----
 
 export type ApiProduct = { productID: string; name: string; unit: string };
-export type ApiFormulaItem = { id: number; bomID: string; productID: string; rmID: string; qtyPerUnit: number; unit: string };
+export type ApiFormulaItem = { id: number; formulaID: string; productID: string; rmID: string; qtyPerUnit: number; unit: string };
 
 export const productsApi = {
   list: () => apiFetch<ApiProduct[]>("/api/products"),
@@ -73,7 +73,7 @@ export const formulasApi = {
 };
 
 export type ApiFormulaStep = {
-  id: number; bomID: string; stepNo: number; stepName: string; description: string; machine: string; durationMinutes: number;
+  id: number; formulaID: string; stepNo: number; stepName: string; description: string; machine: string; durationMinutes: number;
 };
 
 export const formulaStepsApi = {
@@ -82,9 +82,9 @@ export const formulaStepsApi = {
     apiFetch<ApiFormulaStep>("/api/formulas/steps", { method: "POST", body: JSON.stringify(s) }),
 };
 
-/** ดึงขั้นตอนการผลิตของสูตรหนึ่ง (bomID) เรียงตามลำดับ stepNo */
-export function stepsFor(steps: ApiFormulaStep[], bomID: string): ApiFormulaStep[] {
-  return steps.filter((s) => s.bomID === bomID).sort((a, b) => a.stepNo - b.stepNo);
+/** ดึงขั้นตอนการผลิตของสูตรหนึ่ง (formulaID) เรียงตามลำดับ stepNo */
+export function stepsFor(steps: ApiFormulaStep[], formulaID: string): ApiFormulaStep[] {
+  return steps.filter((s) => s.formulaID === formulaID).sort((a, b) => a.stepNo - b.stepNo);
 }
 
 /** ดึงบรรทัดสูตรการผลิตของสินค้าตัวหนึ่ง (จาก productID) ออกมาจากรายการสูตรทั้งหมด */
@@ -113,36 +113,36 @@ export function computeRequiredMaterials(
 }
 
 /** หา bomID ของสูตรที่ผูกกับสินค้าตัวหนึ่ง (ใช้ไปดึงขั้นตอนการผลิตที่ผูกกับ bomID นั้นต่อ) */
-export function bomIDFor(formulas: ApiFormulaItem[], productID: string): string | undefined {
-  return formulaFor(formulas, productID)[0]?.bomID;
+export function formulaIDFor(formulas: ApiFormulaItem[], productID: string): string | undefined {
+  return formulaFor(formulas, productID)[0]?.formulaID;
 }
 
 /** ตัวคั่นระหว่าง "รหัสสูตร" กับ "ชื่อสูตร/สินค้า" ตอนแสดงเป็นตัวเลือกใน dropdown (เช่น "BOM-001 — ขวด PET 500ml") */
-export const BOM_LABEL_SEP = " — ";
+export const FOR_LABEL_SEP = " — ";
 
 /** สร้างรายการตัวเลือกสูตรการผลิตแบบไม่ซ้ำ (bomID) พร้อมชื่อสินค้าที่สูตรนั้นผูกอยู่ ไว้ใช้เป็น options ของ dropdown
  *  แสดงทั้งรหัสสูตรและชื่อสูตร (ชื่อสินค้าที่สูตรนั้นผลิต) ในตัวเลือกเดียวกัน */
 export function formulaOptions(formulas: ApiFormulaItem[], products: ApiProduct[]): string[] {
   const seen = new Map<string, string>();
   for (const f of formulas) {
-    if (seen.has(f.bomID)) continue;
+    if (seen.has(f.formulaID)) continue;
     const productName = products.find((p) => p.productID === f.productID)?.name ?? f.productID;
-    seen.set(f.bomID, `${f.bomID}${BOM_LABEL_SEP}${productName}`);
+    seen.set(f.formulaID, `${f.formulaID}${FOR_LABEL_SEP}${productName}`);
   }
   return Array.from(seen.values());
 }
 
-/** ดึง bomID ล้วนๆ ออกจากตัวเลือกที่แสดงแบบ "BOM-001 — ขวด PET 500ml" (หรือคืนค่าเดิมถ้าไม่มีตัวคั่น) */
-export function bomIDFromOption(option: string): string {
-  return option.split(BOM_LABEL_SEP)[0] ?? option;
+/** ดึง formulaID ล้วนๆ ออกจากตัวเลือกที่แสดงแบบ "FOR-001 — ขวด PET 500ml" (หรือคืนค่าเดิมถ้าไม่มีตัวคั่น) */
+export function formulaIDFromOption(option: string): string {
+  return option.split(FOR_LABEL_SEP)[0] ?? option;
 }
 
 /** ประกอบตัวเลือกแบบ "BOM-001 — ชื่อสินค้า" จาก bomID ล้วนๆ ไว้ตั้งค่าเริ่มต้นให้ตรงกับ options ของ dropdown */
-export function formulaOptionFor(formulas: ApiFormulaItem[], products: ApiProduct[], bomID: string): string {
-  if (!bomID) return "";
-  const match = formulas.find((f) => f.bomID === bomID);
+export function formulaOptionFor(formulas: ApiFormulaItem[], products: ApiProduct[], formulaID: string): string {
+  if (!formulaID) return "";
+  const match = formulas.find((f) => f.formulaID === formulaID);
   const productName = match ? products.find((p) => p.productID === match.productID)?.name ?? match.productID : undefined;
-  return productName ? `${bomID}${BOM_LABEL_SEP}${productName}` : bomID;
+  return productName ? `${formulaID}${FOR_LABEL_SEP}${productName}` : formulaID;
 }
 
 // ---- ตัวช่วยเรียก endpoint แต่ละกลุ่ม (ตรงกับ backend/handlers) ----

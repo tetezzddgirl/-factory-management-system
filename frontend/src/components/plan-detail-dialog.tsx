@@ -5,7 +5,7 @@ import {
 import { Assignment } from "@mui/icons-material";
 
 export type PlanRow = {
-  planID: string; name: string; bomID?: string; bom:string; amount: number; dueDate: string; status: string;
+  planID: string; name: string; formulaID?: string; formula:string; amount: number; dueDate: string; status: string;
   priority?: string; startDate?: string; owner?: string;
 };
 
@@ -64,7 +64,7 @@ export function PlanDetailDialog({ open, plan, onClose, onCreateOrder, onUpdateP
 
         <Row label="วันเริ่มผลิต" value={plan.startDate ?? "-"} />
         <Row label="กำหนดเสร็จ" value={plan.dueDate} />
-        <Row label="สูตรการผลิต (BOM)" value={plan.bom && plan.bom !== "-" ? plan.bom : "ยังไม่ได้ระบุ"} />
+        <Row label="สูตรการผลิต (Formula)" value={plan.formula && plan.formula !== "-" ? plan.formula : "ยังไม่ได้ระบุ"} />
         <Row label="ผู้รับผิดชอบ" value={plan.owner ?? "ฝ่ายวางแผนการผลิต"} />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

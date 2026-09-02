@@ -20,7 +20,7 @@ const seed: Notif[] = [
   { id: "n2", title: "เครื่องจักร M-04 แจ้งเสีย",       desc: "รอมอบหมายช่างซ่อมบำรุง",           time: "8 นาทีก่อน", type: "error",   unread: true },
   { id: "n3", title: "วัตถุดิบ RM-002 ต่ำกว่าเกณฑ์",     desc: "คงเหลือ 12% — ควรสั่งเพิ่ม",         time: "15 นาทีก่อน", type: "warning", unread: true },
   { id: "n4", title: "งาน JOB-2449 ผลิตเสร็จแล้ว",       desc: "ส่งเข้าคลังพร้อม QC final",           time: "1 ชม.ก่อน",   type: "success", unread: false },
-  { id: "n5", title: "BOM ขวด PET 500ml v3 อนุมัติแล้ว", desc: "โดย จันทร์เพ็ญ (QC)",               time: "3 ชม.ก่อน",   type: "info",    unread: false },
+  { id: "n5", title: "สูตรการผลิต ขวด PET 500ml v3 อนุมัติแล้ว", desc: "โดย จันทร์เพ็ญ (QC)",               time: "3 ชม.ก่อน",   type: "info",    unread: false },
 ];
 
 const typeColor: Record<Notif["type"], string> = {

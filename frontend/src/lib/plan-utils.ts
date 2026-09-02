@@ -34,13 +34,13 @@ export function decodeLine(machines: string): { line: string; priority: string }
   return { line: line || "-", priority: priority || "ปกติ" };
 }
 
-/** แปลงแผนการผลิตจาก backend (ApiProductionPlan) เป็น PlanRow ที่ UI ใช้ — รวม bom/line/startDate ที่ backend เก็บจริงแล้ว
+/** แปลงแผนการผลิตจาก backend (ApiProductionPlan) เป็น PlanRow ที่ UI ใช้ — รวม formula/line/startDate ที่ backend เก็บจริงแล้ว
  *  ใช้ร่วมกันทั้งหน้า "วางแผนการผลิต" และตอน "เลือกแผนการผลิต" (สร้างใบสั่งผลิต) เพื่อไม่ให้ข้อมูลไม่ตรงกันระหว่างสองหน้า */
 export function fromApiPlan(p: ApiProductionPlan): PlanRow {
   return {
     planID: String(p.planID),
     name: p.name,
-    bom: p.bomID || "-",
+    formula: p.formulaID || "-",
     amount: p.amount,
     priority: p.priority,
     dueDate: p.endDate ? formatThaiDate(p.endDate) : "-",

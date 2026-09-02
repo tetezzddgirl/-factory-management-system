@@ -13,7 +13,7 @@ import { AssignWorkDialog, type AssignWorkResult } from "@/components/assign-wor
 import { SelectPlanDialog } from "@/components/select-plan-dialog";
 import type { PlanRow } from "@/components/plan-detail-dialog";
 import { type WorkOrder } from "@/lib/plan-data";
-import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, computeRequiredMaterials, bomIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
+import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, computeRequiredMaterials, formulaIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue, formatThaiDate, encodeLine, decodeLine } from "@/lib/plan-utils";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
@@ -106,9 +106,9 @@ function WorkOrdersPage() {
   function stepsForProduct(product: string) {
     const productID = products.find((p) => p.name === product)?.productID;
     if (!productID) return undefined;
-    const bomID = bomIDFor(formulas, productID);
-    if (!bomID) return undefined;
-    return stepsFor(formulaSteps, bomID);
+    const formulaID = formulaIDFor(formulas, productID);
+    if (!formulaID) return undefined;
+    return stepsFor(formulaSteps, formulaID);
   }
 
   async function loadOrders() {
