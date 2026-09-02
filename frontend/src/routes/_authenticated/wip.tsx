@@ -176,6 +176,20 @@ function findFormLocation(values: Record<string, string>) {
   });
 }
 
+function palletLocationConflict(
+  palletNumber: string,
+  targetLocation: string,
+  excludeLocationID?: string,
+): ApiWipLocation | undefined {
+  if (!palletNumber.trim()) return undefined;
+  return wipLocations.find(
+    (l) =>
+      l.palletNumber.trim().toLowerCase() === palletNumber.trim().toLowerCase() &&
+      l.location !== targetLocation &&
+      l.wipLocationID !== excludeLocationID,
+  );
+}
+
 const STOCK_LIMITED_TYPES = ["เบิกจ่าย", "โอนย้าย"];
 
 /** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
@@ -243,6 +257,14 @@ const existingLoc = wipLocations.find((l) => {
   // ถ้ามีการระบุ Pallet Number ให้เทียบจาก Pallet เป็นหลัก
   if (v.palletNumber && v.palletNumber.trim()) {
     return isSameWip && l.palletNumber.trim().toLowerCase() === v.palletNumber.trim().toLowerCase();
+  }
+
+  if (v.palletNumber && v.type !== "โอนย้าย") {
+    const conflict = palletLocationConflict(v.palletNumber, v.location);
+    if (conflict) {
+      toast.error(`Pallet ${v.palletNumber} ถูกใช้เก็บอยู่ที่ ${conflict.location} อยู่แล้ว (1 Pallet เก็บได้แค่ 1 ตำแหน่ง) กรุณาโอนย้าย Pallet เดิมก่อน หรือใช้หมายเลข Pallet อื่น`);
+      return false;
+    }
   }
   
   // ถ้าไม่ได้ระบุ Pallet ให้เทียบจาก Location
@@ -320,6 +342,14 @@ if (existingLoc) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
       return false;
     }
+
+    if (v.palletNumber && v.type !== "โอนย้าย") {
+    const conflict = palletLocationConflict(v.palletNumber, v.location);
+    if (conflict) {
+      toast.error(`Pallet ${v.palletNumber} ถูกใช้เก็บอยู่ที่ ${conflict.location}แล้ว`);
+      return false;
+    }
+  }
 
     if (v.type === "โอนย้าย") {
     const existingLoc = v.palletNumber
@@ -407,6 +437,14 @@ if (existingLoc) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
       return false;
     }
+
+    if (v.palletNumber && v.type !== "โอนย้าย") {
+    const conflict = palletLocationConflict(v.palletNumber, v.location);
+    if (conflict) {
+      toast.error(`Pallet ${v.palletNumber} ถูกใช้เก็บอยู่ที่ ${conflict.location}แล้ว`);
+      return false;
+    }
+  }
 
     try {
       await requisitionsApi.create({

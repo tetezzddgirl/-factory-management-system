@@ -159,6 +159,20 @@ function findFormLocation(values: Record<string, string>) {
   });
 }
 
+function palletLocationConflict(
+  palletNumber: string,
+  targetLocation: string,
+  excludeLocationID?: string,
+): ApiRawMaterialLocation | undefined {
+  if (!palletNumber.trim()) return undefined;
+  return rawMaterialLocation.find(
+    (l) =>
+      l.palletNumber.trim().toLowerCase() === palletNumber.trim().toLowerCase() &&
+      l.location !== targetLocation &&
+      l.rmLocationID !== excludeLocationID,
+  );
+}
+
 /** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
 function amountHelperText(values: Record<string, string>): string | undefined {
   if (values.type !== "เบิกจ่าย") return undefined;
@@ -257,6 +271,13 @@ onSubmit={async (v) => {
   if (sign === -1 && target && qty > target.amount) {
     toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.rawMaterial} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
     return false;
+  }
+  if (v.palletNumber && v.type !== "โอนย้าย") {
+    const conflict = palletLocationConflict(v.palletNumber, v.location);
+    if (conflict) {
+      toast.error(`Pallet ${v.palletNumber} ถูกใช้เก็บอยู่ที่ ${conflict.location} แล้ว`);
+      return false;
+    }
   }
 
   const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
@@ -359,6 +380,14 @@ onSubmit={async (v) => {
     }
     return l.rmID === code && l.location === v.location;
   });
+
+  if (v.palletNumber && v.type !== "โอนย้าย") {
+    const conflict = palletLocationConflict(v.palletNumber, v.location);
+    if (conflict) {
+      toast.error(`Pallet ${v.palletNumber} ถูกใช้เก็บอยู่ที่ ${conflict.location} แล้ว`);
+      return false;
+    }
+  }
 
     // (1) เบิกจ่าย/โอนย้าย ต้องระบุ pallet/location ที่มีอยู่จริงก่อนเสมอ ไม่งั้นไม่รู้จะตัดยอดจากไหน
   if (v.type === "เบิกจ่าย" || v.type === "โอนย้าย") {
