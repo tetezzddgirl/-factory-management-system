@@ -264,7 +264,7 @@ function amountIsOver(values: Record<string, string>): boolean {
             onAutoFill={autoFillNewItem}
 onSubmit={async (v) => {
   const qty = Number(v.amount) || 0;
-  const code = v.item.split(" — ")[0];
+  const code = v.rmID.split(" — ")[0];
   const target = rawMaterial.find((i) => i.rmID === code);
   const sign = v.type === "เบิกจ่าย" ? -1 : v.type === "โอนย้าย" ? 0 : 1;
 
@@ -290,8 +290,22 @@ onSubmit={async (v) => {
     : undefined;
 
   try {
-    await materialsApi.updateStock(code, newAmount);
-    setRawMaterial((prev) => prev.map((i) => (i.rmID === code ? { ...i, amount: newAmount } : i)));
+    if (target) {
+      // วัตถุดิบมีอยู่แล้ว -> อัปเดตยอดเดิม
+      await materialsApi.updateStock(code, newAmount);
+      setRawMaterial((prev) => prev.map((i) => (i.rmID === code ? { ...i, amount: newAmount } : i)));
+    } else {
+      // ✅ วัตถุดิบยังไม่มีในระบบ -> สร้างใหม่ก่อน ค่อยไปสร้าง location
+      const created = await materialsApi.create({
+        rmID: code,
+        rawMaterial: v.rawMaterial,
+        amount: newAmount,
+        unit: v.unit,
+        max: Number(v.max) || 0,
+        min: Number(v.min) || 0,
+      });
+      setRawMaterial((prev) => [created, ...prev]);
+    }
 
     let rmLocationID = "";
 
