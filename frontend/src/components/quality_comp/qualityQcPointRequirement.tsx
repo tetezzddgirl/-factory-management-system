@@ -101,7 +101,7 @@ export default function QualityQcPointRequirement({ inspectItems, onChange }: Qu
         {inspectItems.map((item, index) => {
           const isCustom = item.requirementID === "OTHER";
           return (
-            <Paper key={index} variant="outlined" sx={{ p: 2, bgcolor: "#fafafa", borderRadius: 2 }}>
+            <Paper key={index} variant="outlined" sx={{ p: 2, bgcolor: "#fafafa", borderRadius: 1.5 }}>
               <Box 
                 sx={{ 
                   display: "flex", 
@@ -146,7 +146,7 @@ export default function QualityQcPointRequirement({ inspectItems, onChange }: Qu
                   required
                   fullWidth
                   size="small"
-                  label="ข้อกำหนด (Spec)"
+                  label="ข้อกำหนด"
                   value={item.specification}
                   onChange={(e) => handleItemTextChange(index, "specification", e.target.value)}
                   placeholder="เช่น ไม่มีรอยเกิน 2 จุด"

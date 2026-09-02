@@ -64,13 +64,12 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
   }, [fetchEvents]);
 
   const handleSaveData = async (newData: EventData) => {
-    if (!orderID) return alert("ไม่พบรหัสคำสั่งผลิต");
+    if (!orderID) return alert("ไม่พบรหัสใบสั่งผลิต");
     setLoading(true);
 
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || "";
-      
-      // แก้ไขชื่อ Key ให้ตรงกับ Backend และลบ ? ออก
+
       const payload = {
         orderId: orderID,
         eventType: newData.eventType,
@@ -106,7 +105,6 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
-      {/* ส่วนปุ่ม + เพิ่ม */}
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           variant="contained"
@@ -121,7 +119,6 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
         </Button>
       </Box>
 
-      {/* ตารางแสดงผล */}
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
         <Table sx={{ minWidth: 700 }}>
           <TableHead sx={{ bgcolor: "#f8fafc" }}>
@@ -177,11 +174,10 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
         </Table>
       </TableContainer>
 
-      {/* Popup Form */}
       <Dialog open={openDialog} onClose={() => !loading && setOpenDialog(false)} maxWidth="sm" fullWidth sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}>
         <ProductionEvenForm
-          orderID={orderID}         // ส่งค่าเข้าไปที่ฟอร์ม
-          orderName={orderName}     // ส่งค่าเข้าไปที่ฟอร์ม
+          orderID={orderID}
+          orderName={orderName}
           onSave={handleSaveData}
           onCancel={() => setOpenDialog(false)}
           loading={loading}
@@ -193,10 +189,11 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
         onClose={() => setDetailDialogOpen(false)} 
         maxWidth="sm" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         <ProductionEvenDetail 
           eventData={selectedEvent} 
+          orderID={orderID}
           orderName={orderName} 
           onClose={() => setDetailDialogOpen(false)} 
         />

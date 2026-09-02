@@ -35,7 +35,7 @@ export interface QcPointExtended {
 }
 
 interface QualityQcFormProps {
-  open: boolean;
+  open?: boolean; // ปรับให้เป็น optional เพื่อรับค่าจาก Parent
   onClose: () => void;
   orderID: string;
   orderName?: string;
@@ -187,8 +187,6 @@ export default function QualityQcForm({
 
       if (!resInspection.ok) throw new Error("บันทึกข้อมูล Inspection ไม่สำเร็จ");
 
-      const inspectionData = await resInspection.json();
-
       onSuccess();
       onClose();
     } catch (error) {
@@ -201,168 +199,166 @@ export default function QualityQcForm({
 
   return (
     <>
-      <Dialog open={open} onClose={!loading ? onClose : undefined} maxWidth="md" fullWidth>
-        <form onSubmit={handlePreSubmit}>
-          <DialogTitle sx={{ fontWeight: 700, color: "#1e293b", pb: 1 }}>
-            บันทึกผลการตรวจคุณภาพ
-          </DialogTitle>
-          <Divider />
+      <form onSubmit={handlePreSubmit}>
+        <DialogTitle sx={{ fontWeight: 700, color: "#1e293b", pb: 1 }}>
+          บันทึกผลการตรวจคุณภาพ
+        </DialogTitle>
+        <Divider />
 
-          <DialogContent sx={{ bgcolor: "#f8fafc", px: { xs: 2, sm: 3 } }}>
-            <Box sx={{ mb: 3, p: 2, bgcolor: "#fff", border: "1px solid #e2e8f0", borderRadius: 2 }}>
-              <Stack direction="row" spacing={4}>
-                <Typography sx={{ fontSize: "0.95rem", color: "text.secondary" }}>
-                  คำสั่งผลิต:{" "}
-                  <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                    {orderName || "ไม่ระบุชื่อ"}
-                  </Box>
-                </Typography>
-                <Typography sx={{ fontSize: "0.95rem", color: "text.secondary" }}>
-                  ID:{" "}
-                  <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                    {orderID || "-"}
-                  </Box>
-                </Typography>
-              </Stack>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
+            <Stack direction="column" spacing={0.75}>
+              <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
+                ใบสั่งผลิต:{" "}
+                <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                  {orderName || "ไม่ระบุชื่อ"}
+                </Box>
+              </Typography>
+              <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
+                ID:{" "}
+                <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                  {orderID || "-"}
+                </Box>
+              </Typography>
+            </Stack>
+          </Box>
+
+          <Stack spacing={3}>
+            <FormControl fullWidth required>
+              <InputLabel id="point-select-label">จุดที่ทำการตรวจ</InputLabel>
+              <Select
+                labelId="point-select-label"
+                value={formData.inspectionPointID}
+                label="จุดที่ทำการตรวจ"
+                onChange={(e) => handleChange("inspectionPointID", e.target.value)}
+                sx={{ bgcolor: "#fff" }}
+              >
+                <MenuItem value="" disabled>
+                  {points.length === 0
+                    ? "ไม่มีจุดตรวจสำหรับใบสั่งผลิตนี้"
+                    : "-- กรุณาเลือกจุดตรวจ --"}
+                </MenuItem>
+                {points.map((pt) => (
+                  <MenuItem key={pt.inspectionPointID} value={pt.inspectionPointID}>
+                    {pt.pointName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <QualityQcFormItem
+              items={currentInspectItems}
+              itemsData={itemsData}
+              onChange={handleItemChange}
+            />
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: "#334155" }}>
+                สรุปผลการประเมินจุดตรวจ (Overall Result) *
+              </Typography>
+              <ToggleButtonGroup
+                color="primary"
+                value={formData.overallResult}
+                exclusive
+                onChange={handleOverallResultChange}
+                fullWidth
+                sx={{ bgcolor: "#fff" }}
+              >
+                <ToggleButton
+                  value="Pass"
+                  sx={{
+                    py: 1.5,
+                    fontWeight: "bold",
+                    "&.Mui-selected": { bgcolor: "#dcfce7", color: "#166534", borderColor: "#22c55e" },
+                  }}
+                >
+                  ✅ ผ่าน (Pass)
+                </ToggleButton>
+                <ToggleButton
+                  value="Fail"
+                  sx={{
+                    py: 1.5,
+                    fontWeight: "bold",
+                    "&.Mui-selected": { bgcolor: "#fee2e2", color: "#991b1b", borderColor: "#ef4444" },
+                  }}
+                >
+                  ❌ ไม่ผ่าน (Fail)
+                </ToggleButton>
+              </ToggleButtonGroup>
             </Box>
 
-            <Stack spacing={3}>
-              <FormControl fullWidth required>
-                <InputLabel id="point-select-label">จุดที่ทำการตรวจ</InputLabel>
-                <Select
-                  labelId="point-select-label"
-                  value={formData.inspectionPointID}
-                  label="จุดที่ทำการตรวจ"
-                  onChange={(e) => handleChange("inspectionPointID", e.target.value)}
-                  sx={{ bgcolor: "#fff" }}
-                >
-                  <MenuItem value="" disabled>
-                    {points.length === 0
-                      ? "ไม่มีจุดตรวจสำหรับคำสั่งผลิตนี้"
-                      : "-- กรุณาเลือกจุดตรวจ --"}
-                  </MenuItem>
-                  {points.map((pt) => (
-                    <MenuItem key={pt.inspectionPointID} value={pt.inspectionPointID}>
-                      {pt.pointName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* แยก Component ออกมาแล้ว ใช้งานตรงนี้ */}
-              <QualityQcFormItem
-                items={currentInspectItems}
-                itemsData={itemsData}
-                onChange={handleItemChange}
+            {formData.overallResult === "Fail" && (
+              <TextField
+                label="แนวทางการดำเนินการ (Action Guideline)"
+                fullWidth
+                required
+                multiline
+                rows={2}
+                value={formData.actionGuideline}
+                onChange={(e) => handleChange("actionGuideline", e.target.value)}
+                sx={{ bgcolor: "#fff" }}
+                placeholder="ระบุแนวทางแก้ไข เช่น คัดแยกของเสีย, ปรับตั้งเครื่องจักร..."
+                helperText="* ระบบจะบันทึกสถานะใบตรวจนี้เป็น Pending อัตโนมัติ เพื่อรอการแก้ไข"
               />
+            )}
 
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: "#334155" }}>
-                  สรุปผลการประเมินจุดตรวจ (Overall Result) *
-                </Typography>
-                <ToggleButtonGroup
-                  color="primary"
-                  value={formData.overallResult}
-                  exclusive
-                  onChange={handleOverallResultChange}
-                  fullWidth
-                  sx={{ bgcolor: "#fff" }}
-                >
-                  <ToggleButton
-                    value="Pass"
-                    sx={{
-                      py: 1.5,
-                      fontWeight: "bold",
-                      "&.Mui-selected": { bgcolor: "#dcfce7", color: "#166534", borderColor: "#22c55e" },
-                    }}
-                  >
-                    ✅ ผ่าน (Pass)
-                  </ToggleButton>
-                  <ToggleButton
-                    value="Fail"
-                    sx={{
-                      py: 1.5,
-                      fontWeight: "bold",
-                      "&.Mui-selected": { bgcolor: "#fee2e2", color: "#991b1b", borderColor: "#ef4444" },
-                    }}
-                  >
-                    ❌ ไม่ผ่าน (Fail)
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-
-              {formData.overallResult === "Fail" && (
-                <TextField
-                  label="แนวทางการดำเนินการ (Action Guideline)"
-                  fullWidth
-                  required
-                  multiline
-                  rows={2}
-                  value={formData.actionGuideline}
-                  onChange={(e) => handleChange("actionGuideline", e.target.value)}
-                  sx={{ bgcolor: "#fff" }}
-                  placeholder="ระบุแนวทางแก้ไข เช่น คัดแยกของเสีย, ปรับตั้งเครื่องจักร..."
-                  helperText="* ระบบจะบันทึกสถานะใบตรวจนี้เป็น Pending อัตโนมัติ เพื่อรอการแก้ไข"
-                />
-              )}
-
-              <Stack direction={{ xs: "column", sm: "row" } as const} spacing={2}>
-                <TextField
-                  label="ชื่อผู้ตรวจสอบ (Inspected By)"
-                  fullWidth
-                  required
-                  value={formData.inspectedBy}
-                  onChange={(e) => handleChange("inspectedBy", e.target.value)}
-                  sx={{ bgcolor: "#fff" }}
-                />
-                <TextField
-                  label="หมายเหตุภาพรวม (ถ้ามี)"
-                  fullWidth
-                  value={formData.remark}
-                  onChange={(e) => handleChange("remark", e.target.value)}
-                  sx={{ bgcolor: "#fff" }}
-                />
-              </Stack>
+            <Stack direction={{ xs: "column", sm: "row" } as const} spacing={2}>
+              <TextField
+                label="ชื่อผู้ตรวจสอบ (Inspected By)"
+                fullWidth
+                required
+                value={formData.inspectedBy}
+                onChange={(e) => handleChange("inspectedBy", e.target.value)}
+                sx={{ bgcolor: "#fff" }}
+              />
+              <TextField
+                label="หมายเหตุภาพรวม (ถ้ามี)"
+                fullWidth
+                value={formData.remark}
+                onChange={(e) => handleChange("remark", e.target.value)}
+                sx={{ bgcolor: "#fff" }}
+              />
             </Stack>
-          </DialogContent>
+          </Stack>
+        </DialogContent>
 
-          <Divider />
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={onClose} disabled={loading} color="inherit">
-              ยกเลิก
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading || points.length === 0 || !formData.inspectionPointID}
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-              sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" }, px: 4 }}
-            >
-              {loading ? "กำลังประมวลผล..." : "บันทึกผลตรวจ"}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+        <Divider />
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose} disabled={loading} color="inherit" sx={{ width: 100, color: "#4a90e2"}}>
+            ยกเลิก
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading || points.length === 0 || !formData.inspectionPointID}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+            sx={{ width: 100 }}
+          >
+            {loading ? "กำลังประมวลผล..." : "บันทึก"}
+          </Button>
+        </DialogActions>
+      </form>
 
+      {/* Confirmation Dialog ยังต้องใช้อยู่ */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "#1e293b" }}>
           ยืนยันการบันทึกข้อมูล
         </DialogTitle>
         <DialogContent>
           <Typography>
-            คุณตรวจสอบความถูกต้องของข้อมูล และต้องการบันทึกผลการตรวจคุณภาพใช่หรือไม่?
+            คุณต้องการบันทึกผลการตรวจคุณภาพใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit">
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" sx={{ width: 100, color: "#4a90e2"}}>
             ยกเลิก
           </Button>
           <Button
             onClick={executeSubmit}
             variant="contained"
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
             ยืนยัน
           </Button>

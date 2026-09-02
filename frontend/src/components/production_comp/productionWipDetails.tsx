@@ -43,38 +43,17 @@ export default function ProductionWipDetails({
 }: ProductionWipDetailProps) {
   if (!transferData) return null;
 
-  // 👇 ปรับปรุงฟังก์ชันแสดงผลสถานะที่นี่
   const getStatusChip = (status?: string) => {
-    // ถ้าสถานะเป็น Pending, รอรับ หรือไม่มีค่ามา
-    if (!status || status === "Pending" || status === "รอรับ") {
-      return (
-        <Chip 
-          label="รอรับ" 
-          size="small" 
-          sx={{ bgcolor: "#f59e0b", color: "#fff", fontWeight: 600, minWidth: 80 }} 
-        />
-      );
-    } 
-    // ถ้าสถานะเป็น Received, รับแล้ว หรือ Completed
-    else if (status === "Received" || status === "รับแล้ว" || status === "Completed") {
-      return (
-        <Chip 
-          label="รับแล้ว" 
-          size="small" 
-          sx={{ bgcolor: "#10b981", color: "#fff", fontWeight: 600, minWidth: 80 }} 
-        />
-      );
-    } 
-    // กรณีสถานะอื่นๆ ที่เราไม่ได้คาดคิด
-    else {
-      return (
-        <Chip 
-          label={status} 
-          size="small" 
-          sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: 600, minWidth: 80 }} 
-        />
-      );
+    if (!status || status === "Pending") {
+      return <Chip label="รอรับ" size="small" sx={{ bgcolor: "#f59e0b", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
     }
+    if (status === "Received" || status === "Completed") {
+      return <Chip label="รับแล้ว" size="small" sx={{ bgcolor: "#10b981", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
+    }
+    if (status === "Canceled" || status === "Cancelled") {
+      return <Chip label="ยกเลิก" size="small" sx={{ bgcolor: "#ef4444", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
+    }
+    return <Chip label={status} size="small" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
   };
 
   const isValidDate = (dateString?: string) => {
@@ -91,10 +70,10 @@ export default function ProductionWipDetails({
 
       <DialogContent>
         {/* --- ส่วนแสดงรายละเอียด Order --- */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+        <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
           <Stack direction="column" spacing={0.75}>
             <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-              คำสั่งผลิต:{" "}
+              ใบสั่งผลิต:{" "}
               <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                 {orderName || "ไม่ระบุชื่อ"}
               </Box>
@@ -186,7 +165,6 @@ export default function ProductionWipDetails({
           onClick={onClose} 
           variant="contained" 
           disableElevation
-          sx={{ bgcolor: "#475467", "&:hover": { bgcolor: "#344054" } }}
         >
           ปิดหน้าต่าง
         </Button>

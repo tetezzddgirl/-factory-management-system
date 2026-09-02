@@ -2,15 +2,6 @@ package models
 
 import "time"
 
-type ProductionStatus string
-
-const (
-	InProgress ProductionStatus = "InProgress"
-	Paused     ProductionStatus = "Paused"
-	Completed  ProductionStatus = "Completed"
-	Cancelled  ProductionStatus = "Cancelled"
-)
-
 type ProductionEventType string
 
 const (

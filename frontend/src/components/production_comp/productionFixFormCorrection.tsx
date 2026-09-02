@@ -99,7 +99,7 @@ export default function ProductionFixFormCorrection({
   }
 
   return (
-    <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, bgcolor: "#fff" }}>
+    <Paper variant="outlined" sx={{ p: 3, borderRadius: 1.5, bgcolor: "#fff" }}>
       <Typography sx={{ fontWeight: 700, mb: 3, color: "#1e293b" }}>
         ฟอร์มบันทึกผลการดำเนินการแก้ไข
       </Typography>

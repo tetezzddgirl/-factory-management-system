@@ -38,12 +38,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "Pending"
-    | "Preparing"
-    | "InProgress"
-    | "Paused"
-    | "Completed"
-    | "Cancelled";
+    | "success"   // เสร็จสิ้น
+    | "info"      // กำลังผลิต
+    | "default"   // รอมอบหมาย
+    | "warning"   // หยุดชั่วคราว
+    | "error";    // error
   amount: number;
   machines: string;
   startDate: string;
@@ -96,15 +95,16 @@ function QualityPage() {
 
   const getStatusChip = (status: ProductionOrder["status"]) => {
     switch (status) {
-      case "InProgress":
+      case "info":
         return <Chip label="กำลังผลิต" sx={{ bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Paused":
+      case "warning":
         return <Chip label="หยุดชั่วคราว" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Completed":
+      case "success":
         return <Chip label="เสร็จสิ้น" sx={{ bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Cancelled":
+      case "error":
+        return <Chip label="ยกเลิก" sx={{ bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
       default:
-        return <Chip label="ยกเลิก" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+        return <Chip label="รอมอบหมาย" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
     }
   };
 
@@ -152,12 +152,14 @@ function QualityPage() {
                         sx={{
                           height: 4,
                           background:
-                            order.status === "InProgress"
+                            order.status === "info"
                               ? "#10B981"
-                              : order.status === "Completed"
+                              : order.status === "success"
                               ? "#4A90E2"
-                              : order.status === "Paused"
+                              : order.status === "warning"
                               ? "#F59E0B"
+                              : order.status === "error"
+                              ? "#EF4444"
                               : "#A4ABB6",
                         }}
                       />

@@ -72,10 +72,10 @@ export default function QualityQcPointAdd({ orderID, orderName, onSave, onCancel
         <Divider />
         
         <DialogContent>
-          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
             <Stack direction="column" spacing={0.75}>
               <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-                คำสั่งผลิต:{" "}
+                ใบสั่งผลิต:{" "}
                 <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                   {orderName || "ไม่ระบุชื่อ"}
                 </Box>
@@ -119,16 +119,16 @@ export default function QualityQcPointAdd({ orderID, orderName, onSave, onCancel
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={loading}>
+          <Button onClick={handleCancel} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
             ยกเลิก
           </Button>
           <Button 
             type="submit" 
             variant="contained" 
             disabled={loading}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
-            บันทึกจุดตรวจ
+            บันทึก
           </Button>
         </DialogActions>
       </Box>
@@ -137,25 +137,22 @@ export default function QualityQcPointAdd({ orderID, orderName, onSave, onCancel
       <Dialog
         open={confirmOpen}
         onClose={() => !loading && setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 1 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
-          ยืนยันการบันทึกจุดตรวจ
-        </DialogTitle>
         <DialogContent>
           <Typography color="text.secondary">
-            คุณตรวจสอบข้อมูลจุดตรวจครบถ้วนแล้ว และต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
+            คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading}>
-            กลับไปแก้ไข
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+            ยกเลิก
           </Button>
           <Button
             onClick={handleConfirm}
             variant="contained"
             disabled={loading}
-            sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100 }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
           </Button>

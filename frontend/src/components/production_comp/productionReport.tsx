@@ -7,6 +7,8 @@ import {
   Stack, 
   TextField, 
   Typography, 
+  DialogContent,
+  DialogActions,
   Divider, 
   Dialog,
   MenuItem,
@@ -85,7 +87,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
 
   const handleSave = async () => {
     if (!orderID) {
-      toast.error("ไม่พบรหัสคำสั่งผลิต");
+      toast.error("ไม่พบรหัสใบสั่งผลิต");
       return;
     }
     setLoading(true);
@@ -141,17 +143,17 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     <Box sx={{ width: "100%", mt: 0 }}>
       <Card
         sx={{
-          borderRadius: 3,
+          borderRadius: 2,
           boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
           border: "1px solid #e0e6ed",
         }}
       >
         <CardContent sx={{ p: 3 }}>
           <Stack spacing={2.5}>
-            <Box sx={{ p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+            <Box sx={{ p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
               <Stack direction="column" spacing={0.75}>
                 <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-                  คำสั่งผลิต:{" "}
+                  ใบสั่งผลิต:{" "}
                   <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                     {orderName || "ไม่ระบุชื่อ"}
                   </Box>
@@ -240,7 +242,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
                     disableElevation
                     onClick={() => setConfirmOpen(true)}
                     sx={{
-                      bgcolor: "#4a90e2", color: "#fff", borderRadius: 2, fontWeight: 600,
+                      bgcolor: "#4a90e2", color: "#fff", fontWeight: 600,
                       px: 3.5, py: 0.8, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
                     }}
                   >
@@ -253,28 +255,29 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
         </CardContent>
       </Card>
 
-      <Dialog open={confirmOpen} onClose={() => !loading && setConfirmOpen(false)} sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 2, minWidth: 320 } }}>
-        <Typography sx={{ fontWeight: 700, color: "#1b2559", mb: 1.5, fontSize: "1.1rem", px: 1 }}>
-          ยืนยันการบันทึก
-        </Typography>
-        <Typography sx={{ color: "text.secondary", fontSize: "0.875rem", px: 1, mb: 3 }}>
-          คุณตรวจสอบข้อมูลครบถ้วนแล้ว และต้องการบันทึกรายงานผลการผลิตนี้ใช่หรือไม่?
-        </Typography>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
-          <Button onClick={() => setConfirmOpen(false)} disabled={loading} color="inherit" sx={{ textTransform: "none", fontSize: "0.875rem" }}>
+      <Dialog
+        open={confirmOpen}
+        onClose={() => !loading && setConfirmOpen(false)}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
+      >
+        <DialogContent>
+          <Typography color="text.secondary">
+            คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
             ยกเลิก
           </Button>
           <Button
-            variant="contained" disableElevation disabled={loading}
             onClick={() => { setConfirmOpen(false); handleSave(); }}
-            sx={{
-              bgcolor: "#4a90e2", color: "#fff", borderRadius: 2, fontWeight: 600,
-              px: 3, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
-            }}
+            variant="contained"
+            disabled={loading}
+            sx={{ width: 100 }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : "ยืนยัน"}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
           </Button>
-        </Box>
+        </DialogActions>
       </Dialog>
     </Box>
   );

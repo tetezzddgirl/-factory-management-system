@@ -38,12 +38,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "Pending"      // รอเริ่ม
-    | "Preparing"    // กำลังเตรียมการ
-    | "InProgress"   // กำลังดำเนินการ
-    | "Paused"       // หยุดชั่วคราว
-    | "Completed"    // เสร็จสิ้น
-    | "Cancelled";   // ยกเลิก
+    | "success"   // เสร็จสิ้น
+    | "info"      // กำลังผลิต
+    | "default"   // รอมอบหมาย
+    | "warning"   // หยุดชั่วคราว
+    | "error";    // error
   amount: number;
   machines: string;
   startDate: string;
@@ -94,18 +93,18 @@ function ProductionPage() {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  // ปรับแก้สีตามชุดสีที่กำหนดมาให้
   const getStatusChip = (status: ProductionOrder["status"]) => {
     switch (status) {
-      case "InProgress": // Normal, go -> Green
+      case "info":
         return <Chip label="กำลังผลิต" sx={{ bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Paused": // Needs attention -> Orange
+      case "warning":
         return <Chip label="หยุดชั่วคราว" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Completed": // Done/Available -> Blue
+      case "success":
         return <Chip label="เสร็จสิ้น" sx={{ bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "Cancelled": // Disabled, Off -> Gray (หรือถ้ามองว่าเป็น Critical/Error ให้เปลี่ยนเป็น #EF4444 ได้ครับ)
+      case "error":
+        return <Chip label="ยกเลิก" sx={{ bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
       default:
-        return <Chip label="ยกเลิก" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+        return <Chip label="รอมอบหมาย" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
     }
   };
 
@@ -152,15 +151,16 @@ function ProductionPage() {
                       <Box
                         sx={{
                           height: 4,
-                          // ปรับสีขีดด้านบนของการ์ดให้ตรงกับสีสถานะใหม่
                           background:
-                            order.status === "InProgress"
+                            order.status === "info"
                               ? "#10B981"
-                              : order.status === "Completed"
+                              : order.status === "success"
                               ? "#4A90E2"
-                              : order.status === "Paused"
+                              : order.status === "warning"
                               ? "#F59E0B"
-                              : "#A4ABB6", // สีเทาสำหรับ Cancelled
+                              : order.status === "error"
+                              ? "#EF4444"
+                              : "#A4ABB6",
                         }}
                       />
                       <CardContent>

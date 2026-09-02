@@ -1,9 +1,6 @@
 package models
 
-import (
-	"time"
-	"gorm.io/gorm"
-)
+import "time"
 
 type RawMaterial struct {
 	RmID        string `json:"rmID" gorm:"primaryKey;column:rm_id"`
@@ -63,19 +60,6 @@ type WIPLocation struct {
 	OrderID       *string `json:"orderId" gorm:"column:order_id"`
 
 	TransferRecords []TransferRecord `gorm:"foreignKey:WIPLocationID" json:"transferRecords"`
-}
-
-func (w *WIPLocation) BeforeSave(tx *gorm.DB) (err error) {
-	if w.OrderID != nil && *w.OrderID != "" {
-		w.LotNumber = *w.OrderID
-	} else if w.LotNumber != "" {
-		lot := w.LotNumber
-		w.OrderID = &lot
-	} else {
-		w.OrderID = nil
-		w.LotNumber = ""
-	}
-	return nil
 }
 
 type WorkInProcessRecord struct {

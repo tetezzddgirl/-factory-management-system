@@ -94,11 +94,11 @@ export default function QualityQcDetail({
       <Divider />
 
       <DialogContent>
-        {/* ส่วนแสดงข้อมูลคำสั่งผลิต แบบเดียวกับหน้า Add */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 2 }}>
+        {/* ส่วนแสดงข้อมูลใบสั่งผลิต แบบเดียวกับหน้า Add */}
+        <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
           <Stack direction="column" spacing={0.75}>
             <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-              คำสั่งผลิต:{" "}
+              ใบสั่งผลิต:{" "}
               <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
                 {orderName || "ไม่ระบุชื่อ"}
               </Box>
@@ -127,7 +127,7 @@ export default function QualityQcDetail({
               <Typography sx={{ fontWeight: 600, color: "#1e293b", mb: 1.5 }}>
                 ข้อมูลทั่วไป
               </Typography>
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: "#fff" }}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: "#fff" }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     รหัสจุดตรวจ: <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>{inspection.inspectionPointID}</Box>
@@ -167,7 +167,7 @@ export default function QualityQcDetail({
               <Typography sx={{ fontWeight: 600, color: "#1e293b", mb: 1.5 }}>
                 รายการตรวจสอบ ({items.length} รายการ)
               </Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: "#f8fafc" }}>
                     <TableRow>
@@ -213,7 +213,7 @@ export default function QualityQcDetail({
                 <Typography sx={{ fontWeight: 600, color: "#854d0e", mb: 1.5 }}>
                   ใบแจ้งแก้ไข (Correction Record: {correction.correctionID})
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: "#fefce8", borderColor: "#fef08a" }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: "#fefce8", borderColor: "#fef08a" }}>
                   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
                     <Typography variant="body2" sx={{ color: "text.secondary" }}>
                       การดำเนินการแก้ไข (Action): <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>{correction.action || "รอการระบุ"}</Box>
@@ -237,7 +237,7 @@ export default function QualityQcDetail({
 
       <Divider />
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="contained" sx={{ bgcolor: "#64748b", "&:hover": { bgcolor: "#475569" } }}>
+        <Button onClick={onClose} variant="contained">
           ปิดหน้าต่าง
         </Button>
       </DialogActions>

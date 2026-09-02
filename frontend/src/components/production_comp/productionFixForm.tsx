@@ -50,6 +50,7 @@ export default function ProductionFixForm({
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false); // 👈 เพิ่ม State สำหรับ Dialog ยืนยัน
 
   const [inspection, setInspection] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -82,7 +83,7 @@ export default function ProductionFixForm({
         localStorage.getItem("ff:token") ||
         localStorage.getItem("auth_token") ||
         localStorage.getItem("token") ||
-        ";";
+        "";
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resInsp, resItems, resCorr] = await Promise.all([
@@ -126,6 +127,7 @@ export default function ProductionFixForm({
   };
 
   const handleSaveFix = async () => {
+    setConfirmOpen(false); // 👈 ปิดหน้าต่างยืนยันก่อนเริ่มบันทึก
     setSaving(true);
     try {
       const token =
@@ -165,93 +167,121 @@ export default function ProductionFixForm({
   const isCompleted = inspection?.status === "Completed" || inspection?.status === "Pass";
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, color: "#1b2559", pb: 1 }}>
-        จัดการข้อบกพร่อง (ID: {inspectionID})
-      </DialogTitle>
+    <>
+      {/* 👈 ครอบด้วย Fragment เพื่อให้ใส่ Dialog ยืนยันเพิ่มได้ */}
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 0 } }}>
+        <DialogTitle sx={{ fontWeight: 700, color: "#1b2559", pb: 1 }}>
+          จัดการข้อบกพร่อง (ID: {inspectionID})
+        </DialogTitle>
 
-      <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="fix tabs">
-          <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 700 : 400 }} />
-          <Tab
-            label={(isCompleted && !isEditing) ? "ข้อมูลการแก้ไข" : "บันทึกผลการแก้ไข"}
-            sx={{ fontWeight: tabValue === 1 ? 700 : 400 }}
-          />
-        </Tabs>
-      </Box>
-
-      <DialogContent sx={{ bgcolor: "#f8fafc", px: { xs: 2, sm: 3 }, pb: 4 }}>
-        <Box sx={{ mb: 2, p: 2, bgcolor: "#fff", border: "1px solid #e2e8f0", borderRadius: 2 }}>
-          <Stack direction="row" spacing={4}>
-            <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-              คำสั่งผลิต:{" "}
-              <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                {orderName || "ไม่ระบุชื่อ"}
-              </Box>
-            </Typography>
-            <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
-              ID:{" "}
-              <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                {orderID || "-"}
-              </Box>
-            </Typography>
-          </Stack>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="fix tabs">
+            <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 700 : 400 }} />
+            <Tab
+              label={(isCompleted && !isEditing) ? "ข้อมูลการแก้ไข" : "บันทึกผลการแก้ไข"}
+              sx={{ fontWeight: tabValue === 1 ? 700 : 400 }}
+            />
+          </Tabs>
         </Box>
 
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-            <CircularProgress />
+        <DialogContent sx={{ px: { xs: 2, sm: 3 }, pb: 4 }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 1.5 }}>
+            <Stack direction="column" spacing={0.75}>
+              <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
+                ใบสั่งผลิต:{" "}
+                <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                  {orderName || "ไม่ระบุชื่อ"}
+                </Box>
+              </Typography>
+              <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
+                ID:{" "}
+                <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                  {orderID || "-"}
+                </Box>
+              </Typography>
+            </Stack>
           </Box>
-        ) : !inspection ? (
-          <Typography color="error" align="center" sx={{ py: 5 }}>
-            ไม่พบข้อมูลการตรวจนี้
-          </Typography>
-        ) : (
-          <>
-            <CustomTabPanel value={tabValue} index={0}>
-              <ProductionFixFormDetails inspection={inspection} items={items} />
-            </CustomTabPanel>
 
-            <CustomTabPanel value={tabValue} index={1}>
-              <ProductionFixFormCorrection
-                correction={correction}
-                inspectionStatus={inspection.status}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-                formData={formData}
-                handleFormChange={handleFormChange}
-              />
-            </CustomTabPanel>
-          </>
-        )}
-      </DialogContent>
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : !inspection ? (
+            <Typography color="error" align="center" sx={{ py: 5 }}>
+              ไม่พบข้อมูลการตรวจนี้
+            </Typography>
+          ) : (
+            <>
+              <CustomTabPanel value={tabValue} index={0}>
+                <ProductionFixFormDetails inspection={inspection} items={items} />
+              </CustomTabPanel>
 
-      <Divider />
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} disabled={saving} color="inherit">
-          ปิดหน้าต่าง
-        </Button>
+              <CustomTabPanel value={tabValue} index={1}>
+                <ProductionFixFormCorrection
+                  correction={correction}
+                  inspectionStatus={inspection.status}
+                  isEditing={isEditing}
+                  setIsEditing={setIsEditing}
+                  formData={formData}
+                  handleFormChange={handleFormChange}
+                />
+              </CustomTabPanel>
+            </>
+          )}
+        </DialogContent>
 
-        {/* แสดงปุ่มบันทึกเฉพาะแท็บ 2 และอยู่ในโหมดกำลังกรอกแบบฟอร์มเท่านั้น */}
-        {tabValue === 1 && (!isCompleted || isEditing) && (
-          <>
-            {isCompleted && (
-              <Button onClick={() => setIsEditing(false)} disabled={saving} variant="outlined" color="inherit">
-                ยกเลิกการแก้ไข
+        <Divider />
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose} variant="contained" disableElevation>
+            ปิดหน้าต่าง
+          </Button>
+
+          {tabValue === 1 && (!isCompleted || isEditing) && (
+            <>
+              {isCompleted && (
+                <Button onClick={() => setIsEditing(false)} disabled={saving} variant="outlined" color="inherit">
+                  ยกเลิกการแก้ไข
+                </Button>
+              )}
+              <Button
+                onClick={() => setConfirmOpen(true)} // 👈 เรียกให้เปิด Dialog ยืนยัน
+                variant="contained"
+                disabled={saving || !formData.action || !formData.correctedBy}
+                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}
+                sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+              >
+                {saving ? "กำลังบันทึก..." : "บันทึกผลการแก้ไข"}
               </Button>
-            )}
-            <Button
-              onClick={handleSaveFix}
-              variant="contained"
-              disabled={saving || !formData.action || !formData.correctedBy}
-              startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}
-              sx={{ bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
-            >
-              {saving ? "กำลังบันทึก..." : "บันทึกผลการแก้ไข"}
-            </Button>
-          </>
-        )}
-      </DialogActions>
-    </Dialog>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* 👈 เพิ่ม Dialog สำหรับกดยืนยัน */}
+      <Dialog
+        open={confirmOpen}
+        onClose={() => !loading && setConfirmOpen(false)}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
+      >
+        <DialogContent>
+          <Typography color="text.secondary">
+            คุณต้องการบันทึกผลการแก้ไขใช่หรือไม่?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+            ยกเลิก
+          </Button>
+          <Button
+            onClick={handleSaveFix}
+            variant="contained"
+            disabled={loading}
+            sx={{ width: 100,bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
