@@ -11,6 +11,7 @@ import { AddItemDialog } from "@/components/add-item-dialog";
 import { issuesApi, workOrdersApi, personnelApi, resolveHandlerName, type ApiIssue, type ApiWorkOrder, type ApiPersonnel } from "@/lib/api-client";
 import { getSession } from "@/lib/auth";
 import { toast } from "sonner";
+import { useRole } from "@/lib/roles";
 
 export const Route = createFileRoute("/_authenticated/issues")({
   head: () => ({
@@ -47,6 +48,9 @@ function ProblemPage() {
   const [reporterID, setReporterID] = useState("");
   const [solutionProviderID, setSolutionProviderID] = useState("");
   const [status, setStatus] = useState<string>("รอแก้ไข");
+
+  const { role } = useRole();
+  const isPlanner = role === "planner";
 
   async function loadIssues() {
     setLoading(true);
@@ -208,9 +212,9 @@ function getPersonnelLabel(id: string) {
               <TextField label="ปัญหาที่พบ" value={problemText} onChange={(e) => setProblemText(e.target.value)} />
               <TextField label="รายละเอียดปัญหา" multiline minRows={3} value={descriptionText} onChange={(e) => setDescriptionText(e.target.value)} />
               <Divider />
-              <TextField label="เจ้าหน้าที่ฝ่ายวางแผนการผลิต" value={solutionProviderID} onChange={(e) => setSolutionProviderID(e.target.value)} >
+              <TextField label="เจ้าหน้าที่ฝ่ายวางแผนการผลิต" value={solutionProviderID} onChange={(e) => setSolutionProviderID(e.target.value)} slotProps={{ input: { readOnly: !isPlanner}, }} > 
               {personnelOptions.map((p) => ( <MenuItem key={p} value={p}> {p} </MenuItem> ))} </TextField>
-              <TextField label="แนวทางแก้ไขปัญหา" multiline minRows={3} value={solution} onChange={(e) => setSolution(e.target.value)} />
+              <TextField label="แนวทางแก้ไขปัญหา" multiline minRows={3} value={solution} onChange={(e) => setSolution(e.target.value)} slotProps={{ input: { readOnly: !isPlanner}, }} />
               <TextField select label="สถานะ" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
               </TextField>
