@@ -93,7 +93,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} disabled helperText="ระบบกำหนดให้อัตโนมัติ" />
+              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} slotProps={{ input: { readOnly: true } }} helperText="ระบบกำหนดให้อัตโนมัติ" />
               <TextField fullWidth label="สินค้า" value={v.product} onChange={(e) => set("product", e.target.value)} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

@@ -122,7 +122,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
             ))}
           </TextField>
           {sourceId && <Alert severity="info">ดึงข้อมูลจากแผน {sourceId} มาแล้ว แก้ไขได้ตามต้องการ</Alert>}
-          <TextField label="หมายเลขแผนการผลิต" value={planID} disabled helperText="ระบบกำหนดให้อัตโนมัติ" />
+          <TextField label="หมายเลขแผนการผลิต" value={planID} slotProps={{ input: { readOnly: true } }} helperText="ระบบกำหนดให้อัตโนมัติ" />
           <TextField label="ชื่อแผนการผลิต" value={name} onChange={(e) => setName(e.target.value)} />
           <TextField select label="สินค้า" value={product} onChange={(e) => handleProductChange(e.target.value)}>
             {products.map((p) => <MenuItem key={p.productID} value={p.name}>{p.name}</MenuItem>)}
