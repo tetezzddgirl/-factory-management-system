@@ -107,7 +107,12 @@ func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
 		return
 	}
 	if o.OrderID == "" {
-		o.OrderID = fmt.Sprintf("WO-%d", time.Now().UnixNano())
+    	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("060102"), 3)
+    	if err != nil {
+        	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        	return
+    	}
+    	o.OrderID = id
 	}
 	if o.Status == "" {
 		o.Status = "รอมอบหมาย"
@@ -225,4 +230,13 @@ func (h *WorkOrderHandler) UpdateWork(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (h *WorkOrderHandler) PreviewNextOrderID(c *gin.Context) {
+	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("20260102"), 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"orderID": id})
 }

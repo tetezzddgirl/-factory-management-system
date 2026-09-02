@@ -6,6 +6,7 @@ import {
 } from "@mui/material";
 import { Assignment, Factory, EventNote } from "@mui/icons-material";
 import type { ApiProductionLine } from "@/lib/api-client";
+import { workOrdersApi } from "@/lib/api-client";
 
 export type WorkOrderData = { planID?: string; name: string; amount: number; dueDate: string };
 
@@ -32,6 +33,14 @@ interface Props {
   onSubmit: (r: WorkOrderResult) => void;
 }
 
+function getToday() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset();
+  const localDate = new Date(today.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().split("T")[0];
+}
+
+
 export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit }: Props) {
   const LINES = productionLines && productionLines.length > 0 ? productionLines.map((l) => l.name) : FALLBACK_LINES;
   const [v, setV] = useState<WorkOrderResult>({
@@ -41,16 +50,22 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
 
   useEffect(() => {
     if (!open || !data) return;
+    const today = getToday();
     setV({
-      orderNo: `WO-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      orderNo: "",
       product: data.name,
       qty: data.amount,
       line: LINES[0],
-      startDate: "",
-      due: "",
+      startDate: today,
+      due: today,
       priority: "ปกติ",
       note: "",
     });
+
+    workOrdersApi
+    .getNextID()
+    .then((res) => setV((s) => ({ ...s, orderNo: res.orderID })))
+    .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
 
@@ -78,7 +93,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} onChange={(e) => set("orderNo", e.target.value)} />
+              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} disabled helperText="ระบบกำหนดให้อัตโนมัติ" />
               <TextField fullWidth label="สินค้า" value={v.product} onChange={(e) => set("product", e.target.value)} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -131,7 +146,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
+          disabled={ !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
           onClick={() => onSubmit(v)}
         >
           ถัดไป: ตรวจสอบทรัพยากร

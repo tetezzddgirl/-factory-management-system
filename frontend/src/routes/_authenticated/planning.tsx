@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/planning")({
 });
 
 const statusColor: Record<string, "success" | "info" | "default"> = {
-  "เสร็จสิ้น": "success", "กำลังผลิต": "info", "รอเริ่ม": "default",
+  "เสร็จสิ้น": "success", "กำลังผลิต": "info", "รอเริ่ม": "default", "รอมอบหมาย": "default",
 };
 
 function PlanningPage() {
@@ -71,6 +71,7 @@ function PlanningPage() {
 
   useEffect(() => {
     loadPlans();
+
   }, []);
   const [checkOpen, setCheckOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -107,7 +108,7 @@ function PlanningPage() {
         ];
 
     return {
-      product, target, due,
+      product, target, dueDate:due,
       materials,
       machines: [
         { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
@@ -186,6 +187,13 @@ function PlanningPage() {
     setDetailPlan(null);
     setSavedPlan(null);
     setOrderPlan(plan);
+  }
+
+  function getToday() {
+    const today = new Date();
+    const offset = today.getTimezoneOffset();
+    const localDate = new Date(today.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split("T")[0];
   }
 
   /** สร้างใบสั่งผลิตจริงที่ backend ก่อน (persist ลง DB แล้ว) แล้วค่อยพาไปตรวจสอบทรัพยากรต่อ
@@ -299,15 +307,23 @@ function PlanningPage() {
               submitLabel="บันทึกแผนการผลิต"
               trigger={<Button ref={newPlanRef}>เปิด</Button>}
               fields={[
-                { name: "planID", label: "หมายเลขแผนการผลิต", placeholder: "PLAN-2025-07-01" },
+                { name: "planID", label: "หมายเลขแผนการผลิต", disabled: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
                 { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
                 { name: "bom", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
                 { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000" },
                 { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
                 { name: "priority", label: "ลำดับความสำคัญ", type: "select", options: ["สูง", "ปกติ", "ต่ำ"], defaultValue: "ปกติ" },
-                { name: "start", label: "วันที่เริ่มผลิต", type: "date" },
-                { name: "due", label: "กำหนดเสร็จ", type: "date" },
+                { name: "start", label: "วันที่เริ่มผลิต", type: "date", defaultValue: getToday() },
+                { name: "due", label: "กำหนดเสร็จ", type: "date", defaultValue: getToday() },
               ]}
+              onOpen={async () => {
+                try {
+                  const res = await plansApi.getNextID();
+                  return { planID: res.planID };
+                } catch {
+                  return {}; // preview พลาดไม่บล็อก user, ปล่อยว่างไว้ให้ backend generate ตอน submit จริง
+                      }
+              }}
               onAutoFill={autoFillPlan}
               onSubmit={handleRequestPlan}
             />
@@ -354,7 +370,7 @@ function PlanningPage() {
       />
       <AssignWorkDialog
         open={assignOpen}
-        data={pending ? { ...pending, materials: checkData?.materials, steps: stepsForProduct(pending.product), existingTasks } : null}
+        data={pending ? { ...pending, dueDate: pending.due, materials: checkData?.materials, steps: stepsForProduct(pending.product), existingTasks } : null}
         onClose={() => setAssignOpen(false)}
         onConfirm={confirmAssignment}
       />

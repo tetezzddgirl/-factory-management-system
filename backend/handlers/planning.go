@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -54,6 +53,17 @@ func toPlanOut(p models.ProductionPlan, refBOMs map[string]models.RefBOM) planOu
 	}
 }
 
+// PreviewNextPlanID คืนเลขที่แผนการผลิตที่ "จะได้" ถ้าสร้างตอนนี้ — ใช้แสดงผลใน UI เท่านั้น
+// ไม่ persist หรือ "จอง" เลขไว้ ถ้ามีการสร้างแผนอื่นแทรกก่อน submit จริง เลขที่ได้จริงอาจขยับ
+func (h *PlanningHandler) PreviewNextPlanID(c *gin.Context) {
+	id, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", time.Now().Format("20060102"), 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"planID": id})
+}
+
 // ListPlans คืนรายการแผนการผลิตทั้งหมด (join กับ RefBOM เพื่อยัด productID/bomID กลับเข้า response)
 func (h *PlanningHandler) ListPlans(c *gin.Context) {
 	plans := []models.ProductionPlan{}
@@ -78,6 +88,7 @@ func (h *PlanningHandler) ListPlans(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, out)
 }
+
 
 // CreatePlan สร้างแผนการผลิตใหม่ — productID/bomID ที่ frontend ส่งมาจะถูก resolve เป็นแถวใน RefBOM
 // (หาแถวเดิมถ้ามี หรือสร้างใหม่) แล้วเก็บแค่ refBomID ไว้บน ProductionPlan
@@ -111,9 +122,14 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 	}
 
 	now := time.Now()
+	planID, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", now.Format("2006-01-02"), 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+    	return
+	}
 	p := models.ProductionPlan{
 		Timestamp: now,
-		PlanID:    fmt.Sprintf("PLAN-%d", now.UnixNano()/int64(time.Millisecond)),
+		PlanID:    planID,
 		Name:      body.Name,
 		Status:    body.Status,
 		Amount:    body.Amount,

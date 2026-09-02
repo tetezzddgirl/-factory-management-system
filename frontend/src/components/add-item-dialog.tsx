@@ -13,6 +13,7 @@ export type Field = {
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  disabled?: boolean;
   /** ข้อความช่วยอธิบายใต้ช่อง เช่น บอกว่าค่านี้กรอกอัตโนมัติให้แล้ว (ยังแก้ไขเองได้) */
   helperText?: string | ((values: Record<string, string>) => string | undefined);
   error?: (values: Record<string, string>) => boolean;
@@ -33,11 +34,12 @@ interface AddItemDialogProps {
    * คืนค่าเป็น object ของ field ที่ต้องการเติม/แก้ (เฉพาะที่เปลี่ยน) หรือไม่คืนอะไรถ้าไม่มีอะไรต้องเติม
    */
   onAutoFill?: (values: Record<string, string>, changedField: string) => Partial<Record<string, string>> | void;
+  onOpen?: () => Partial<Record<string, string>> | Promise<Partial<Record<string, string>> | void> | void;
 }
 
 export function AddItemDialog({
   trigger, title, description, submitLabel = "บันทึก", fields, onSubmit,
-  successMessage = "บันทึกสำเร็จ", onAutoFill,
+  successMessage = "บันทึกสำเร็จ", onAutoFill, onOpen,
 }: AddItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +49,21 @@ export function AddItemDialog({
 
   function reset() {
     setValues(Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ""])));
+  }
+
+  async function handleOpen() {
+    reset();
+    setOpen(true);
+    if (!onOpen) return;
+    const patch = await onOpen();
+    if (!patch) return;
+    setValues((prev) => {
+    const merged = { ...prev };
+    for (const [k, v] of Object.entries(patch)) {
+      if (v !== undefined) merged[k] = v;
+    }
+    return merged;
+    });
   }
 
   function handleFieldChange(name: string, value: string) {
@@ -83,8 +100,8 @@ export function AddItemDialog({
   }
 
   const triggerEl = isValidElement(trigger)
-    ? cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, { onClick: () => setOpen(true) })
-    : <span onClick={() => setOpen(true)}>{trigger}</span>;
+    ? cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, { onClick: handleOpen })
+    : <span onClick={() => {handleOpen}}>{trigger}</span>;
 
   return (
     <>
@@ -109,7 +126,9 @@ export function AddItemDialog({
                   multiline={f.type === "textarea"}
                   minRows={f.type === "textarea" ? 3 : undefined}
                   value={values[f.name]}
+                  disabled={f.disabled}
                   helperText={resolvedHelperText}
+                  error={resolvedError}
                   slotProps={f.type === "date" ? { inputLabel: { shrink: true } } : undefined}
                   onChange={(e) => handleFieldChange(f.name, e.target.value)}
                 >

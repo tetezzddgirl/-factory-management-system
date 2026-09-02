@@ -161,6 +161,7 @@ export const productionLinesApi = {
 
 export const plansApi = {
   list: () => apiFetch<ApiProductionPlan[]>("/api/plans"),
+  getNextID: () => apiFetch<{ planID: string }>("/api/plans/next-id"),
   create: (p: Pick<ApiProductionPlan, "name" | "amount"> & Partial<ApiProductionPlan>) =>
     apiFetch<ApiProductionPlan>("/api/plans", { method: "POST", body: JSON.stringify(p) }),
   updatePriority: (planID: string, priority: string, status?: string) =>
@@ -369,6 +370,7 @@ export const workOrdersApi = {
   list: () => apiFetch<ApiWorkOrder[]>("/api/work-orders"),
   getDetail: (orderID: string) =>
     apiFetch<ApiWorkOrder>(`/api/work-orders/${encodeURIComponent(orderID)}/detail`),
+  getNextID: () => apiFetch<{ orderID: string }>("/api/work-orders/next-id"),
   create: (o: Omit<ApiWorkOrder, "orderID" | "timestamp"> & { orderID?: string }) =>
     apiFetch<ApiWorkOrder>("/api/work-orders", { method: "POST", body: JSON.stringify(o) }),
   updateStatus: (orderID: string, status: string, machines?: string) =>

@@ -158,9 +158,11 @@ function findFormLocation(values: Record<string, string>) {
   });
 }
 
+const STOCK_LIMITED_TYPES = ["เบิกจ่าย", "โอนย้าย"];
+
 /** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
 function amountHelperText(values: Record<string, string>): string | undefined {
-  if (values.type !== "เบิกจ่าย") return undefined;
+  if (!STOCK_LIMITED_TYPES.includes(values.type)) return undefined;
   const loc = findFormLocation(values);
   if (!loc) return undefined;
   const code = values.item.split(" — ")[0];
@@ -175,7 +177,7 @@ function amountHelperText(values: Record<string, string>): string | undefined {
 
 /** true = จำนวนที่กรอกเกินยอดที่ Pallet/Location นั้นมี ให้ขึ้นช่องสีแดง */
 function amountIsOver(values: Record<string, string>): boolean {
-  if (values.type !== "เบิกจ่าย") return false;
+  if (!STOCK_LIMITED_TYPES.includes(values.type)) return false;
   const loc = findFormLocation(values);
   if (!loc) return false;
   return (Number(values.amount) || 0) > loc.amount;
@@ -299,6 +301,16 @@ if (existingLoc) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
       return false;
     }
+
+    if (v.type === "โอนย้าย") {
+    const existingLoc = v.palletNumber
+      ? wipLocations.find((l) => l.wipID === code && l.palletNumber.trim().toLowerCase() === v.palletNumber.trim().toLowerCase())
+      : wipLocations.find((l) => l.wipID === code && l.location === v.location);
+    if (existingLoc && qty > existingLoc.amount) {
+      toast.error(`โอนย้ายไม่สำเร็จ: ต้นทางมีเพียง ${existingLoc.amount.toLocaleString()} ${target?.unit ?? ""} (ขอย้าย ${qty.toLocaleString()})`);
+      return false;
+    }
+  }
 
     const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
 

@@ -17,7 +17,7 @@ export type ResourceItem = {
 export type ResourceCheckData = {
   product: string;
   target: number;
-  due: string;
+  dueDate: string;
   materials: ResourceItem[];
   machines: ResourceItem[];
   personnel: ResourceItem[];
@@ -96,7 +96,7 @@ export function ResourceCheckDialog({ open, data, onClose, onConfirm }: Props) {
       <DialogTitle sx={{ fontWeight: 700, pb: 0.5 }}>
         ตรวจสอบทรัพยากร
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 400, mt: 0.25 }}>
-          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.due}
+          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.dueDate}
         </Typography>
       </DialogTitle>
       <DialogContent dividers sx={{ py: 1.5 }}>

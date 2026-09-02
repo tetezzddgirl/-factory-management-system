@@ -9,7 +9,7 @@ import { AssignmentInd, Add, DeleteOutlined, ContentCopy, FormatListNumbered, Ex
 export type AssignWorkData = {
   product: string;
   target: number;
-  due: string;
+  dueDate: string;
   orderID: string;
   /** ขั้นตอนการผลิตตามสูตร (เรียงลำดับ) ไว้ให้ผู้มอบหมายงานอ้างอิงเวลาตั้งชื่อ/รายละเอียดงานแต่ละงาน */
   steps?: { stepNo: number; stepName: string; description: string; machine: string; durationMinutes: number }[];
@@ -41,18 +41,25 @@ const draftStore = new Map<string, AssignWorkResult[]>();
 const keyFor = (d: AssignWorkData) => `${d.product}__${d.orderID}`;
 
 draftStore.set("ขวด PET 500ml__WO-1042", [
-  { workID: "WORK-038", work: "ผลิตฝาเกลียวรอบบ่าย", description: "สายการผลิต L-02 กะเช้า 08:00-16:00", start: "2025-07-01", due: "2025-07-03" },
+  { workID: "WORK-038", work: "ผลิตฝาเกลียวรอบบ่าย", description: "สายการผลิต L-02 กะเช้า 08:00-16:00", start: "2025-07-01", due: "2025-07-03"},
 ]);
 draftStore.set("ฝาเกลียว__WO-1039", [
   { workID: "WORK-050", work: "ผลิตฝาเกลียวรอบเช้า", description: "สายการผลิต L-01 กะเช้า 08:00-16:00", start: "2025-07-01", due: "2025-07-03", },
 ]);
 
+function getToday() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset();
+  const localDate = new Date(today.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().split("T")[0];
+}
+const today = getToday();
 const emptyTask = (): AssignWorkResult => ({
   workID: `WORK-${String(workSeq++).padStart(3, "0")}`,
   work: "",
   description: "",
-  start: "",
-  due: "",
+  start: today,
+  due: today,
 });
 
 export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
@@ -61,26 +68,26 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
   const [showFormula, setShowFormula] = useState(false);
 
   useEffect(() => {
-    if (!open || !data) return;
+  if (!open || !data) return;
 
-    const key = keyFor(data);
-    const saved = draftStore.get(key);
+  const key = keyFor(data);
+  const saved = draftStore.get(key);
 
-    if (saved && saved.length > 0) {
-      setTasks(saved);
-    } else if (data.existingTasks && data.existingTasks.length > 0) {
-      setTasks(data.existingTasks);
-      draftStore.set(key, data.existingTasks);
-    } else {
-      setTasks([emptyTask()]);
-    }
-    // เช็คเฉพาะเมื่อเปิด Dialog หรือเปลี่ยน OrderID เท่านั้น
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  if (saved && saved.length > 0) {
+    setTasks(saved);
+  } else if (data.existingTasks && data.existingTasks.length > 0) {
+    setTasks(data.existingTasks);
+    draftStore.set(key, data.existingTasks);
+  } else {
+    setTasks([emptyTask()]);
+  }
+  // เช็คเฉพาะเมื่อเปิด Dialog หรือเปลี่ยน OrderID เท่านั้น
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data?.orderID]);
 
   if (!data) return null;
 
-  const set = <K extends keyof AssignWorkResult>(i: number, k: K, val: AssignWorkResult[K]) =>
+    const set = <K extends keyof AssignWorkResult>(i: number, k: K, val: AssignWorkResult[K]) =>
     setTasks((s) => {
       const next = s.map((t, idx) => (idx === i ? { ...t, [k]: val } : t));
       draftStore.set(keyFor(data), next);
@@ -102,19 +109,19 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
     });
 
   const removeTask = (i: number) => {
-    setTasks((s) => {
-      if (s.length === 1) return s; // เหลืองานอย่างน้อย 1 รายการ
-
-      // 1. กรองรายการที่ถูกกดลบออก
-      const next = s.filter((_, idx) => idx !== i);
-
-      // 2. อัปเดต draftStore ทันทีด้วยข้อมูลชุดใหม่ที่ลบแล้ว
-      if (data) {
-        draftStore.set(keyFor(data), next);
-      }
-
-      return next;
-    });
+  setTasks((s) => {
+    if (s.length === 1) return s; // เหลืองานอย่างน้อย 1 รายการ
+    
+    // 1. กรองรายการที่ถูกกดลบออก
+    const next = s.filter((_, idx) => idx !== i);
+    
+    // 2. อัปเดต draftStore ทันทีด้วยข้อมูลชุดใหม่ที่ลบแล้ว
+    if (data) {
+      draftStore.set(keyFor(data), next);
+    }
+    
+    return next;
+  });
   };
 
   // แต่ละงานต้องกรอกครบ และวันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่ม
@@ -129,7 +136,7 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
           <span>มอบหมายงานผลิต</span>
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400, mt: 0.5 }}>
-          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.due}
+          {data.product} • เป้า {data.target.toLocaleString()} • กำหนด {data.dueDate}
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
@@ -262,19 +269,19 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose}>ย้อนกลับ</Button>
-        <Button
-          variant="contained"
-          disabled={!valid}
-          onClick={() => {
-            // ลบ Draft ชั่วคราวออก เพื่อใช้ค่า tasks ล่าสุดที่เพิ่งแก้ไข/ลบไป
-            if (data) {
-              draftStore.delete(keyFor(data));
-            }
-            onConfirm(tasks);
-          }}
-        >
-          มอบหมายงาน ({tasks.length} งาน)
-        </Button>
+        <Button 
+  variant="contained" 
+  disabled={!valid} 
+  onClick={() => {
+    // ลบ Draft ชั่วคราวออก เพื่อใช้ค่า tasks ล่าสุดที่เพิ่งแก้ไข/ลบไป
+    if (data) {
+      draftStore.delete(keyFor(data));
+    }
+    onConfirm(tasks);
+  }}
+>
+  มอบหมายงาน ({tasks.length} งาน)
+</Button>
       </DialogActions>
     </Dialog>
   );
