@@ -116,10 +116,11 @@ function ProblemPage() {
 
   async function handleAdd(v: Record<string, string>) {
   try {
+    const orderID = v.orderID.split(" - ")[0];
     const reporterID = v.reporterID.split(" — ")[0];
 
     await issuesApi.create({
-      orderID: v.orderID,
+      orderID,
       reporter_id: reporterID.split(" — ")[0],
       issue: v.problem,
       description_id: v.description,
