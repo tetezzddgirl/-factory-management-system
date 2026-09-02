@@ -38,11 +38,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "success"   // เสร็จสิ้น
-    | "info"      // กำลังผลิต
-    | "default"   // รอมอบหมาย
-    | "warning"   // หยุดชั่วคราว
-    | "error";    // error
+    | "กำลังผลิต"
+    | "หยุดชั่วคราว"
+    | "เสร็จสิ้น"
+    | "ยกเลิก"
+    | "รอมอบหมาย";
   amount: number;
   machines: string;
   startDate: string;
@@ -95,13 +95,13 @@ function QualityPage() {
 
   const getStatusChip = (status: ProductionOrder["status"]) => {
     switch (status) {
-      case "info":
+      case "กำลังผลิต":
         return <Chip label="กำลังผลิต" sx={{ bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "warning":
+      case "หยุดชั่วคราว":
         return <Chip label="หยุดชั่วคราว" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "success":
+      case "เสร็จสิ้น":
         return <Chip label="เสร็จสิ้น" sx={{ bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
-      case "error":
+      case "ยกเลิก":
         return <Chip label="ยกเลิก" sx={{ bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
       default:
         return <Chip label="รอมอบหมาย" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
@@ -152,13 +152,13 @@ function QualityPage() {
                         sx={{
                           height: 4,
                           background:
-                            order.status === "info"
+                            order.status === "กำลังผลิต"
                               ? "#10B981"
-                              : order.status === "success"
+                              : order.status === "เสร็จสิ้น"
                               ? "#4A90E2"
-                              : order.status === "warning"
+                              : order.status === "หยุดชั่วคราว"
                               ? "#F59E0B"
-                              : order.status === "error"
+                              : order.status === "ยกเลิก"
                               ? "#EF4444"
                               : "#A4ABB6",
                         }}

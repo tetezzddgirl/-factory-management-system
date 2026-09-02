@@ -21,11 +21,11 @@ interface ProductionOrder {
   timestamp: string;
   name: string;
   status:
-    | "success"   // เสร็จสิ้น
-    | "info"      // กำลังผลิต
-    | "default"   // รอมอบหมาย
-    | "warning"   // หยุดชั่วคราว
-    | "error";    // error  
+    | "กำลังผลิต"
+    | "หยุดชั่วคราว"
+    | "เสร็จสิ้น"
+    | "ยกเลิก"
+    | "รอมอบหมาย"; 
   amount: number;
   machines: string;
   startDate: string;
@@ -91,13 +91,13 @@ function RouteComponent() {
 
   const getStatusChipProps = (status: string) => {
     switch (status) {
-      case "info": 
+      case "กำลังผลิต": 
         return { label: "กำลังผลิต", sx: { bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "warning": 
+      case "หยุดชั่วคราว": 
         return { label: "หยุดชั่วคราว", sx: { bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "success": 
+      case "เสร็จสิ้น": 
         return { label: "เสร็จสิ้น", sx: { bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 } };
-      case "error":
+      case "ยกเลิก":
         return { label: "ยกเลิก", sx: { bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 } };
       default:
         return { label: "รอมอบหมาย", sx: { bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 } };

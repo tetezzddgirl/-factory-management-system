@@ -36,3 +36,29 @@ Off, unavailable, disabled
 sx={{ width: 100, color: "#4a90e2"}}
 sx={{ width: 100 }}
 
+กำลังผลิต
+หยุดชั่วคราว
+เสร็จสิ้น
+ยกเลิก
+รอมอบหมาย
+
+  status:
+    | "กำลังผลิต"
+    | "หยุดชั่วคราว"
+    | "เสร็จสิ้น"
+    | "ยกเลิก"
+    | "รอมอบหมาย";
+
+    switch (status) {
+      case "กำลังผลิต":
+        return <Chip label="กำลังผลิต" sx={{ bgcolor: "#10B981", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "หยุดชั่วคราว":
+        return <Chip label="หยุดชั่วคราว" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "เสร็จสิ้น":
+        return <Chip label="เสร็จสิ้น" sx={{ bgcolor: "#4A90E2", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      case "ยกเลิก":
+        return <Chip label="ยกเลิก" sx={{ bgcolor: "#EF4444", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+      default:
+        return <Chip label="รอมอบหมาย" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: "bold", minWidth: 80 }} size="small" />;
+    }
+  };
