@@ -34,7 +34,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Product{},
 		&models.FormulaItem{},
 		&models.FormulaStep{},
-		&models.RefBOM{},
+		&models.RefFormula{},
 		&models.ProductionPlan{},
 		&models.ProductionOrder{},
 		&models.Resources{},

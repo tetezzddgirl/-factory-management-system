@@ -21,7 +21,7 @@ func NewPlanningHandler(db *gorm.DB) *PlanningHandler {
 }
 
 // planOut คือรูปร่าง JSON ที่ frontend คาดหวัง (เหมือนเดิมทุก field) แม้ว่า ProductionPlan
-// จะไม่เก็บ productID/bomID ตรงๆ อีกต่อไปแล้วก็ตาม — ค่า productID/bomID มาจากการ join กับ RefBOM
+// จะไม่เก็บ productID/bomID ตรงๆ อีกต่อไปแล้วก็ตาม — ค่า productID/formulaID มาจากการ join กับ RefBOM
 type planOut struct {
 	Timestamp time.Time `json:"timestamp"`
 	PlanID    string    `json:"planID"`
@@ -32,12 +32,12 @@ type planOut struct {
 	StartDate time.Time `json:"startDate"`
 	EndDate   time.Time `json:"endDate"`
 	ProductID string    `json:"productID"`
-	BomID     string    `json:"bomID"`
-	RefBomID  string    `json:"refBomID"`
+	FormulaID     string    `json:"formulaID"`
+	RefFormulaID  string    `json:"refFormulaID"`
 }
 
-func toPlanOut(p models.ProductionPlan, refBOMs map[string]models.RefBOM) planOut {
-	rb := refBOMs[p.RefBomID]
+func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula) planOut {
+	rb := refFormulas[p.RefFormulaID]
 	return planOut{
 		Timestamp: p.Timestamp,
 		PlanID:    p.PlanID,
@@ -48,8 +48,8 @@ func toPlanOut(p models.ProductionPlan, refBOMs map[string]models.RefBOM) planOu
 		StartDate: p.StartDate,
 		EndDate:   p.EndDate,
 		ProductID: rb.ProductID,
-		BomID:     rb.BomID,
-		RefBomID:  p.RefBomID,
+		FormulaID:     rb.FormulaID,
+		RefFormulaID:  p.RefFormulaID,
 	}
 }
 
@@ -72,11 +72,11 @@ func (h *PlanningHandler) ListPlans(c *gin.Context) {
 		return
 	}
 
-	refBomIDs := make([]string, 0, len(plans))
+	refFormulaIDs := make([]string, 0, len(plans))
 	for _, p := range plans {
-		refBomIDs = append(refBomIDs, p.RefBomID)
+		refFormulaIDs = append(refFormulaIDs, p.RefFormulaID)
 	}
-	refBOMs, err := refBOMMap(h.db, refBomIDs)
+	refFormulas, err := refFormulaMap(h.db, refFormulaIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -84,7 +84,7 @@ func (h *PlanningHandler) ListPlans(c *gin.Context) {
 
 	out := make([]planOut, 0, len(plans))
 	for _, p := range plans {
-		out = append(out, toPlanOut(p, refBOMs))
+		out = append(out, toPlanOut(p, refFormulas))
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -101,7 +101,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		StartDate string `json:"startDate"`
 		EndDate   string `json:"endDate"`
 		ProductID string `json:"productID"`
-		BomID     string `json:"bomID"`
+		FormulaID     string `json:"formulaID"`
 		Line      string `json:"line"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -115,7 +115,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		body.Priority = "ปกติ"
 	}
 
-	refBomID, err := resolveRefBOM(h.db, body.ProductID, body.BomID)
+	refFormulaID, err := resolveRefFormula(h.db, body.ProductID, body.FormulaID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -135,7 +135,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		Amount:    body.Amount,
 		Priority:  body.Priority,
 		StartDate: now,
-		RefBomID:  refBomID,
+		RefFormulaID:  refFormulaID,
 	}
 	if t, err := time.Parse(time.RFC3339, body.StartDate); err == nil {
 		p.StartDate = t
@@ -149,12 +149,12 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		return
 	}
 
-	refBOMs, err := refBOMMap(h.db, []string{p.RefBomID})
+	refFormulas, err := refFormulaMap(h.db, []string{p.RefFormulaID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, toPlanOut(p, refBOMs))
+	c.JSON(http.StatusOK, toPlanOut(p, refFormulas))
 }
 
 // UpdatePlanProgress อัปเดตลำดับความสำคัญ (priority) และสถานะของแผนการผลิตตาม planID (path param: /api/plans/:id)

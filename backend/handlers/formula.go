@@ -22,7 +22,7 @@ func NewFormulaHandler(db *gorm.DB) *FormulaHandler {
 // ListFormulas คืนรายการบรรทัดสูตรการผลิตทั้งหมด (ฝั่ง frontend ไปจัดกลุ่มตาม productID/bomID เอง)
 func (h *FormulaHandler) ListFormulas(c *gin.Context) {
 	out := []models.FormulaItem{}
-	if err := h.db.Order("bom_id").Find(&out).Error; err != nil {
+	if err := h.db.Order("formula_id").Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -47,7 +47,7 @@ func (h *FormulaHandler) CreateFormulaItem(c *gin.Context) {
 // (ฝั่ง frontend ไปกรองตาม bomID ที่ต้องการเอง เหมือนกับ ListFormulas)
 func (h *FormulaHandler) ListFormulaSteps(c *gin.Context) {
 	out := []models.FormulaStep{}
-	if err := h.db.Order("bom_id, step_no").Find(&out).Error; err != nil {
+	if err := h.db.Order("formula_id, step_no").Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -63,7 +63,7 @@ func (h *FormulaHandler) CreateFormulaStep(c *gin.Context) {
 	}
 	if s.StepNo == 0 {
 		var maxStep int
-		h.db.Model(&models.FormulaStep{}).Where("bom_id = ?", s.BomID).
+		h.db.Model(&models.FormulaStep{}).Where("formula_id = ?", s.FormulaID).
 			Select("COALESCE(MAX(step_no), 0)").Scan(&maxStep)
 		s.StepNo = maxStep + 1
 	}

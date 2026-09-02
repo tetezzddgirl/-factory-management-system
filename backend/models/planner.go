@@ -13,7 +13,7 @@ type ProductionPlan struct {
 	EndDate   time.Time `json:"endDate"`
 	// RefBomID อ้างอิงแถวใน RefBOM ที่บอกว่าแผนนี้เลือกใช้ product/bom คู่ไหน
 	// (ไม่เก็บ ProductID/BomID ตรงๆ อีกต่อไป — ต้อง join ผ่าน RefBOM เท่านั้น)
-	RefBomID string `json:"refBomID" gorm:"column:ref_bom_id"`
+	RefFormulaID string `json:"refFormulaID" gorm:"column:ref_formula_id"`
 
 	Orders []ProductionOrder `json:"orders,omitempty" gorm:"foreignKey:PlanID"`
 }
@@ -21,10 +21,10 @@ type ProductionPlan struct {
 // RefBOM คือ association entity ที่แท้จริงระหว่างสินค้า (Product) กับสูตรการผลิต (BOM/Formula)
 // ที่ ProductionPlan และ ProductionOrder แต่ละตัวเลือกใช้งาน — มี PK ของตัวเอง (RefBomID)
 // เพื่อให้ Plan/Order อ้างอิงกลับมาด้วย FK เดียว แทนที่จะก็อบปี้ ProductID/BomID กระจายไปทุกตาราง
-type RefBOM struct {
-	RefBomID  string `json:"refBomID" gorm:"primaryKey;column:ref_bom_id"`
-	ProductID string `json:"productID" gorm:"column:product_id;uniqueIndex:idx_ref_bom_product_bom"`
-	BomID     string `json:"bomID" gorm:"column:bom_id;uniqueIndex:idx_ref_bom_product_bom"`
+type RefFormula struct {
+	RefFormulaID  string `json:"refFormulaID" gorm:"primaryKey;column:ref_formula_id"`
+	ProductID string `json:"productID" gorm:"column:product_id;uniqueIndex:idx_ref_formula_product_formula"`
+	FormulaID     string `json:"formulaID" gorm:"column:formula_id;uniqueIndex:idx_ref_formula_product_formula"`
 }
 
 type ProductionOrder struct {
@@ -38,7 +38,7 @@ type ProductionOrder struct {
 	EndDate   time.Time `json:"endDate"`
 	PlanID    string    `json:"planID" gorm:"column:plan_id"`
 	// RefBomID สืบทอดมาจาก ProductionPlan ต้นทางตอนสร้างใบสั่งผลิต (ดู CreateWorkOrder)
-	RefBomID string `json:"refBomID" gorm:"column:ref_bom_id"`
+	RefFormulaID string `json:"refFormulaID" gorm:"column:ref_formula_id"`
 
 	Work                 []Work                `json:"work,omitempty" gorm:"foreignKey:OrderID"`
 	Resources            []Resources           `json:"resources,omitempty" gorm:"foreignKey:OrderID"`

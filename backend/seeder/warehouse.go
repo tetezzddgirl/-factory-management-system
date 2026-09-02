@@ -18,9 +18,9 @@ func SeedWarehouse(db *gorm.DB) {
 	})
 
 	upsert(db, "rm_location_id", []models.RawMaterialLocation{
-		{RmLocationID: "RML-001", Location: "A-01-01", PalletNumber: "PLT-101", LotNumber: "LOT-2601", Amount: 4200, RmID: "RM-001"},
-		{RmLocationID: "RML-002", Location: "A-02-01", PalletNumber: "PLT-102", LotNumber: "LOT-2602", Amount: 12000, RmID: "RM-002"},
-		{RmLocationID: "RML-003", Location: "A-03-01", PalletNumber: "PLT-103", LotNumber: "LOT-2603", Amount: 8000, RmID: "RM-003"},
-		{RmLocationID: "RML-004", Location: "A-04-01", PalletNumber: "PLT-104", LotNumber: "LOT-2604", Amount: 300, RmID: "RM-004"},
+		{RmLocationID: "RML-001", Location: "A-01-01", PalletNumber: "PLT-101", LotNumber: "LOT-20250701-001-002", Amount: 4200, RmID: "RM-001"},
+		{RmLocationID: "RML-002", Location: "A-02-01", PalletNumber: "PLT-102", LotNumber: "LOT-20250702-001-002", Amount: 12000, RmID: "RM-002"},
+		{RmLocationID: "RML-003", Location: "A-03-01", PalletNumber: "PLT-103", LotNumber: "LOT-20250703-001-002", Amount: 8000, RmID: "RM-003"},
+		{RmLocationID: "RML-004", Location: "A-04-01", PalletNumber: "PLT-104", LotNumber: "LOT-20250704-001-002", Amount: 300, RmID: "RM-004"},
 	})
 }

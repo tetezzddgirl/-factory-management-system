@@ -202,54 +202,6 @@ function WorkOrdersPage() {
     }
   }
 
-//   async function confirmAssignment(rs: AssignWorkResult[]) {
-//   const workNames = rs.map((r) => r.work).filter(Boolean);
-//   if (!active) return;
-//   try {
-//     // 1. อัปเดตสถานะใบสั่งผลิต
-//     await workOrdersApi.updateStatus(active.orderNo, "กำลังผลิต", encodeLine(active.line, active.priority));
-
-//     // 2. เปรียบเทียบหางานที่ถูกลบออกใน Dialog
-//     const currentWorkIds = new Set(rs.map((r) => r.workID));
-//     const deletedWorkIds = Array.from(existingWorkIdsRef.current).filter(
-//       (id) => !currentWorkIds.has(id)
-//     );
-
-//     // 🛠️ 3. สั่ง Delete ไปที่ Backend สำหรับงานที่ถูกกดลบออก
-//     if (deletedWorkIds.length > 0) {
-//       await Promise.all(deletedWorkIds.map((id) => workApi.delete(id)));
-//     }
-
-//     // 4. สั่ง Create งานใหม่ที่เพิ่งเพิ่มเข้ามา
-//     await Promise.all(
-//       rs
-//         .filter((r) => r.work && !existingWorkIdsRef.current.has(r.workID))
-//         .map((r) =>
-//           workApi.create({
-//             work: r.work,
-//             startDate: toISO(r.start),
-//             endDate: toISO(r.due),
-//             orderID: active.orderNo,
-//           }),
-//         ),
-//     );
-
-//     toast.success(
-//       `ใบสั่งผลิต ${active.orderNo} • ${rs.length} งาน • มอบหมายเรียบร้อย`,
-//     );
-    
-//     // 5. โหลดข้อมูลใหม่จาก Backend มาแสดงผล
-//     await loadOrders();
-//   } catch (e) {
-//     toast.error(e instanceof Error ? e.message : "มอบหมายงานไม่สำเร็จ");
-//   } finally {
-//     setAssignOpen(false);
-//     setActive(null);
-//     setExistingTasks([]);
-//     existingWorkIdsRef.current = new Set();
-//   }
-// }
-
 async function confirmAssignment(rs: AssignWorkResult[]) {
   const workNames = rs.map((r) => r.work).filter(Boolean);
   if (!active) return;
