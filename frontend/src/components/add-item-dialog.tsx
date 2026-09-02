@@ -13,6 +13,7 @@ export type Field = {
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  readOnly?: boolean;
   disabled?: boolean;
   /** ข้อความช่วยอธิบายใต้ช่อง เช่น บอกว่าค่านี้กรอกอัตโนมัติให้แล้ว (ยังแก้ไขเองได้) */
   helperText?: string | ((values: Record<string, string>) => string | undefined);
@@ -135,10 +136,13 @@ function handleFieldChange(name: string, value: string) {
                   multiline={f.type === "textarea"}
                   minRows={f.type === "textarea" ? 3 : undefined}
                   value={values[f.name]}
+                  slotProps={{
+                   ...(f.type === "date" ? { inputLabel: { shrink: true } } : {}),
+                    ...(f.readOnly ? { input: { readOnly: true } } : {}),   // 🆕 เพิ่มตรงนี้
+                  }}
                   disabled={f.disabled}
                   helperText={resolvedHelperText}
                   error={resolvedError}
-                  slotProps={f.type === "date" ? { inputLabel: { shrink: true } } : undefined}
                   onChange={(e) => handleFieldChange(f.name, e.target.value)}
                 >
                   {f.type === "select" && f.options?.map((o) => (

@@ -307,7 +307,7 @@ function PlanningPage() {
               submitLabel="บันทึกแผนการผลิต"
               trigger={<Button ref={newPlanRef}>เปิด</Button>}
               fields={[
-                { name: "planID", label: "หมายเลขแผนการผลิต", disabled: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
+                { name: "planID", label: "หมายเลขแผนการผลิต", readOnly: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
                 { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
                 { name: "formula", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
                 { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000" },
