@@ -273,7 +273,7 @@ export function AssignWorkDialog({ open, data, onClose, onConfirm }: Props) {
   variant="contained" 
   disabled={!valid} 
   onClick={() => {
-    // ลบ Draft ชั่วคราวออก เพื่อใช้ค่า tasks ล่าสุดที่เพิ่งแก้ไข/ลบไป
+    
     if (data) {
       draftStore.delete(keyFor(data));
     }

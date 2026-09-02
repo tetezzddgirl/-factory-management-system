@@ -66,6 +66,7 @@ func main() {
 		api.GET("/plans", planningHandler.ListPlans)
 		api.POST("/plans", planningHandler.CreatePlan)
 		api.PUT("/plans/:id", planningHandler.UpdatePlanProgress)
+		api.GET("/plans/next-id", planningHandler.PreviewNextPlanID)
 
 		// สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/BOM master data) — ใช้ตอนสร้างแผนการผลิต/ใบสั่งผลิต
 		api.GET("/products", productHandler.ListProducts)
@@ -85,6 +86,7 @@ func main() {
 		api.GET("/materials/locations", warehouseHandler.ListLocations)
 		api.POST("/materials/locations", warehouseHandler.CreateLocation)
 		api.PUT("/materials/locations/:id", warehouseHandler.UpdateLocation)
+		api.GET("/materials/locations/next-code", warehouseHandler.PreviewNextLocationCodes)
 
 		// ประวัติรายการเคลื่อนไหววัตถุดิบ (RawMaterialRecord)
 		api.GET("/materials/records", warehouseHandler.ListRecords)
@@ -109,6 +111,7 @@ func main() {
 		api.GET("/wip/locations", wipHandler.ListWipLocations)
 		api.POST("/wip/locations", wipHandler.CreateWipLocation)
 		api.PUT("/wip/locations/:id", wipHandler.UpdateWipLocation)
+		api.GET("/wip/locations/next-code", wipHandler.PreviewNextLocationCodes)
 
 		api.GET("/wip/records", wipHandler.ListWipRecords)
 		api.POST("/wip/records", wipHandler.CreateWipRecord)
@@ -121,6 +124,7 @@ func main() {
 		api.POST("/work-orders", workOrderHandler.CreateWorkOrder)
 		api.PUT("/work-orders/:id", workOrderHandler.UpdateWorkOrderStatus)
 		api.GET("/work-orders/:id/detail", workOrderHandler.GetWorkOrder)
+		api.GET("/work-orders/next-id", workOrderHandler.PreviewNextOrderID)
 
 		api.GET("/work-orders/work", workOrderHandler.ListWork)
 		api.POST("/work-orders/work", workOrderHandler.CreateWork)

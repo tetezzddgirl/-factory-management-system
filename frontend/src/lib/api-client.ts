@@ -41,7 +41,7 @@ export type ApiProductionPlan = {
   amount: number;
   priority: string;
   startDate?: string | null;
-  dueDate?: string | null;
+  endDate?: string | null;
   productID?: string;
   bomID?: string;
 };
@@ -161,6 +161,7 @@ export const productionLinesApi = {
 
 export const plansApi = {
   list: () => apiFetch<ApiProductionPlan[]>("/api/plans"),
+  getNextID: () => apiFetch<{ planID: string }>("/api/plans/next-id"),
   create: (p: Pick<ApiProductionPlan, "name" | "amount"> & Partial<ApiProductionPlan>) =>
     apiFetch<ApiProductionPlan>("/api/plans", { method: "POST", body: JSON.stringify(p) }),
   updatePriority: (planID: string, priority: string, status?: string) =>
@@ -206,6 +207,10 @@ export type ApiRawMaterialRecord = {
 export const materialLocationsApi = {
   list: (rmID?: string) =>
     apiFetch<ApiRawMaterialLocation[]>(`/api/materials/locations${rmID ? `?rmID=${encodeURIComponent(rmID)}` : ""}`),
+  previewNextCodes: (orderID?: string) =>
+    apiFetch<{ palletNumber: string; lotNumber: string }>(
+      `/api/materials/locations/next-code${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`,
+    ),
   create: (loc: Omit<ApiRawMaterialLocation, "rmLocationID"> & { rmLocationID?: string }) =>
     apiFetch<ApiRawMaterialLocation>("/api/materials/locations", { method: "POST", body: JSON.stringify(loc) }),
   update: (rmLocationID: string, amount: number, location: string) =>
@@ -312,13 +317,15 @@ export const wipApi = {
 
 export const wipLocationsApi = {
   list: (wipID?: string) => apiFetch<ApiWipLocation[]>(`/api/wip/locations${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`),
-    create: (loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string; }
-  ) =>
+  previewNextCodes: (orderID?: string) =>
+    apiFetch<{ palletNumber: string; lotNumber: string }>(
+      `/api/wip/locations/next-code${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`,
+    ),
+  create: (loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string; orderID?: string }) =>
     apiFetch<ApiWipLocation>("/api/wip/locations", {
       method: "POST",
       body: JSON.stringify(loc),
     }),
-
   update: (
     wipLocationID: string,
     amount: number,
@@ -326,13 +333,7 @@ export const wipLocationsApi = {
   ) =>
     apiFetch<ApiWipLocation>(
       `/api/wip/locations/${encodeURIComponent(wipLocationID)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({
-          amount,
-          location,
-        }),
-      }
+      { method: "PUT", body: JSON.stringify({ amount, location }) }
     ),
 };
 
@@ -369,6 +370,7 @@ export const workOrdersApi = {
   list: () => apiFetch<ApiWorkOrder[]>("/api/work-orders"),
   getDetail: (orderID: string) =>
     apiFetch<ApiWorkOrder>(`/api/work-orders/${encodeURIComponent(orderID)}/detail`),
+  getNextID: () => apiFetch<{ orderID: string }>("/api/work-orders/next-id"),
   create: (o: Omit<ApiWorkOrder, "orderID" | "timestamp"> & { orderID?: string }) =>
     apiFetch<ApiWorkOrder>("/api/work-orders", { method: "POST", body: JSON.stringify(o) }),
   updateStatus: (orderID: string, status: string, machines?: string) =>

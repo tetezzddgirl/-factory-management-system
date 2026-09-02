@@ -87,42 +87,53 @@ function WipPage() {
   const currentHandler = currentWarehouse
     ? `${currentWarehouse.id} — ${currentWarehouse.name}` : "";
 
-  function autoFillRecord(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
-    if (changed === "item") {
-      const code = values.item.split(" — ")[0];
-      const found = workInProcess.find((m) => m.wipID === code);
-      if (found) return { unit: found.unit };
+  async function autoFillRecord(values: Record<string, string>, changed: string): Promise<Partial<Record<string, string>> | void> {
+  if (changed === "item") {
+    const code = values.item.split(" — ")[0];
+    const found = workInProcess.find((m) => m.wipID === code);
+    if (found) return { unit: found.unit };
+  }
+  if (changed === "palletNumber" && values.palletNumber) {
+    const loc = wipLocations.find(
+      (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
+    );
+    if (loc) {
+      const mat = workInProcess.find((m) => m.wipID === loc.wipID);
+      return {
+        location: loc.location,
+        lotNumber: loc.lotNumber,
+        ...(mat ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
+      };
     }
-    if (changed === "palletNumber" && values.palletNumber) {
-      const loc = wipLocations.find(
-        (l) => l.palletNumber.trim().toLowerCase() === values.palletNumber.trim().toLowerCase(),
-      );
-      if (loc) {
-        const mat = workInProcess.find((m) => m.wipID === loc.wipID);
-        return {
-          location: loc.location,
-          lotNumber: loc.lotNumber,
-          ...(mat ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
-        };
+    // pallet ใหม่ ไม่เคยมีในระบบ — preview เฉพาะกรณี "รับเข้า"/"คืน" เพราะมีแค่ 2 ประเภทนี้ที่จะสร้างตำแหน่งใหม่จริง
+    if (values.type === "รับเข้า" || values.type === "คืน") {
+      try {
+        const orderID = values.orderID ? values.orderID.split(" - ")[0] : "";
+        const res = await wipLocationsApi.previewNextCodes(orderID);
+        return { lotNumber: res.lotNumber };
+      } catch {
+        return;
       }
     }
-    if (changed === "location" && values.location) {
-      const code = values.item ? values.item.split(" — ")[0] : "";
-      const loc = code
-        ? wipLocations.find((l) => l.location === values.location && l.wipID === code)
-        : wipLocations.find((l) => l.location === values.location);
-      if (loc) {
-        const mat = workInProcess.find((m) => m.wipID === loc.wipID);
-        return {
-          palletNumber: loc.palletNumber,
-          lotNumber: loc.lotNumber,
-          ...(mat ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
-        };
-      }
+    return;
+  }
+  if (changed === "location" && values.location) {
+    const code = values.item ? values.item.split(" — ")[0] : "";
+    const loc = code
+      ? wipLocations.find((l) => l.location === values.location && l.wipID === code)
+      : wipLocations.find((l) => l.location === values.location);
+    if (loc) {
+      const mat = workInProcess.find((m) => m.wipID === loc.wipID);
+      return {
+        palletNumber: loc.palletNumber,
+        lotNumber: loc.lotNumber,
+        ...(mat ? { item: `${mat.wipID} — ${mat.wip}`, unit: mat.unit } : {}),
+      };
     }
   }
+}
 
-  function autoFillNewWip(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
+  async function autoFillNewWip(values: Record<string, string>, changed: string): Promise<Partial<Record<string, string>> | void >{
     if (changed === "wipID" && values.wipID) {
       const found = workInProcess.find((m) => m.wipID.trim().toLowerCase() === values.wipID.trim().toLowerCase());
       if (found) return { wip: found.wip, unit: found.unit, max: String(found.max) };
@@ -139,6 +150,13 @@ function WipPage() {
           ...(mat ? { wipID: mat.wipID, wip: mat.wip, unit: mat.unit, max: String(mat.max) } : {}),
         };
       }
+      try {
+      const orderID = values.orderID ? values.orderID.split(" - ")[0] : "";
+      const res = await wipLocationsApi.previewNextCodes(orderID);
+      return { lotNumber: res.lotNumber };
+    } catch {
+      return; 
+    }
     }
   }
 
@@ -158,9 +176,11 @@ function findFormLocation(values: Record<string, string>) {
   });
 }
 
+const STOCK_LIMITED_TYPES = ["เบิกจ่าย", "โอนย้าย"];
+
 /** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
 function amountHelperText(values: Record<string, string>): string | undefined {
-  if (values.type !== "เบิกจ่าย") return undefined;
+  if (!STOCK_LIMITED_TYPES.includes(values.type)) return undefined;
   const loc = findFormLocation(values);
   if (!loc) return undefined;
   const code = values.item.split(" — ")[0];
@@ -175,7 +195,7 @@ function amountHelperText(values: Record<string, string>): string | undefined {
 
 /** true = จำนวนที่กรอกเกินยอดที่ Pallet/Location นั้นมี ให้ขึ้นช่องสีแดง */
 function amountIsOver(values: Record<string, string>): boolean {
-  if (values.type !== "เบิกจ่าย") return false;
+  if (!STOCK_LIMITED_TYPES.includes(values.type)) return false;
   const loc = findFormLocation(values);
   if (!loc) return false;
   return (Number(values.amount) || 0) > loc.amount;
@@ -265,6 +285,7 @@ if (existingLoc) {
     palletNumber: v.palletNumber || "",
     lotNumber: v.lotNumber || "",
     amount: qty,
+    orderID: v.orderID.split(" - ")[0],
   });
   
   wipLocationID = loc.wipLocationID;
@@ -299,6 +320,16 @@ if (existingLoc) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit} (ขอเบิก ${qty.toLocaleString()})`);
       return false;
     }
+
+    if (v.type === "โอนย้าย") {
+    const existingLoc = v.palletNumber
+      ? wipLocations.find((l) => l.wipID === code && l.palletNumber.trim().toLowerCase() === v.palletNumber.trim().toLowerCase())
+      : wipLocations.find((l) => l.wipID === code && l.location === v.location);
+    if (existingLoc && qty > existingLoc.amount) {
+      toast.error(`โอนย้ายไม่สำเร็จ: ต้นทางมีเพียง ${existingLoc.amount.toLocaleString()} ${target?.unit ?? ""} (ขอย้าย ${qty.toLocaleString()})`);
+      return false;
+    }
+  }
 
     const newAmount = target ? Math.max(0, target.amount + sign * qty) : qty;
 
@@ -342,6 +373,7 @@ if (existingLoc) {
             palletNumber: v.palletNumber,
             lotNumber: v.lotNumber,
             amount: qty,
+            orderID: v.orderID.split(" - ")[0],
           });
           wipLocationID = loc.wipLocationID;
         }
@@ -470,7 +502,7 @@ if (existingLoc) {
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
-                  { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
+                  { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005", required: false },
                   { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
                   { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
                 ]}

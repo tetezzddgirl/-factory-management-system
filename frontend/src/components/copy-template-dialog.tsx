@@ -8,6 +8,8 @@ import {
   computeRequiredMaterials, formulaOptions, formulaOptionFor, bomIDFromOption,
   type ApiProduct, type ApiFormulaItem, type ApiRawMaterial, type ApiProductionLine,
 } from "@/lib/api-client";
+import { plansApi } from "@/lib/api-client";
+import { Today } from "@mui/icons-material";
 
 export type TemplateResult = { planID: string;  name: string; product: string; bom: string; target: number; priority: string; start: string; due: string };
 
@@ -35,19 +37,24 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
   const [due, setDue] = useState("");
   const [requiredMaterials, setRequiredMaterials] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    const today = getToday();
-    setSourceId(""); setPlanID(""); setName("");  setProduct(""); setBom("");
-    setTarget("");  setStart(today); setDue(today); setRequiredMaterials("");
-  }, [open]);
-
   function getToday() {
     const today = new Date();
     const offset = today.getTimezoneOffset();
     const localDate = new Date(today.getTime() - offset * 60 * 1000);
     return localDate.toISOString().split("T")[0];
   }
+
+  useEffect(() => {
+    if (!open) return;
+    const today = getToday();
+    setSourceId(""); setPlanID(""); setName("");  setProduct(""); setBom("");
+    setTarget("");  setStart(today); setDue(today); setRequiredMaterials("");
+
+    plansApi
+    .getNextID()
+    .then((res) => setPlanID(res.planID))
+    .catch(() => {});
+  }, [open]);
 
   /** คำนวณวัตถุดิบที่ต้องใช้ใหม่ (เหมือนตอนสร้างแผนการผลิตใหม่) ทุกครั้งที่สินค้าหรือจำนวนที่ผลิตเปลี่ยน */
   function recomputeMaterials(productName: string, targetStr: string) {
@@ -68,8 +75,8 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
   function pick(id: string) {
     setSourceId(id);
     const src = plans.find((p) => p.planID === id);
+    const today = getToday();
     if (src) {
-      setPlanID(`${src.planID}-COPY`);
       setName(src.name);
       setProduct(src.name);
       const rawBomID = src.bomID || (typeof src.bom === "string" && src.bom !== "-" ? src.bom : "");
@@ -79,8 +86,8 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
       setPriority(src.priority ?? "ปกติ");
       // startDate/dueDate ของแผนต้นทางเป็นข้อความไทยที่จัดรูปแบบไว้แสดงผลแล้ว (เช่น "01 ก.ค. 2568")
       // ไม่ใช่รูปแบบ YYYY-MM-DD ที่ <input type="date"> อ่านได้ จึงเว้นว่างไว้ให้เลือกวันที่ใหม่แทน
-      setStart("");
-      setDue("");
+      setStart(today);
+      setDue(today);
       recomputeMaterials(src.name, String(src.amount));
     }
   }
@@ -115,7 +122,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
             ))}
           </TextField>
           {sourceId && <Alert severity="info">ดึงข้อมูลจากแผน {sourceId} มาแล้ว แก้ไขได้ตามต้องการ</Alert>}
-          <TextField label="หมายเลขแผนการผลิต" value={planID} onChange={(e) => setPlanID(e.target.value)} />
+          <TextField label="หมายเลขแผนการผลิต" value={planID} disabled helperText="ระบบกำหนดให้อัตโนมัติ" />
           <TextField label="ชื่อแผนการผลิต" value={name} onChange={(e) => setName(e.target.value)} />
           <TextField select label="สินค้า" value={product} onChange={(e) => handleProductChange(e.target.value)}>
             {products.map((p) => <MenuItem key={p.productID} value={p.name}>{p.name}</MenuItem>)}

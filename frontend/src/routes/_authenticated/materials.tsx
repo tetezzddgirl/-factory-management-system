@@ -97,7 +97,7 @@ function MaterialsPage() {
     .filter((x) => x.materials.length > 0);
 
   /** กรอกอัตโนมัติสำหรับ dialog "บันทึกรายการวัตถุดิบ": เลือกวัตถุดิบ -> เติมหน่วยให้เอง, พิมพ์ Pallet Number ที่มีอยู่แล้ว -> ดึง Location/Lot/วัตถุดิบให้เอง, เลือก Location -> ดึง Pallet/Lot/วัตถุดิบที่เก็บอยู่ตรงนั้นให้เอง */
-  function autoFillRecord(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
+  async function autoFillRecord(values: Record<string, string>, changed: string): Promise<Partial<Record<string, string>> | void> {
     if (changed === "item") {
       const code = values.item.split(" — ")[0];
       const found = rawMaterial.find((m) => m.rmID === code);
@@ -115,6 +115,16 @@ function MaterialsPage() {
           ...(mat  ? { item: `${mat.rmID} — ${mat.rawMaterial}`, unit: mat.unit } : {}),
         };
       }
+      if (values.type === "รับเข้า" || values.type === "คืน") {
+            try {
+              const orderID = values.orderID ? values.orderID.split(" - ")[0] : "";
+              const res = await materialLocationsApi.previewNextCodes(orderID);
+              return { lotNumber: res.lotNumber };
+            } catch {
+              return;
+            }
+          }
+        return;
     }
     if (changed === "location" && values.location) {
       const code = values.item ? values.item.split(" — ")[0] : "";
@@ -173,7 +183,7 @@ function amountIsOver(values: Record<string, string>): boolean {
 }
 
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
-  function autoFillNewItem(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
+  async function autoFillNewItem(values: Record<string, string>, changed: string): Promise<Partial<Record<string, string>> | void> {
   if (changed === "rmID" && values.rmID) {
     const found = rawMaterial.find((m) => m.rmID.trim().toLowerCase() === values.rmID.trim().toLowerCase());
     if (found) return { rawMaterial: found.rawMaterial, unit: found.unit, max: String(found.max), min: String(found.min) };
@@ -189,6 +199,13 @@ function amountIsOver(values: Record<string, string>): boolean {
         lotNumber: loc.lotNumber,
         ...(mat ? { rmID: mat.rmID, rawMaterial: mat.rawMaterial, unit: mat.unit, max: String(mat.max), min: String(mat.min) } : {}),
       };
+    }
+    try {
+      const orderID = values.orderID ? values.orderID.split(" - ")[0] : "";
+      const res = await materialLocationsApi.previewNextCodes(orderID);
+      return { lotNumber: res.lotNumber };
+    } catch {
+      return;
     }
   }
 }
@@ -226,11 +243,11 @@ function amountIsOver(values: Record<string, string>): boolean {
               { name: "min", label: "จำนวนที่ต้องสำรอง", type: "number", defaultValue: "0" },
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ"},
-              { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
+              { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005", required: false },
               { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
               { name: "agency", label: "แผนกต้นทาง", defaultValue: "Supplier A" },
             ]}
-            onAutoFill={autoFillRecord}
+            onAutoFill={autoFillNewItem}
 onSubmit={async (v) => {
   const qty = Number(v.amount) || 0;
   const code = v.item.split(" — ")[0];

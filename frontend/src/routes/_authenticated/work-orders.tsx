@@ -158,7 +158,7 @@ function WorkOrdersPage() {
         amount: r.qty,
         machines: encodeLine(r.line, r.priority),
         startDate: toISO(r.startDate),
-        endDate: toISO(r.dueDate),
+        endDate: toISO(r.due),
         planID: orderPlan?.planID ?? "-",
       });
       setOrderPlan(null);

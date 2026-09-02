@@ -6,6 +6,7 @@ import {
 } from "@mui/material";
 import { Assignment, Factory, EventNote } from "@mui/icons-material";
 import type { ApiProductionLine } from "@/lib/api-client";
+import { workOrdersApi } from "@/lib/api-client";
 
 export type WorkOrderData = { planID?: string; name: string; amount: number; dueDate: string };
 
@@ -15,7 +16,7 @@ export type WorkOrderResult = {
   qty: number;
   line: string;
   startDate: string;
-  dueDate: string;
+  due: string;
   priority: string;
   note: string;
 };
@@ -39,26 +40,32 @@ function getToday() {
   return localDate.toISOString().split("T")[0];
 }
 
+
 export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit }: Props) {
   const LINES = productionLines && productionLines.length > 0 ? productionLines.map((l) => l.name) : FALLBACK_LINES;
   const [v, setV] = useState<WorkOrderResult>({
     orderNo: "", product: "", qty: 0, line: LINES[0],
-    startDate: "", dueDate: "", priority: "ปกติ", note: "",
+    startDate: "", due: "", priority: "ปกติ", note: "",
   });
 
   useEffect(() => {
     if (!open || !data) return;
     const today = getToday();
     setV({
-      orderNo: `WO-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      orderNo: "",
       product: data.name,
       qty: data.amount,
       line: LINES[0],
       startDate: today,
-      dueDate: today,
+      due: today,
       priority: "ปกติ",
       note: "",
     });
+
+    workOrdersApi
+    .getNextID()
+    .then((res) => setV((s) => ({ ...s, orderNo: res.orderID })))
+    .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
 
@@ -66,9 +73,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
 
   const set = <K extends keyof WorkOrderResult>(k: K, val: WorkOrderResult[K]) =>
     setV((s) => ({ ...s, [k]: val }));
-
-  // วันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่มผลิต
-  const dateError = Boolean(v.startDate && v.dueDate && v.dueDate < v.startDate);
+  const dateError = Boolean(v.startDate && v.due && v.due < v.startDate);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -88,7 +93,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} onChange={(e) => set("orderNo", e.target.value)} />
+              <TextField fullWidth label="เลขที่ใบสั่งผลิต" value={v.orderNo} disabled helperText="ระบบกำหนดให้อัตโนมัติ" />
               <TextField fullWidth label="สินค้า" value={v.product} onChange={(e) => set("product", e.target.value)} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -110,8 +115,8 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
                 slotProps={{ inputLabel: { shrink: true } }}
               />
               <TextField
-                fullWidth label="กำหนดเสร็จ" type="date" value={v.dueDate}
-                onChange={(e) => set("dueDate", e.target.value)}
+                fullWidth label="กำหนดเสร็จ" type="date" value={v.due}
+                onChange={(e) => set("due", e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
                 error={dateError}
                 helperText={dateError ? "ต้องไม่มาก่อนวันที่เริ่มผลิต" : undefined}
@@ -141,7 +146,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!v.orderNo.trim() || !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.dueDate.trim() || dateError}
+          disabled={ !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
           onClick={() => onSubmit(v)}
         >
           ถัดไป: ตรวจสอบทรัพยากร
