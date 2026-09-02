@@ -5,13 +5,13 @@ import {
 } from "@mui/material";
 import type { PlanRow } from "./plan-detail-dialog";
 import {
-  computeRequiredMaterials, formulaOptions, formulaOptionFor, bomIDFromOption,
+  computeRequiredMaterials, formulaOptions, formulaOptionFor, formulaIDFromOption,
   type ApiProduct, type ApiFormulaItem, type ApiRawMaterial, type ApiProductionLine,
 } from "@/lib/api-client";
 import { plansApi } from "@/lib/api-client";
 import { Today } from "@mui/icons-material";
 
-export type TemplateResult = { planID: string;  name: string; product: string; bom: string; target: number; priority: string; start: string; due: string };
+export type TemplateResult = { planID: string;  name: string; product: string; formula: string; target: number; priority: string; start: string; due: string };
 
 interface Props {
   open: boolean;
@@ -30,7 +30,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
   const [planID, setPlanID] = useState("");
   const [name, setName] = useState("");
   const [product, setProduct] = useState("");
-  const [bom, setBom] = useState("");
+  const [formula, setFormula] = useState("");
   const [target, setTarget] = useState("");
   const [priority, setPriority] = useState("ปกติ");
   const [start, setStart] = useState("");
@@ -47,7 +47,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
   useEffect(() => {
     if (!open) return;
     const today = getToday();
-    setSourceId(""); setPlanID(""); setName("");  setProduct(""); setBom("");
+    setSourceId(""); setPlanID(""); setName("");  setProduct(""); setFormula("");
     setTarget("");  setStart(today); setDue(today); setRequiredMaterials("");
 
     plansApi
@@ -79,9 +79,9 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
     if (src) {
       setName(src.name);
       setProduct(src.name);
-      const rawBomID = src.bomID || (typeof src.bom === "string" && src.bom !== "-" ? src.bom : "");
-      const matchedOption = formulaOptionFor(formulas, products, rawBomID);
-    setBom(matchedOption);
+      const rawFormulaID = src.formulaID || (typeof src.formula === "string" && src.formula !== "-" ? src.formula : "");
+      const matchedOption = formulaOptionFor(formulas, products, rawFormulaID);
+    setFormula(matchedOption);
       setTarget(String(src.amount));
       setPriority(src.priority ?? "ปกติ");
       // startDate/dueDate ของแผนต้นทางเป็นข้อความไทยที่จัดรูปแบบไว้แสดงผลแล้ว (เช่น "01 ก.ค. 2568")
@@ -95,8 +95,8 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
   function handleProductChange(v: string) {
     setProduct(v);
     const productID = products.find((p) => p.name === v)?.productID;
-    const bomID = productID ? formulas.find((f) => f.productID === productID)?.bomID ?? "" : "";
-    setBom(formulaOptionFor(formulas, products, bomID));
+    const formulaID = productID ? formulas.find((f) => f.productID === productID)?.formulaID ?? "" : "";
+    setFormula(formulaOptionFor(formulas, products, formulaID));
     recomputeMaterials(v, target);
   }
 
@@ -127,7 +127,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
           <TextField select label="สินค้า" value={product} onChange={(e) => handleProductChange(e.target.value)}>
             {products.map((p) => <MenuItem key={p.productID} value={p.name}>{p.name}</MenuItem>)}
           </TextField>
-          <TextField select label="สูตรการผลิต" value={bom} onChange={(e) => setBom(e.target.value)} >
+          <TextField select label="สูตรการผลิต" value={formula} onChange={(e) => setFormula(e.target.value)} >
             {formulaOptions(formulas, products).map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
           </TextField>
           <TextField label="จำนวนที่ผลิต" type="number" value={target} onChange={(e) => handleTargetChange(e.target.value)} />
@@ -158,7 +158,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
         <Button
           variant="contained"
           disabled={!sourceId || !product || !target || dateError}
-          onClick={() => onSubmit({ planID, name, product, bom: bomIDFromOption(bom), target: Number(target) || 0, priority, start, due })}
+          onClick={() => onSubmit({ planID, name, product, formula: formulaIDFromOption(formula), target: Number(target) || 0, priority, start, due })}
         >
           บันทึก
         </Button>

@@ -13,7 +13,7 @@ import { WorkOrderDialog, type WorkOrderResult } from "@/components/work-order-d
 import { PlanSavedDialog } from "@/components/plan-saved-dialog";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
-import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, computeRequiredMaterials, bomIDFor, bomIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
+import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, computeRequiredMaterials, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue, encodeLine } from "@/lib/plan-utils";
 
 export const Route = createFileRoute("/_authenticated/planning")({
@@ -64,9 +64,9 @@ function PlanningPage() {
   function stepsForProduct(product: string) {
     const productID = products.find((p) => p.name === product)?.productID;
     if (!productID) return undefined;
-    const bomID = bomIDFor(formulas, productID);
-    if (!bomID) return undefined;
-    return stepsFor(formulaSteps, bomID);
+    const formulaID = formulaIDFor(formulas, productID);
+    if (!formulaID) return undefined;
+    return stepsFor(formulaSteps, formulaID);
   }
 
   useEffect(() => {
@@ -123,13 +123,13 @@ function PlanningPage() {
 
   /** สร้างแผนจริงที่ backend — name/amount/status/priority/productID/bomID/line/startDate/endDate persist ลง DB ทั้งหมดแล้ว */
   async function savePlan(
-    name: string, bom: string, amount: number, due: string, priority?: string,
+    name: string, formula: string, amount: number, due: string, priority?: string,
     productID?: string, start?: string,
   ) {
     try {
       const apiPlan = await plansApi.create({
         name, amount, status: "รอเริ่ม", priority,
-        productID, bomID: bom,
+        productID, formulaID: formula,
         startDate: toISO(start ?? ""), endDate: toISO(due),
       });
       const created: PlanRow = fromApiPlan(apiPlan);
@@ -153,8 +153,8 @@ function PlanningPage() {
   function handleRequestPlan(v: Record<string, string>) {
     const productID = v.productID.split(" — ")[0];
     const productName = v.productID.split(" — ")[1] ?? v.productID;
-    const bomID = bomIDFromOption(v.bom);
-    savePlan(productName, bomID, Number(v.amount) || 0, v.due, v.priority, productID, v.start);
+    const formulaID = formulaIDFromOption(v.formula);
+    savePlan(productName, formulaID, Number(v.amount) || 0, v.due, v.priority, productID, v.start);
   }
 
   /** เลือกสินค้า -> เติมสูตรการผลิต (bom) และคำนวณยอดวัตถุดิบที่ต้องใช้แสดงเป็น preview ให้เอง
@@ -167,20 +167,20 @@ function PlanningPage() {
 
     const amount = Number(values.amount) || 0;
     const need = computeRequiredMaterials(formulas, rawMaterial, productID, amount);
-    const bomID = formulas.find((f) => f.productID === productID)?.bomID ?? "";
+    const formulaID = formulas.find((f) => f.productID === productID)?.formulaID ?? "";
     const requiredMaterials = need.length
       ? need.map((m) => `${m.name} ${m.required.toLocaleString()} ${m.unit} (คงเหลือ ${m.available.toLocaleString()} ${m.unit})`).join(" | ")
       : "ยังไม่มีสูตรการผลิตของสินค้านี้ในระบบ";
 
     return changed === "productID"
-      ? { bom: formulaOptionFor(formulas, products, bomID), requiredMaterials }
+      ? { formula: formulaOptionFor(formulas, products, formulaID), requiredMaterials }
       : { requiredMaterials };
   }
 
   function handleTemplate(r: TemplateResult) {
     setTemplateOpen(false);
     const productID = products.find((p) => p.name === r.product)?.productID;
-    savePlan(r.product, bomIDFromOption(r.bom), r.target, r.due, r.priority, productID, r.start);
+    savePlan(r.product, formulaIDFromOption(r.formula), r.target, r.due, r.priority, productID, r.start);
   }
 
   function createOrderFor(plan: PlanRow) {
@@ -309,7 +309,7 @@ function PlanningPage() {
               fields={[
                 { name: "planID", label: "หมายเลขแผนการผลิต", disabled: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
                 { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
-                { name: "bom", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
+                { name: "formula", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
                 { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000" },
                 { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
                 { name: "priority", label: "ลำดับความสำคัญ", type: "select", options: ["สูง", "ปกติ", "ต่ำ"], defaultValue: "ปกติ" },
