@@ -83,6 +83,7 @@ func main() {
 		api.GET("/materials/locations", warehouseHandler.ListLocations)
 		api.POST("/materials/locations", warehouseHandler.CreateLocation)
 		api.PUT("/materials/locations/:id", warehouseHandler.UpdateLocation)
+		api.GET("/materials/locations/next-code", warehouseHandler.PreviewNextLocationCodes)
 
 		// ประวัติรายการเคลื่อนไหววัตถุดิบ (RawMaterialRecord)
 		api.GET("/materials/records", warehouseHandler.ListRecords)
@@ -107,6 +108,7 @@ func main() {
 		api.GET("/wip/locations", wipHandler.ListWipLocations)
 		api.POST("/wip/locations", wipHandler.CreateWipLocation)
 		api.PUT("/wip/locations/:id", wipHandler.UpdateWipLocation)
+		api.GET("/wip/locations/next-code", wipHandler.PreviewNextLocationCodes)
 
 		api.GET("/wip/records", wipHandler.ListWipRecords)
 		api.POST("/wip/records", wipHandler.CreateWipRecord)

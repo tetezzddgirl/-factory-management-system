@@ -33,7 +33,7 @@ interface AddItemDialogProps {
    * ใช้สำหรับ "กรอกอัตโนมัติ" ให้ field อื่นตามค่าที่เลือก เช่น เลือกวัตถุดิบแล้วเติมหน่วยให้เอง
    * คืนค่าเป็น object ของ field ที่ต้องการเติม/แก้ (เฉพาะที่เปลี่ยน) หรือไม่คืนอะไรถ้าไม่มีอะไรต้องเติม
    */
-  onAutoFill?: (values: Record<string, string>, changedField: string) => Partial<Record<string, string>> | void;
+  onAutoFill?: (values: Record<string, string>, changedField: string) => Partial<Record<string, string>> | void | Promise<Partial<Record<string, string>> | void>;
   onOpen?: () => Partial<Record<string, string>> | Promise<Partial<Record<string, string>> | void> | void;
 }
 
@@ -66,18 +66,27 @@ export function AddItemDialog({
     });
   }
 
-  function handleFieldChange(name: string, value: string) {
-    setValues((prev) => {
-      const next = { ...prev, [name]: value };
-      const patch = onAutoFill?.(next, name);
-      if (!patch) return next;
-      const merged = { ...next };
-      for (const [k, v] of Object.entries(patch)) {
-        if (v !== undefined) merged[k] = v;
-      }
-      return merged;
-    });
+  function applyPatch(patch: Partial<Record<string, string>> | void) {
+  if (!patch) return;
+  setValues((prev) => {
+    const merged = { ...prev };
+    for (const [k, v] of Object.entries(patch)) {
+      if (v !== undefined) merged[k] = v;
+    }
+    return merged;
+  });
+}
+
+function handleFieldChange(name: string, value: string) {
+  const next = { ...values, [name]: value };
+  setValues(next);
+  const result = onAutoFill?.(next, name);
+  if (result instanceof Promise) {
+    result.then(applyPatch);
+  } else {
+    applyPatch(result);
   }
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

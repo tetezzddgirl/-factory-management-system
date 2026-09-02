@@ -31,6 +31,75 @@ func (h *WarehouseHandler) ListRawMaterials(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
+func (h *WarehouseHandler) PreviewNextLocationCodes(c *gin.Context) {
+	palletNumber, err := nextSeqID(h.db, &models.RawMaterialLocation{}, "pallet_number", "PLT", time.Now().Format("20060102"), 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	lotMiddle := c.Query("orderID")
+	if lotMiddle == "" {
+		lotMiddle = time.Now().Format("060102")
+	}
+	lotNumber, err := nextSeqID(h.db, &models.RawMaterialLocation{}, "lot_number", "LOT", lotMiddle, 3)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"palletNumber": palletNumber, "lotNumber": lotNumber})
+}
+
+// CreateWipLocation สร้างตำแหน่งจัดเก็บ WIP ใหม่
+// ถ้าระบุ PalletNumber มาด้วย ระบบจะเช็คก่อนว่า pallet นี้เคยถูกใช้เก็บของที่ตำแหน่งอื่นมาก่อนหรือไม่
+// (เช็คจาก DB ตรงๆ ไม่พึ่งข้อมูลจาก frontend) ถ้าเคย -> ใช้ LotNumber เดิมของ pallet นั้น ไม่ generate ใหม่ซ้อน
+// ถ้าไม่เคย (หรือไม่ได้ระบุ PalletNumber) และ LotNumber ว่าง -> generate ให้อัตโนมัติ
+// ถ้าแนบ orderID มาด้วย จะฝังหมายเลขใบสั่งผลิตนั้นไว้ในรหัส lot ใหม่ที่ generate (เช่น "LOT-WO-1039-01")
+func (h *WipHandler) CreateRawMaterialLocation(c *gin.Context) {
+	var body struct {
+		models.RawMaterialLocation
+		OrderID string `json:"orderID"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	loc := body.RawMaterialLocation
+
+	if loc.RmLocationID == "" {
+		loc.RmLocationID = fmt.Sprintf("WLO-%d", time.Now().UnixNano())
+	}
+
+	// เช็คก่อนว่า pallet นี้เคยถูกใช้งานที่ตำแหน่งอื่นมาก่อนหรือไม่ ถ้าเคย ดึง LotNumber เดิมมาใช้
+	if loc.LotNumber == "" && loc.PalletNumber != "" {
+		var existing models.RawMaterialLocation
+		if err := h.db.Where("pallet_number = ?", loc.PalletNumber).First(&existing).Error; err == nil {
+			loc.LotNumber = existing.LotNumber
+		}
+	}
+
+	// ยังไม่มี LotNumber (pallet ใหม่จริงๆ ไม่เคยมีในระบบ) -> generate ใหม่
+	if loc.LotNumber == "" {
+		lotMiddle := body.OrderID
+		if lotMiddle == "" || lotMiddle == "-" {
+			lotMiddle = time.Now().Format("060102")
+		}
+		id, err := nextSeqID(h.db, &models.RawMaterialLocation{}, "lot_number", "LOT", lotMiddle, 2)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		loc.LotNumber = id
+	}
+
+	if err := h.db.Create(&loc).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, loc)
+}
+
 // GetRawMaterial คืนวัตถุดิบ 1 ตัว พร้อม Locations/Records ที่ผูกอยู่ (path: /api/materials/:rmID/detail)
 func (h *WarehouseHandler) GetRawMaterial(c *gin.Context) {
 	rmID := c.Param("rmID")
