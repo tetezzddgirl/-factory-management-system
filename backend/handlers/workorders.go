@@ -34,12 +34,12 @@ type orderOut struct {
 	EndDate   time.Time `json:"endDate"`
 	PlanID    string    `json:"planID"`
 	ProductID string    `json:"productID"`
-	BomID     string    `json:"bomID"`
-	RefBomID  string    `json:"refBomID"`
+	FormulaID     string    `json:"formulaID"`
+	RefFormulaID  string    `json:"refFormulaID"`
 }
 
-func toOrderOut(o models.ProductionOrder, refBOMs map[string]models.RefBOM) orderOut {
-	rb := refBOMs[o.RefBomID]
+func toOrderOut(o models.ProductionOrder, refFormulas map[string]models.RefFormula) orderOut {
+	rb := refFormulas[o.RefFormulaID]
 	return orderOut{
 		Timestamp: o.Timestamp,
 		OrderID:   o.OrderID,
@@ -51,8 +51,8 @@ func toOrderOut(o models.ProductionOrder, refBOMs map[string]models.RefBOM) orde
 		EndDate:   o.EndDate,
 		PlanID:    o.PlanID,
 		ProductID: rb.ProductID,
-		BomID:     rb.BomID,
-		RefBomID:  o.RefBomID,
+		FormulaID:     rb.FormulaID,
+		RefFormulaID:  o.RefFormulaID,
 	}
 }
 
@@ -64,11 +64,11 @@ func (h *WorkOrderHandler) ListWorkOrders(c *gin.Context) {
 		return
 	}
 
-	refBomIDs := make([]string, 0, len(orders))
+	refFormulaIDs := make([]string, 0, len(orders))
 	for _, o := range orders {
-		refBomIDs = append(refBomIDs, o.RefBomID)
+		refFormulaIDs = append(refFormulaIDs, o.RefFormulaID)
 	}
-	refBOMs, err := refBOMMap(h.db, refBomIDs)
+	refFormulas, err := refFormulaMap(h.db, refFormulaIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -76,7 +76,7 @@ func (h *WorkOrderHandler) ListWorkOrders(c *gin.Context) {
 
 	out := make([]orderOut, 0, len(orders))
 	for _, o := range orders {
-		out = append(out, toOrderOut(o, refBOMs))
+		out = append(out, toOrderOut(o, refFormulas))
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -123,7 +123,7 @@ func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
 	if o.PlanID != "" {
 		var plan models.ProductionPlan
 		if err := h.db.Where("plan_id = ?", o.PlanID).First(&plan).Error; err == nil {
-			o.RefBomID = plan.RefBomID
+			o.RefFormulaID = plan.RefFormulaID
 		}
 	}
 	if err := h.db.Create(&o).Error; err != nil {
@@ -131,12 +131,12 @@ func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
 		return
 	}
 
-	refBOMs, err := refBOMMap(h.db, []string{o.RefBomID})
+	refFormulas, err := refFormulaMap(h.db, []string{o.RefFormulaID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, toOrderOut(o, refBOMs))
+	c.JSON(http.StatusOK, toOrderOut(o, refFormulas))
 }
 
 // UpdateWorkOrderStatus แก้ไขสถานะ/เครื่องจักรของใบสั่งผลิตตาม orderID (path param: /api/work-orders/:id)

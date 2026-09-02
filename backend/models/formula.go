@@ -5,7 +5,7 @@ package models
 // ใช้คำนวณยอดวัตถุดิบที่ต้องใช้อัตโนมัติ ตอนสร้างแผนการผลิต/ใบสั่งผลิต (required = QtyPerUnit * จำนวนที่ผลิต)
 type FormulaItem struct {
 	ID         uint    `json:"id" gorm:"primaryKey;autoIncrement"`
-	BomID      string  `json:"bomID" gorm:"column:bom_id;index"`
+	FormulaID      string  `json:"formulaID" gorm:"column:formula_id;index"`
 	ProductID  string  `json:"productID" gorm:"column:product_id;index"`
 	RmID       string  `json:"rmID" gorm:"column:rm_id"`
 	QtyPerUnit float64 `json:"qtyPerUnit"`
@@ -16,7 +16,7 @@ type FormulaItem struct {
 // ใช้แสดงให้ผู้มอบหมายงาน/ผู้ปฏิบัติงานเห็นว่าต้องทำอะไรบ้างตามลำดับ แยกจากรายการวัตถุดิบ (FormulaItem)
 type FormulaStep struct {
 	ID              uint   `json:"id" gorm:"primaryKey;autoIncrement"`
-	BomID           string `json:"bomID" gorm:"column:bom_id;index"`
+	FormulaID           string `json:"formulaID" gorm:"column:formula_id;index"`
 	StepNo          int    `json:"stepNo" gorm:"column:step_no"`
 	StepName        string `json:"stepName" gorm:"column:step_name"`
 	Description     string `json:"description"`

@@ -18,7 +18,7 @@ const items = [
   // { title: "แดชบอร์ด", url: "/", icon: DashboardIcon },
   { title: "แผนการผลิต", url: "/planning", icon: CalendarMonth },
   { title: "ใบสั่งผลิต", url: "/work-orders", icon: Assignment },
-  { title: "ผลิตภัณฑ์ & BOM", url: "/products", icon: Category },
+  { title: "ผลิตภัณฑ์ & สูตรการผลิต", url: "/products", icon: Category },
   { title: "วัตถุดิบ", url: "/materials", icon: Inventory2 },
   { title: "สินค้าระหว่างผลิต", url: "/wip", icon: Layers },
   { title: "การผลิต", url: "/production", icon: Factory },
