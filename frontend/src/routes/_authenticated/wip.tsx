@@ -13,6 +13,8 @@ import {
   type ApiWorkInProcess, type ApiWipRecord, type ApiRequisitionSlip, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel,
 } from "@/lib/api-client";
 import { toast } from "sonner";
+import { RequisitionDialog } from "@/components/requisition-dialog";
+{/* <RequisitionDialog defaultOrderID={order.orderID} onCreated={() => refetchMyOwnData()} /> */}
 
 export const Route = createFileRoute("/_authenticated/wip")({
   head: () => ({
@@ -551,25 +553,7 @@ if (existingLoc) {
           )}
 
           {role === "operator" && (
-            <AddItemDialog
-              key={`slip-${currentHandler}`}
-              title="สร้างใบเบิกจ่าย"
-              description="บันทึกคำขอเบิกวัตถุดิบ/สินค้าระหว่างผลิตไปยังฝ่ายผลิต"
-              successMessage="สร้างใบเบิกจ่ายแล้ว"
-              trigger={<Button variant="contained" startIcon={<Add />}>ใบเบิกจ่าย</Button>}
-              fields={[
-                { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
-                { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
-                { name: "amount", label: "จำนวนที่ต้องการเบิก", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
-                { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
-                { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
-                { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
-                { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
-              ]}
-              onAutoFill={autoFillRecord}
-              onSubmit={handleRequisition}
-            />
+            <RequisitionDialog onCreated={loadAll} />
           )}
         </>
       }
