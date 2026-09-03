@@ -20,6 +20,7 @@ import {
   Alert,
 } from "@mui/material";
 import { PageShell } from "@/components/page-shell";
+import { RequisitionDialog } from "@/components/requisition-dialog";
 
 export const Route = createFileRoute("/_authenticated/production")({
   head: () => ({ meta: [{ title: "การผลิต — FactoryFlow" }] }),
