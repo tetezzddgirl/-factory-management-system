@@ -195,9 +195,13 @@ func (h *WipHandler) UpdateWipLocation(c *gin.Context) {
 // ListWipRecords คืนประวัติรายการเคลื่อนไหวของ WIP เรียงล่าสุดก่อน (กรองด้วย wipID ได้)
 func (h *WipHandler) ListWipRecords(c *gin.Context) {
 	out := []models.WorkInProcessRecord{}
-	q := h.db.Order("timestamp DESC")
+	q := h.db.
+		Select("work_in_process_records.*, wip_locations.wip_id AS wip_id").
+		Joins("JOIN wip_locations ON wip_locations.wip_location_id = work_in_process_records.wip_location_id").
+		Order("work_in_process_records.timestamp DESC")
+
 	if wipID := c.Query("wipID"); wipID != "" {
-		q = q.Where("wip_id = ?", wipID)
+		q = q.Where("wip_locations.wip_id = ?", wipID)
 	}
 	if err := q.Limit(50).Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -213,6 +217,14 @@ func (h *WipHandler) CreateWipRecord(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+
+	var location models.WIPLocation
+	if err := h.db.Where("wip_location_id = ?", rec.WipLocationID).First(&location).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wip location not found"})
+		return
+	}
+	rec.WipID = location.WipID
+
 	if rec.WipRecordID == "" {
 		rec.WipRecordID = fmt.Sprintf("WR-%d", time.Now().UnixNano())
 	}
