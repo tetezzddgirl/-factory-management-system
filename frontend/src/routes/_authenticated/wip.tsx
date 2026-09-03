@@ -14,7 +14,6 @@ import {
 } from "@/lib/api-client";
 import { toast } from "sonner";
 import { RequisitionDialog } from "@/components/requisition-dialog";
-{/* <RequisitionDialog defaultOrderID={order.orderID} onCreated={() => refetchMyOwnData()} /> */}
 
 export const Route = createFileRoute("/_authenticated/wip")({
   head: () => ({
