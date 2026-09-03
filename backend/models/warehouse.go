@@ -14,14 +14,14 @@ type RawMaterial struct {
 }
 
 type RawMaterialLocation struct {
-	RmLocationID  string `json:"rmLocationID" gorm:"primaryKey;column:rm_location_id"`
-	Location      string `json:"location"`
-	PalletNumber string  `json:"palletNumber"`
-	LotNumber     string `json:"lotNumber"`
-	Amount        int    `json:"amount"`
-	RmID          string `json:"rmID" gorm:"column:rm_id"`
+	RmLocationID string `json:"rmLocationID" gorm:"primaryKey;column:rm_location_id"`
+	Location     string `json:"location"`
+	PalletNumber string `json:"palletNumber"`
+	LotNumber    string `json:"lotNumber"`
+	Amount       int    `json:"amount"`
+	RmID         string `json:"rmID" gorm:"column:rm_id"`
 
-	Records   []RawMaterialRecord   `json:"records,omitempty" gorm:"foreignKey:RmLocationID"`
+	Records []RawMaterialRecord `json:"records,omitempty" gorm:"foreignKey:RmLocationID"`
 }
 
 type RawMaterialRecord struct {
@@ -35,7 +35,6 @@ type RawMaterialRecord struct {
 	OrderID      string    `json:"orderID"`
 	RmID         string    `json:"rmID" gorm:"->;column:rm_id"`
 	RmLocationID string    `json:"rmLocationID" gorm:"column:rm_location_id"`
-	
 }
 
 type WorkInProcess struct {
@@ -46,7 +45,7 @@ type WorkInProcess struct {
 	Unit    string `json:"unit"`
 	Max     int    `json:"max"`
 
-	Locations []WIPLocation         `json:"locations,omitempty" gorm:"foreignKey:WipID"`
+	Locations []WIPLocation `json:"locations,omitempty" gorm:"foreignKey:WipID"`
 }
 
 type WIPLocation struct {
@@ -56,10 +55,9 @@ type WIPLocation struct {
 	LotNumber     string `json:"lotNumber"`
 	Amount        int    `json:"amount"`
 	WipID         string `json:"wipID" gorm:"column:wip_id"`
-	// OrderID       *string `json:"orderId" gorm:"column:order_id"`
 
-	Records   []WorkInProcessRecord `json:"records,omitempty" gorm:"foreignKey:WipLocationID"`
-	TransferRecords []TransferRecord `gorm:"foreignKey:WIPLocationID" json:"transferRecords"`
+	Records         []WorkInProcessRecord `json:"records,omitempty" gorm:"foreignKey:WipLocationID"`
+	TransferRecords []TransferRecord      `gorm:"foreignKey:WIPLocationID" json:"transferRecords"`
 }
 
 func (WIPLocation) TableName() string {
@@ -76,7 +74,7 @@ type WorkInProcessRecord struct {
 	Handler       string    `json:"handler"`
 	Agency        string    `json:"agency"`
 	OrderID       string    `json:"orderID"`
-	WipID   	  string 	`json:"wipID" gorm:"->;column:wip_id"`
+	WipID         string    `json:"wipID" gorm:"->;column:wip_id"`
 	WipLocationID string    `json:"wipLocationID" gorm:"column:wip_location_id"`
 }
 

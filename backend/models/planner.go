@@ -3,36 +3,36 @@ package models
 import "time"
 
 type ProductionPlan struct {
-	Timestamp time.Time `json:"timestamp"`
-	PlanID    string    `json:"planID" gorm:"primaryKey;column:plan_id"`
-	Name      string    `json:"name"`
-	Status    string    `json:"status"`
-	Amount    int       `json:"amount"`
-	Priority  string    `json:"priority"`
-	StartDate time.Time `json:"startDate"`
-	EndDate   time.Time `json:"endDate"`
-	RefFormulaID string `json:"refFormulaID" gorm:"column:ref_formula_id"`
+	Timestamp    time.Time `json:"timestamp"`
+	PlanID       string    `json:"planID" gorm:"primaryKey;column:plan_id"`
+	Name         string    `json:"name"`
+	Status       string    `json:"status"`
+	Amount       int       `json:"amount"`
+	Priority     string    `json:"priority"`
+	StartDate    time.Time `json:"startDate"`
+	EndDate      time.Time `json:"endDate"`
+	RefFormulaID string    `json:"refFormulaID" gorm:"column:ref_formula_id"`
 
 	Orders []ProductionOrder `json:"orders,omitempty" gorm:"foreignKey:PlanID"`
 }
 
 type RefFormula struct {
-	RefFormulaID  string `json:"refFormulaID" gorm:"primaryKey;column:ref_formula_id"`
-	ProductID string `json:"productID" gorm:"column:product_id;uniqueIndex:idx_ref_formula_product_formula"`
-	FormulaID     string `json:"formulaID" gorm:"column:formula_id;uniqueIndex:idx_ref_formula_product_formula"`
+	RefFormulaID string `json:"refFormulaID" gorm:"primaryKey;column:ref_formula_id"`
+	ProductID    string `json:"productID" gorm:"column:product_id;uniqueIndex:idx_ref_formula_product_formula"`
+	FormulaID    string `json:"formulaID" gorm:"column:formula_id;uniqueIndex:idx_ref_formula_product_formula"`
 }
 
 type ProductionOrder struct {
-	Timestamp time.Time `json:"timestamp"`
-	OrderID   string    `json:"orderID" gorm:"primaryKey;column:order_id"`
-	Name      string    `json:"name"`
-	Status    string    `json:"status"`
-	Amount    int       `json:"amount"`
-	Machines  string    `json:"machines"`
-	StartDate time.Time `json:"startDate"`
-	EndDate   time.Time `json:"endDate"`
-	PlanID    string    `json:"planID" gorm:"column:plan_id"`
-	RefFormulaID string `json:"refFormulaID" gorm:"column:ref_formula_id"`
+	Timestamp    time.Time `json:"timestamp"`
+	OrderID      string    `json:"orderID" gorm:"primaryKey;column:order_id"`
+	Name         string    `json:"name"`
+	Status       string    `json:"status"`
+	Amount       int       `json:"amount"`
+	Machines     string    `json:"machines"`
+	StartDate    time.Time `json:"startDate"`
+	EndDate      time.Time `json:"endDate"`
+	PlanID       string    `json:"planID" gorm:"column:plan_id"`
+	RefFormulaID string    `json:"refFormulaID" gorm:"column:ref_formula_id"`
 
 	Work                 []Work                `json:"work,omitempty" gorm:"foreignKey:OrderID"`
 	Resources            []Resources           `json:"resources,omitempty" gorm:"foreignKey:OrderID"`
@@ -45,7 +45,6 @@ type ProductionOrder struct {
 	ProductionStatusHistory []ProductionStatusHistory `gorm:"foreignKey:OrderID" json:"statusHistory"`
 	ProductionEvents        []ProductionEvent         `gorm:"foreignKey:OrderID" json:"events"`
 	ProductionReport        *ProductionReport         `gorm:"foreignKey:OrderID" json:"report"`
-	WIPLocations            []WIPLocation             `gorm:"foreignKey:OrderID" json:"wipLocations"`
 	TransferRecords         []TransferRecord          `gorm:"foreignKey:OrderID" json:"transferRecords"`
 }
 
