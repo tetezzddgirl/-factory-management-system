@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useSearch } from '@tanstack/react-router';
 import { 
   Box, Typography, Button, Chip, LinearProgress, Stack, Grid, 
-  Avatar, Tabs, Tab, Dialog, CircularProgress, Alert
+  Avatar, Tabs, Tab, Dialog, CircularProgress, Alert, DialogContent,
 } from '@mui/material';
 import { Factory, Person, Settings as CogIcon } from '@mui/icons-material';
 import { PageShell } from "@/components/page-shell";
@@ -14,6 +14,9 @@ import ProductionReport from "@/components/production_comp/productionReport";
 import ProductionStatus from "@/components/production_comp/productionStatus";
 import ProductionWip from "@/components/production_comp/productionWip";
 import ProductionFg from "@/components/production_comp/productionFg";
+import { RequisitionForm } from "@/components/production_comp/requisitionForm";
+
+import { RequisitionDialog } from "@/components/requisition-dialog";
 
 interface ProductionReport {
   reportId?: string;
@@ -59,7 +62,9 @@ function RouteComponent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
+  
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
+  const [openReqDialog, setOpenReqDialog] = useState(false); // 👈 เพิ่ม State คุม Dialog ขอเบิก
 
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
@@ -221,15 +226,23 @@ function RouteComponent() {
                   fullWidth 
                   variant="contained" 
                   color="primary" 
-                  sx={{ borderRadius: 2 }}
                   onClick={() => setOpenStatusDialog(true)}
                 >
                   แก้ไขสถานะ
                 </Button>
               </Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>แจ้งเสีย</Button></Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>ขอเบิก</Button></Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary" sx={{ borderRadius: 2 }}>แจ้งปัญหา</Button></Grid>
+              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary">แจ้งเสีย</Button></Grid>
+              <Grid size={{ xs: 6 }}>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={() => setOpenReqDialog(true)}
+                >
+                  ขอเบิก
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary">แจ้งปัญหา</Button></Grid>
             </Grid>
           </Grid>
 
@@ -247,7 +260,11 @@ function RouteComponent() {
         </Box>
 
         <Box sx={{ pt: 3 }}>
-          {tabValue === 0 && <ProductionDetails />}
+          {tabValue === 0 && (
+            <ProductionDetails 
+              orderID={order.orderID} 
+            />
+          )}
           {tabValue === 1 && (
           <ProductionFix 
               orderID={order.orderID} 
@@ -282,6 +299,7 @@ function RouteComponent() {
 
       </Box>
 
+      {/* Dialog แก้ไขสถานะ */}
       <Dialog
         open={openStatusDialog}
         onClose={() => setOpenStatusDialog(false)}
@@ -297,6 +315,26 @@ function RouteComponent() {
           onCancel={() => setOpenStatusDialog(false)}
         />
       </Dialog>
+
+      <Dialog
+        open={openReqDialog}
+        onClose={() => setOpenReqDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {order && (
+            <RequisitionForm 
+              orderID={order.orderID} 
+              orderName={order.name} 
+              onCancel={() => setOpenReqDialog(false)}
+              onCreated={() => setOpenReqDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
     </PageShell>
   );
 }

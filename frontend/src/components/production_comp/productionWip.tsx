@@ -159,7 +159,7 @@ export default function ProductionWip({ orderID, orderName }: ProductionWipProps
           disableElevation
           onClick={() => setOpenDialog(true)}
           sx={{
-            bgcolor: "#4a90e2", color: "#fff", borderRadius: 2, fontWeight: 600, px: 4,
+            bgcolor: "#4a90e2", color: "#fff", fontWeight: 600, px: 4,
             textTransform: "none", "&:hover": { bgcolor: "#357abd" },
           }}
         >

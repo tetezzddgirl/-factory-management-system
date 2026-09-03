@@ -8,6 +8,7 @@ import { VerifiedUser, Person, Settings as CogIcon } from "@mui/icons-material";
 import { PageShell } from "@/components/page-shell";
 import QualityQcPoint from "@/components/quality_comp/qualityQcPoint";
 import QualityQc from "@/components/quality_comp/qualityQc";
+import ProductionDetails from "@/components/production_comp/productionDetails";
 
 interface ProductionReport {
   reportId?: string;
@@ -197,18 +198,17 @@ function RouteComponent() {
 
         <Box sx={{ pt: 3 }}>
           {tabValue === 0 && (
-            <Box>
-              <Typography variant="body1" color="text.secondary">
-                รายละเอียดคำสั่งผลิต: {order.name} (ID: {order.orderID})
-              </Typography>
-            </Box>
-          )}
-        {tabValue === 1 && (
-          <QualityQcPoint 
+          <ProductionDetails 
             orderID={order.orderID} 
             orderName={order.name} 
           />
-        )}
+          )}
+          {tabValue === 1 && (
+            <QualityQcPoint 
+              orderID={order.orderID} 
+              orderName={order.name} 
+            />
+          )}
           {tabValue === 2 && (
             <QualityQc 
             orderID={order.orderID} 

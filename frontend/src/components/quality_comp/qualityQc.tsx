@@ -201,8 +201,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
           sx={{
             bgcolor: "#4a90e2",
             "&:hover": { bgcolor: "#357abd" },
-            textTransform: "none",
-            borderRadius: 2
+            textTransform: "none"
           }}
           onClick={() => setIsFormOpen(true)}
         >

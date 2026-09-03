@@ -144,7 +144,6 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
       <Card
         sx={{
           borderRadius: 2,
-          boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
           border: "1px solid #e0e6ed",
         }}
       >

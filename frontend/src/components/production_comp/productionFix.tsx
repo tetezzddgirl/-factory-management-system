@@ -95,7 +95,7 @@ export default function ProductionFix({ orderID, orderName }: ProductionFixProps
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
       {/* ตารางแสดงผล */}
-      <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed", boxShadow: "none" }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed"}}>
         <Table sx={{ minWidth: 700 }}>
           <TableHead sx={{ bgcolor: "#f8fafc" }}>
             <TableRow>

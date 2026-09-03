@@ -29,7 +29,6 @@ func (h *ProductionHandler) ListOrders(c *gin.Context) {
 		Preload("ProductionReport").
 		Preload("ProductionStatusHistory").
 		Preload("ProductionEvents").
-		Preload("WIPLocations").
 		Order("timestamp DESC").
 		Find(&orders).Error
 
@@ -49,7 +48,6 @@ func (h *ProductionHandler) GetOrderByID(c *gin.Context) {
 		Preload("ProductionReport").
 		Preload("ProductionStatusHistory").
 		Preload("ProductionEvents").
-		Preload("WIPLocations").
 		Preload("TransferRecords").
 		Where(`"order_id" = ?`, orderID).
 		First(&order).Error
