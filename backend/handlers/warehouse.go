@@ -25,6 +25,7 @@ func NewWarehouseHandler(db *gorm.DB) *WarehouseHandler {
 func (h *WarehouseHandler) ListRawMaterials(c *gin.Context) {
 	out := []models.RawMaterial{}
 	if err := h.db.Order("rm_id").Find(&out).Error; err != nil {
+	// if err := h.db.Preload("Locations").Order("rm_id").Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -49,55 +50,6 @@ func (h *WarehouseHandler) PreviewNextLocationCodes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"palletNumber": palletNumber, "lotNumber": lotNumber})
-}
-
-// CreateWipLocation สร้างตำแหน่งจัดเก็บ WIP ใหม่
-// ถ้าระบุ PalletNumber มาด้วย ระบบจะเช็คก่อนว่า pallet นี้เคยถูกใช้เก็บของที่ตำแหน่งอื่นมาก่อนหรือไม่
-// (เช็คจาก DB ตรงๆ ไม่พึ่งข้อมูลจาก frontend) ถ้าเคย -> ใช้ LotNumber เดิมของ pallet นั้น ไม่ generate ใหม่ซ้อน
-// ถ้าไม่เคย (หรือไม่ได้ระบุ PalletNumber) และ LotNumber ว่าง -> generate ให้อัตโนมัติ
-// ถ้าแนบ orderID มาด้วย จะฝังหมายเลขใบสั่งผลิตนั้นไว้ในรหัส lot ใหม่ที่ generate (เช่น "LOT-WO-1039-01")
-func (h *WipHandler) CreateRawMaterialLocation(c *gin.Context) {
-	var body struct {
-		models.RawMaterialLocation
-		OrderID string `json:"orderID"`
-	}
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
-		return
-	}
-	loc := body.RawMaterialLocation
-
-	if loc.RmLocationID == "" {
-		loc.RmLocationID = fmt.Sprintf("WLO-%d", time.Now().UnixNano())
-	}
-
-	// เช็คก่อนว่า pallet นี้เคยถูกใช้งานที่ตำแหน่งอื่นมาก่อนหรือไม่ ถ้าเคย ดึง LotNumber เดิมมาใช้
-	if loc.LotNumber == "" && loc.PalletNumber != "" {
-		var existing models.RawMaterialLocation
-		if err := h.db.Where("pallet_number = ?", loc.PalletNumber).First(&existing).Error; err == nil {
-			loc.LotNumber = existing.LotNumber
-		}
-	}
-
-	// ยังไม่มี LotNumber (pallet ใหม่จริงๆ ไม่เคยมีในระบบ) -> generate ใหม่
-	if loc.LotNumber == "" {
-		lotMiddle := body.OrderID
-		if lotMiddle == "" || lotMiddle == "-" {
-			lotMiddle = time.Now().Format("060102")
-		}
-		id, err := nextSeqID(h.db, &models.RawMaterialLocation{}, "lot_number", "LOT", lotMiddle, 2)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		loc.LotNumber = id
-	}
-
-	if err := h.db.Create(&loc).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, loc)
 }
 
 // GetRawMaterial คืนวัตถุดิบ 1 ตัว พร้อม Locations/Records ที่ผูกอยู่ (path: /api/materials/:rmID/detail)
@@ -160,14 +112,46 @@ func (h *WarehouseHandler) ListLocations(c *gin.Context) {
 
 // CreateLocation สร้างการจัดเก็บวัตถุดิบตำแหน่งใหม่ (rmLocationID ว่างได้ ระบบจะ gen ให้)
 func (h *WarehouseHandler) CreateLocation(c *gin.Context) {
-	var loc models.RawMaterialLocation
-	if err := c.ShouldBindJSON(&loc); err != nil {
+	var body struct {
+		models.RawMaterialLocation
+		OrderID string `json:"orderID"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+
+	loc := body.RawMaterialLocation
 	if loc.RmLocationID == "" {
-		loc.RmLocationID = fmt.Sprintf("RMLO-%d", time.Now().UnixNano())
+		loc.RmLocationID = fmt.Sprintf("RML-%s", time.Now().Format("20060102150405"))
 	}
+	if loc.RmID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "rmID is required"})
+		return
+	}
+
+	// เช็คก่อนว่า pallet นี้เคยถูกใช้งานที่ตำแหน่งอื่นมาก่อนหรือไม่ ถ้าเคย ดึง LotNumber เดิมมาใช้
+	if loc.LotNumber == "" && loc.PalletNumber != "" {
+		var existing models.RawMaterialLocation
+		if err := h.db.Where("pallet_number = ?", loc.PalletNumber).First(&existing).Error; err == nil {
+			loc.LotNumber = existing.LotNumber
+		}
+	}
+
+	// ยังไม่มี LotNumber (pallet ใหม่จริงๆ ไม่เคยมีในระบบ) -> generate ใหม่
+	if loc.LotNumber == "" {
+		lotMiddle := body.OrderID
+		if lotMiddle == "" || lotMiddle == "-" {
+			lotMiddle = time.Now().Format("060102")
+		}
+		id, err := nextSeqID(h.db, &models.RawMaterialLocation{}, "lot_number", "LOT", lotMiddle, 2)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		loc.LotNumber = id
+	}
+
 	if err := h.db.Create(&loc).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -195,11 +179,27 @@ func (h *WarehouseHandler) UpdateLocation(c *gin.Context) {
 }
 
 // ListRecords คืนประวัติรายการเคลื่อนไหวของวัตถุดิบ เรียงล่าสุดก่อน — ใช้กับ "รายการเคลื่อนไหวล่าสุด"
+// func (h *WarehouseHandler) ListRecords(c *gin.Context) {
+// 	out := []models.RawMaterialRecord{}
+// 	q := h.db.Order("timestamp DESC")
+// 	if rmID := c.Query("rmID"); rmID != "" {
+// 		q = q.Where("rm_id = ?", rmID)
+// 	}
+// 	if err := q.Limit(50).Find(&out).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, out)
+// }
 func (h *WarehouseHandler) ListRecords(c *gin.Context) {
 	out := []models.RawMaterialRecord{}
-	q := h.db.Order("timestamp DESC")
+	q := h.db.
+		Select("raw_material_records.*, raw_material_locations.rm_id AS rm_id").
+		Joins("JOIN raw_material_locations ON raw_material_locations.rm_location_id = raw_material_records.rm_location_id").
+		Order("raw_material_records.timestamp DESC")
+
 	if rmID := c.Query("rmID"); rmID != "" {
-		q = q.Where("rm_id = ?", rmID)
+		q = q.Where("raw_material_locations.rm_id = ?", rmID)
 	}
 	if err := q.Limit(50).Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -216,8 +216,17 @@ func (h *WarehouseHandler) CreateRecord(c *gin.Context) {
 		return
 	}
 	if rec.RmRecordID == "" {
-		rec.RmRecordID = fmt.Sprintf("RMR-%d", time.Now().UnixNano())
+		rec.RmRecordID = fmt.Sprintf("RMR-%s", time.Now().Format("20060102150405"))
 	}
+	// ตรวจสอบว่า Location นี้มีจริงไหม
+	var location models.RawMaterialLocation
+
+	if err := h.db.
+		Where("rm_location_id = ?", rec.RmLocationID).First(&location).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{ "error": "raw material location not found", })
+		return
+	}
+	rec.RmID = location.RmID
 	if rec.Timestamp.IsZero() {
 		rec.Timestamp = time.Now()
 	}

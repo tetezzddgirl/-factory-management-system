@@ -24,7 +24,7 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // Migrate สร้าง/อัปเดตตารางที่จำเป็นด้วย GORM AutoMigrate
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	if err := db.AutoMigrate(
 		// ผู้ใช้งาน / auth
 		&models.User{},
 
@@ -67,5 +67,16 @@ func Migrate(db *gorm.DB) error {
 		&models.Inspection{},
 		&models.InspectionItem{},
 		&models.CorrectionRecord{},
-	)
+	); err != nil {
+		return err
+	}
+
+	if err := db.Exec(`ALTER TABLE raw_material_records DROP COLUMN IF EXISTS rm_id`).Error; err != nil {
+		return err
+	}
+	if err := db.Exec(`ALTER TABLE work_in_process_records DROP COLUMN IF EXISTS wip_id`).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -11,7 +11,6 @@ type RawMaterial struct {
 	Min         int    `json:"min"`
 
 	Locations []RawMaterialLocation `json:"locations,omitempty" gorm:"foreignKey:RmID"`
-	Records   []RawMaterialRecord   `json:"records,omitempty" gorm:"foreignKey:RmID"`
 }
 
 type RawMaterialLocation struct {
@@ -21,6 +20,8 @@ type RawMaterialLocation struct {
 	LotNumber     string `json:"lotNumber"`
 	Amount        int    `json:"amount"`
 	RmID          string `json:"rmID" gorm:"column:rm_id"`
+
+	Records   []RawMaterialRecord   `json:"records,omitempty" gorm:"foreignKey:RmLocationID"`
 }
 
 type RawMaterialRecord struct {
@@ -32,7 +33,7 @@ type RawMaterialRecord struct {
 	Handler      string    `json:"handler"`
 	Agency       string    `json:"agency"`
 	OrderID      string    `json:"orderID"`
-	RmID         string    `json:"rmID"`
+	RmID         string    `json:"rmID" gorm:"->;column:rm_id"`
 	RmLocationID string    `json:"rmLocationID" gorm:"column:rm_location_id"`
 	
 }
@@ -46,7 +47,6 @@ type WorkInProcess struct {
 	Max     int    `json:"max"`
 
 	Locations []WIPLocation         `json:"locations,omitempty" gorm:"foreignKey:WipID"`
-	Records   []WorkInProcessRecord `json:"records,omitempty" gorm:"foreignKey:WipID"`
 }
 
 type WIPLocation struct {
@@ -56,10 +56,14 @@ type WIPLocation struct {
 	LotNumber     string `json:"lotNumber"`
 	Amount        int    `json:"amount"`
 	WipID         string `json:"wipID" gorm:"column:wip_id"`
+	// OrderID       *string `json:"orderId" gorm:"column:order_id"`
 
-	OrderID       *string `json:"orderId" gorm:"column:order_id"`
-
+	Records   []WorkInProcessRecord `json:"records,omitempty" gorm:"foreignKey:WipLocationID"`
 	TransferRecords []TransferRecord `gorm:"foreignKey:WIPLocationID" json:"transferRecords"`
+}
+
+func (WIPLocation) TableName() string {
+	return "wip_locations"
 }
 
 type WorkInProcessRecord struct {
@@ -72,8 +76,12 @@ type WorkInProcessRecord struct {
 	Handler       string    `json:"handler"`
 	Agency        string    `json:"agency"`
 	OrderID       string    `json:"orderID"`
-	WipID   	  string 	`json:"wipID"`
+	WipID   	  string 	`json:"wipID" gorm:"->;column:wip_id"`
 	WipLocationID string    `json:"wipLocationID" gorm:"column:wip_location_id"`
+}
+
+func (WorkInProcessRecord) TableName() string {
+	return "work_in_process_records"
 }
 
 type RequisitionSlip struct {
