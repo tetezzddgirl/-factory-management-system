@@ -39,7 +39,7 @@ interface ProductionStatusProps {
 export default function ProductionStatus({
   orderId,
   orderName,
-  initialStatus = "info",
+  initialStatus = "รอมอบหมาย",
   onSave,
   onCancel,
 }: ProductionStatusProps) {
@@ -73,34 +73,30 @@ export default function ProductionStatus({
     fetchHistory();
   }, [orderId]);
 
-  // Map รหัสสถานะเป็น ข้อความ/สี
+  // Map สถานะภาษาไทย ไปเป็น สี
   const getStatusDisplay = (status: string, isActive: boolean = true) => {
-    // หา label พื้นฐานก่อน
-    let label = "รอมอบหมาย";
-    if (status === "info") label = "กำลังผลิต";
-    else if (status === "warning") label = "หยุดชั่วคราว";
-    else if (status === "success") label = "เสร็จสิ้น";
-    else if (status === "error") label = "ยกเลิก";
+    const label = status || "รอมอบหมาย";
 
     if (!isActive) {
       return { label, bgcolor: "#f1f5f9", color: "#64748b", border: "1px solid #cbd5e1" };
     }
 
     switch (status) {
-      case "info":
-        return { label: "กำลังผลิต", bgcolor: "#10B981", color: "#fff", border: "1px solid #10B981" };
-      case "warning":
-        return { label: "หยุดชั่วคราว", bgcolor: "#F59E0B", color: "#fff", border: "1px solid #F59E0B" };
-      case "success":
-        return { label: "เสร็จสิ้น", bgcolor: "#4A90E2", color: "#fff", border: "1px solid #4A90E2" };
-      case "error":
-        return { label: "ยกเลิก", bgcolor: "#EF4444", color: "#fff", border: "1px solid #EF4444" };
+      case "กำลังผลิต":
+        return { label, bgcolor: "#10B981", color: "#fff", border: "1px solid #10B981" };
+      case "หยุดชั่วคราว":
+        return { label, bgcolor: "#F59E0B", color: "#fff", border: "1px solid #F59E0B" };
+      case "เสร็จสิ้น":
+        return { label, bgcolor: "#4A90E2", color: "#fff", border: "1px solid #4A90E2" };
+      case "ยกเลิก":
+        return { label, bgcolor: "#EF4444", color: "#fff", border: "1px solid #EF4444" };
       default:
         return { label: "รอมอบหมาย", bgcolor: "#A4ABB6", color: "#fff", border: "1px solid #A4ABB6" };
     }
   };
 
-  const availableStatuses = ["info", "warning", "success", "error"];
+  // เปลี่ยน Value ที่จะบันทึกลงฐานข้อมูลให้เป็นภาษาไทยตรงๆ
+  const availableStatuses = ["กำลังผลิต", "หยุดชั่วคราว", "เสร็จสิ้น", "ยกเลิก"];
 
   return (
     <Box sx={{ width: "100%", p: 0 }}>
