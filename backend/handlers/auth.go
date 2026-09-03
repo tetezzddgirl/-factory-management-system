@@ -11,18 +11,15 @@ import (
 	"gorm.io/gorm"
 )
 
-// AuthHandler รวม dependency ที่ handler ฝั่ง auth ต้องใช้
 type AuthHandler struct {
 	db     *gorm.DB
 	secret []byte
 }
 
-// NewAuthHandler สร้าง AuthHandler ตัวใหม่
 func NewAuthHandler(db *gorm.DB, secret []byte) *AuthHandler {
 	return &AuthHandler{db: db, secret: secret}
 }
 
-// Signup สมัครสมาชิกใหม่แล้วคืน JWT token
 func (h *AuthHandler) Signup(c *gin.Context) {
 	var cred models.Credentials
 	if err := c.ShouldBindJSON(&cred); err != nil {
@@ -42,7 +39,6 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 	h.writeToken(c, user.ID, user.Email)
 }
 
-// Login ตรวจสอบ credentials แล้วคืน JWT token
 func (h *AuthHandler) Login(c *gin.Context) {
 	var cred models.Credentials
 	if err := c.ShouldBindJSON(&cred); err != nil {

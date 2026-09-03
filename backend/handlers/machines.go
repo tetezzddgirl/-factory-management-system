@@ -9,17 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// MachineHandler รวม dependency ของ endpoint ฝั่งเครื่องจักร (Machines)
 type MachineHandler struct {
 	db *gorm.DB
 }
 
-// NewMachineHandler สร้าง MachineHandler ตัวใหม่
 func NewMachineHandler(db *gorm.DB) *MachineHandler {
 	return &MachineHandler{db: db}
 }
 
-// ListMachines คืนรายการเครื่องจักรทั้งหมด
 func (h *MachineHandler) ListMachines(c *gin.Context) {
 	out := []models.Machine{}
 	if err := h.db.Order("id").Find(&out).Error; err != nil {
@@ -29,7 +26,6 @@ func (h *MachineHandler) ListMachines(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// CreateMachine เพิ่มเครื่องจักรใหม่
 func (h *MachineHandler) CreateMachine(c *gin.Context) {
 	var m models.Machine
 	if err := c.ShouldBindJSON(&m); err != nil {

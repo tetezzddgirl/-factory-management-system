@@ -11,17 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// PersonnelHandler รวม dependency ของ endpoint ฝั่งบุคลากร (Personnel)
 type PersonnelHandler struct {
 	db *gorm.DB
 }
 
-// NewPersonnelHandler สร้าง PersonnelHandler ตัวใหม่
 func NewPersonnelHandler(db *gorm.DB) *PersonnelHandler {
 	return &PersonnelHandler{db: db}
 }
 
-// ListPersonnel คืนรายชื่อบุคลากรทั้งหมด
 func (h *PersonnelHandler) ListPersonnel(c *gin.Context) {
 	out := []models.Personnel{}
 	if err := h.db.Order("id").Find(&out).Error; err != nil {
@@ -31,7 +28,6 @@ func (h *PersonnelHandler) ListPersonnel(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// CreatePersonnel เพิ่มบุคลากรใหม่ (gen id ให้ถ้าไม่ระบุมา)
 func (h *PersonnelHandler) CreatePersonnel(c *gin.Context) {
 	var p models.Personnel
 	if err := c.ShouldBindJSON(&p); err != nil {
@@ -51,7 +47,6 @@ func (h *PersonnelHandler) CreatePersonnel(c *gin.Context) {
 	c.JSON(http.StatusOK, p)
 }
 
-// UpdatePersonnelStatus แก้ไขสถานะของบุคลากรตาม id (path param: /api/personnel/:id)
 func (h *PersonnelHandler) UpdatePersonnelStatus(c *gin.Context) {
 	id := c.Param("id")
 	var body struct {

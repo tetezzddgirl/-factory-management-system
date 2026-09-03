@@ -173,7 +173,7 @@ function palletLocationConflict(
   );
 }
 
-/** ข้อความใต้ช่อง "จำนวน": เตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง */
+// ข้อความเตือนแบบเรียลไทม์ถ้าเบิกจ่ายเกินยอดที่ Pallet/Location นั้นมีอยู่จริง 
 function amountHelperText(values: Record<string, string>): string | undefined {
   if (values.type !== "เบิกจ่าย") return undefined;
   const loc = findFormLocation(values);
@@ -194,6 +194,10 @@ function amountIsOver(values: Record<string, string>): boolean {
   const loc = findFormLocation(values);
   if (!loc) return false;
   return (Number(values.amount) || 0) > loc.amount;
+}
+
+function isNegative(field: string) {
+  return (values: Record<string, string>) => Number(values[field]) < 0;
 }
 
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
@@ -251,10 +255,10 @@ function amountIsOver(values: Record<string, string>): boolean {
               { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
               { name: "rmID", label: "รหัสวัตถุดิบ", placeholder: "RM-005", helperText: "หากกรอกรหัสวัตถุดิบที่มีอยู่ในรายการวัตถุดิบ ระบบจะดึงชื่อ/หน่วย/จำนวนสูงสุดและจำนวนสำรองให้โดยอัตโนมัติ" },
               { name: "rawMaterial", label: "ชื่อวัตถุดิบ", placeholder: "HDPE Resin" },
-              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
+              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", error: isNegative("amount") },
               { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
-              { name: "max", label: "จำนวนสูงสุดที่เก็บได้", type: "number", defaultValue: "10000" },
-              { name: "min", label: "จำนวนที่ต้องสำรอง", type: "number", defaultValue: "0" },
+              { name: "max", label: "จำนวนสูงสุดที่เก็บได้", type: "number", defaultValue: "10000", error: isNegative("max") },
+              { name: "min", label: "จำนวนที่ต้องสำรอง", type: "number", defaultValue: "0", error: isNegative("min") },
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ"},
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005", required: false },
@@ -372,8 +376,9 @@ onSubmit={async (v) => {
               { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "โอนย้าย", "เบิกจ่าย", "คืน"], defaultValue: "รับเข้า" },
               { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
               { name: "item", label: "รหัส / ชื่อวัตถุดิบ", type: "select", options: rawMaterial.map((i) => `${i.rmID} — ${i.rawMaterial}`), defaultValue: rawMaterial[0] ? `${rawMaterial[0].rmID} — ${rawMaterial[0].rawMaterial}` : "" },
-              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
-              { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },    // ระบบจะเติม unit ให้โดยอัตโนมัติตามวัตถุดิบที่เลือก
+              { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText
+                , error: (values: Record<string, string>) => amountIsOver(values) || isNegative("amount")(values), },
+              { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },   
               { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ" }, // หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมั
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
@@ -403,7 +408,7 @@ onSubmit={async (v) => {
     }
   }
 
-    // (1) เบิกจ่าย/โอนย้าย ต้องระบุ pallet/location ที่มีอยู่จริงก่อนเสมอ ไม่งั้นไม่รู้จะตัดยอดจากไหน
+    // เบิกจ่าย/โอนย้าย ต้องระบุ pallet/location ที่มีอยู่จริงก่อนเสมอ ไม่งั้นไม่รู้จะตัดยอดจากไหน
   if (v.type === "เบิกจ่าย" || v.type === "โอนย้าย") {
     if (!existingLoc) {
       toast.error("ไม่พบ Pallet/Location นี้ในระบบ กรุณาระบุ Pallet Number หรือ Location ที่มีวัตถุดิบนี้จัดเก็บอยู่จริง");
@@ -411,7 +416,7 @@ onSubmit={async (v) => {
     }
   }
 
-  // (2) เช็คยอดที่ "ตำแหน่งนั้น" ไม่ใช่ยอดรวม
+  // เช็คยอดที่ "ตำแหน่งนั้น" ไม่ใช่ยอดรวม
   if (v.type === "เบิกจ่าย" && existingLoc && qty > existingLoc.amount) {
     toast.error(
       `เบิกจ่ายไม่สำเร็จ: ตำแหน่ง ${existingLoc.location}${existingLoc.palletNumber ? ` (Pallet ${existingLoc.palletNumber})` : ""} มีเพียง ${existingLoc.amount.toLocaleString()} ${target?.unit ?? ""} (ขอเบิก ${qty.toLocaleString()})`,

@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-client";
 import { plansApi } from "@/lib/api-client";
 import { Today } from "@mui/icons-material";
+import { error } from "node:console";
 
 export type TemplateResult = { planID: string;  name: string; product: string; formula: string; target: number; priority: string; start: string; due: string };
 
@@ -107,6 +108,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
 
   // วันที่กำหนดเสร็จต้องไม่มาก่อนวันที่เริ่มผลิต
   const dateError = Boolean(start && due && due < start);
+  const targetIsNegative = Number(target) < 0;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -130,7 +132,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
           <TextField select label="สูตรการผลิต" value={formula} onChange={(e) => setFormula(e.target.value)} >
             {formulaOptions(formulas, products).map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
           </TextField>
-          <TextField label="จำนวนที่ผลิต" type="number" value={target} onChange={(e) => handleTargetChange(e.target.value)} />
+          <TextField label="จำนวนที่ผลิต" type="number" value={target} onChange={(e) => handleTargetChange(e.target.value)} error={targetIsNegative} />
           <TextField
             label="วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)" value={requiredMaterials}
             multiline minRows={3} slotProps={{ input: { readOnly: true } }}
@@ -157,7 +159,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={!sourceId || !product || !target || dateError}
+          disabled={!sourceId || !product || !target || dateError || targetIsNegative}
           onClick={() => onSubmit({ planID, name, product, formula: formulaIDFromOption(formula), target: Number(target) || 0, priority, start, due })}
         >
           บันทึก

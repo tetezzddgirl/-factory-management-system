@@ -11,17 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// IssueHandler รวม dependency ของ endpoint ฝั่งการแจ้ง/แก้ไขปัญหาการผลิต (Issues)
 type IssueHandler struct {
 	db *gorm.DB
 }
 
-// NewIssueHandler สร้าง IssueHandler ตัวใหม่
 func NewIssueHandler(db *gorm.DB) *IssueHandler {
 	return &IssueHandler{db: db}
 }
 
-// ListIssues คืนรายการปัญหาทั้งหมด เรียงล่าสุดก่อน
 func (h *IssueHandler) ListIssues(c *gin.Context) {
 	out := []models.Issue{}
 	if err := h.db.Order("timestamp DESC").Find(&out).Error; err != nil {
@@ -31,7 +28,6 @@ func (h *IssueHandler) ListIssues(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// CreateIssue แจ้งปัญหาใหม่
 func (h *IssueHandler) CreateIssue(c *gin.Context) {
 	var iss models.Issue
 	if err := c.ShouldBindJSON(&iss); err != nil {
@@ -54,7 +50,6 @@ func (h *IssueHandler) CreateIssue(c *gin.Context) {
 	c.JSON(http.StatusOK, iss)
 }
 
-// UpdateIssue บันทึกแนวทางแก้ไข/สถานะของปัญหาตาม issueID (path param: /api/issues/:id)
 func (h *IssueHandler) UpdateIssue(c *gin.Context) {
 	id := c.Param("id")
 	var body struct {

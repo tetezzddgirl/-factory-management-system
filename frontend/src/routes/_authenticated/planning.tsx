@@ -123,22 +123,24 @@ function PlanningPage() {
 
   /** สร้างแผนจริงที่ backend — name/amount/status/priority/productID/bomID/line/startDate/endDate persist ลง DB ทั้งหมดแล้ว */
   async function savePlan(
-    name: string, formula: string, amount: number, due: string, priority?: string,
-    productID?: string, start?: string,
-  ) {
-    try {
-      const apiPlan = await plansApi.create({
-        name, amount, status: "รอเริ่ม", priority,
-        productID, formulaID: formula,
-        startDate: toISO(start ?? ""), endDate: toISO(due),
-      });
-      const created: PlanRow = fromApiPlan(apiPlan);
-      setPlans((prev) => [created, ...prev]);
-      setSavedPlan(created);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "สร้างแผนการผลิตไม่สำเร็จ");
-    }
+  name: string, formula: string, amount: number, due: string, priority?: string,
+  productID?: string, start?: string,
+): Promise<boolean> {
+  try {
+    const apiPlan = await plansApi.create({
+      name, amount, status: "รอเริ่ม", priority,
+      productID, formulaID: formula,
+      startDate: toISO(start ?? ""), endDate: toISO(due),
+    });
+    const created: PlanRow = fromApiPlan(apiPlan);
+    setPlans((prev) => [created, ...prev]);
+    setSavedPlan(created);
+    return true;
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "สร้างแผนการผลิตไม่สำเร็จ");
+    return false;
   }
+}
 
   async function updatePriority(planId: string, priority: string) {
     setPlans((prev) => prev.map((p) => (p.planID === planId ? { ...p, priority } : p)));
@@ -150,11 +152,20 @@ function PlanningPage() {
     }
   }
 
+  function isNegative(field: string) {
+    return (values: Record<string, string>) => Number(values[field]) < 0;
+  }
+
   function handleRequestPlan(v: Record<string, string>) {
+    const amount = Number(v.amount) || 0;
+    if (amount < 0) {
+      toast.error("จำนวนที่ผลิตต้องไม่ติดลบ");
+      return false;
+    }
     const productID = v.productID.split(" — ")[0];
     const productName = v.productID.split(" — ")[1] ?? v.productID;
     const formulaID = formulaIDFromOption(v.formula);
-    savePlan(productName, formulaID, Number(v.amount) || 0, v.due, v.priority, productID, v.start);
+    return savePlan(productName, formulaID, amount, v.due, v.priority, productID, v.start);
   }
 
   /** เลือกสินค้า -> เติมสูตรการผลิต (bom) และคำนวณยอดวัตถุดิบที่ต้องใช้แสดงเป็น preview ให้เอง
@@ -177,11 +188,16 @@ function PlanningPage() {
       : { requiredMaterials };
   }
 
-  function handleTemplate(r: TemplateResult) {
-    setTemplateOpen(false);
-    const productID = products.find((p) => p.name === r.product)?.productID;
-    savePlan(r.product, formulaIDFromOption(r.formula), r.target, r.due, r.priority, productID, r.start);
+  async function handleTemplate(r: TemplateResult) {
+  if (r.target < 0) {
+    toast.error("จำนวนที่ผลิตต้องไม่ติดลบ");
+    return false;
   }
+  const productID = products.find((p) => p.name === r.product)?.productID;
+  const ok = await savePlan(r.product, formulaIDFromOption(r.formula), r.target, r.due, r.priority, productID, r.start);
+  if (ok) setTemplateOpen(false);
+  return ok;
+}
 
   function createOrderFor(plan: PlanRow) {
     setDetailPlan(null);
@@ -310,7 +326,7 @@ function PlanningPage() {
                 { name: "planID", label: "หมายเลขแผนการผลิต", readOnly: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
                 { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
                 { name: "formula", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
-                { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000" },
+                { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000", error: isNegative("amount") },
                 { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
                 { name: "priority", label: "ลำดับความสำคัญ", type: "select", options: ["สูง", "ปกติ", "ต่ำ"], defaultValue: "ปกติ" },
                 { name: "start", label: "วันที่เริ่มผลิต", type: "date", defaultValue: getToday() },

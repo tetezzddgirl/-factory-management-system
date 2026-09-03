@@ -216,6 +216,10 @@ function amountIsOver(values: Record<string, string>): boolean {
   return (Number(values.amount) || 0) > loc.amount;
 }
 
+function isNegative(field: string) {
+  return (values: Record<string, string>) => Number(values[field]) < 0;
+}
+
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
   function autoFillNewItem(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
   if (changed === "wipID" && values.wipID) {
@@ -516,7 +520,7 @@ if (existingLoc) {
                   { name: "wipID", label: "รหัสสินค้าระหว่างผลิต", placeholder: "WIP-005", helperText: "หากกรอกรหัสที่มีอยู่แล้วในรายการสินค้าระหว่างผลิต ระบบจะเติมชื่อ/หน่วยให้อัตโนมัติ" },
                   { name: "wip", label: "ชื่อสินค้าระหว่างผลิต", placeholder: "ขวดติดฉลากแล้ว" },
                   { name: "inStage", label: "ขั้นตอนการผลิต", placeholder: "หลังติดฉลาก" },
-                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
+                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", error: isNegative("amount") },
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
@@ -537,7 +541,8 @@ if (existingLoc) {
                   { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "โอนย้าย", "เบิกจ่าย", "คืน"], defaultValue: "รับเข้า" },
                   { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
                   { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
-                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
+                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText,
+                     error: (values: Record<string, string>) => amountIsOver(values) || isNegative("amount")(values), },
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
