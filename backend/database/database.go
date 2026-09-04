@@ -24,6 +24,14 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // Migrate สร้าง/อัปเดตตารางที่จำเป็นด้วย GORM AutoMigrate
 func Migrate(db *gorm.DB) error {
+	if db.Migrator().HasTable("w_ip_locations") {
+		if err := db.Exec(`ALTER TABLE work_in_process_records DROP CONSTRAINT IF EXISTS fk_w_ip_locations_records`).Error; err != nil {
+			return err
+		}
+		if err := db.Migrator().DropTable("w_ip_locations"); err != nil {
+			return err
+		}
+	}
 	if err := db.AutoMigrate(
 		// ผู้ใช้งาน / auth
 		&models.User{},

@@ -56,7 +56,7 @@ func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula
 // PreviewNextPlanID คืนเลขที่แผนการผลิตที่ "จะได้" ถ้าสร้างตอนนี้ — ใช้แสดงผลใน UI เท่านั้น
 // ไม่ persist หรือ "จอง" เลขไว้ ถ้ามีการสร้างแผนอื่นแทรกก่อน submit จริง เลขที่ได้จริงอาจขยับ
 func (h *PlanningHandler) PreviewNextPlanID(c *gin.Context) {
-	id, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", time.Now().Format("20060102"), 3)
+	id, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", time.Now().Format("2006-01-02"), 3)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -108,6 +108,10 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if body.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if body.Status == "" {
 		body.Status = "รอเริ่ม"
 	}
@@ -136,6 +140,10 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		Priority:  body.Priority,
 		StartDate: now,
 		RefFormulaID:  refFormulaID,
+	}
+	if body.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
 	}
 	if t, err := time.Parse(time.RFC3339, body.StartDate); err == nil {
 		p.StartDate = t

@@ -51,6 +51,10 @@ func (h *WipHandler) CreateWorkInProcess(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if w.Amount < 0 || w.Max < 0{ 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if err := h.db.Save(&w).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -66,6 +70,10 @@ func (h *WipHandler) UpdateWorkInProcessAmount(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if body.Amount < 0 { 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}
 	if err := h.db.Model(&models.WorkInProcess{}).Where("wip_id = ?", wipID).
@@ -126,6 +134,10 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if body.Amount < 0 { 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	loc := body.WIPLocation
 
 	if loc.WipLocationID == "" {
@@ -173,6 +185,10 @@ func (h *WipHandler) UpdateWipLocation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if body.Amount < 0 { 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 
 	updates := map[string]interface{}{}
 	if body.Location != "" {
@@ -217,6 +233,10 @@ func (h *WipHandler) CreateWipRecord(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if rec.Amount < 0 { 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 
 	var location models.WIPLocation
 	if err := h.db.Where("wip_location_id = ?", rec.WipLocationID).First(&location).Error; err != nil {
@@ -255,6 +275,10 @@ func (h *WipHandler) CreateRequisitionSlip(c *gin.Context) {
 	var slip models.RequisitionSlip
 	if err := c.ShouldBindJSON(&slip); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if slip.Amount < 0 { 
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}
 	if slip.SlipID == "" {

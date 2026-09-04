@@ -13,6 +13,7 @@ import {
   type ApiWorkInProcess, type ApiWipRecord, type ApiRequisitionSlip, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel,
 } from "@/lib/api-client";
 import { toast } from "sonner";
+import { RequisitionDialog } from "@/components/requisition-dialog";
 
 export const Route = createFileRoute("/_authenticated/wip")({
   head: () => ({
@@ -213,6 +214,10 @@ function amountIsOver(values: Record<string, string>): boolean {
   const loc = findFormLocation(values);
   if (!loc) return false;
   return (Number(values.amount) || 0) > loc.amount;
+}
+
+function isNegative(field: string) {
+  return (values: Record<string, string>) => Number(values[field]) < 0;
 }
 
   /** กรอกอัตโนมัติสำหรับ dialog "เพิ่มวัตถุดิบในรายการ": ถ้าพิมพ์รหัสวัตถุดิบที่มีอยู่แล้ว (เติมสต็อกเดิม) -> เติมชื่อ/หน่วยให้เอง */
@@ -515,7 +520,7 @@ if (existingLoc) {
                   { name: "wipID", label: "รหัสสินค้าระหว่างผลิต", placeholder: "WIP-005", helperText: "หากกรอกรหัสที่มีอยู่แล้วในรายการสินค้าระหว่างผลิต ระบบจะเติมชื่อ/หน่วยให้อัตโนมัติ" },
                   { name: "wip", label: "ชื่อสินค้าระหว่างผลิต", placeholder: "ขวดติดฉลากแล้ว" },
                   { name: "inStage", label: "ขั้นตอนการผลิต", placeholder: "หลังติดฉลาก" },
-                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0" },
+                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", error: isNegative("amount") },
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
@@ -536,7 +541,8 @@ if (existingLoc) {
                   { name: "type", label: "ประเภทรายการ", type: "select", options: ["รับเข้า", "โอนย้าย", "เบิกจ่าย", "คืน"], defaultValue: "รับเข้า" },
                   { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
                   { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
-                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
+                  { name: "amount", label: "จำนวน", type: "number", defaultValue: "0", helperText: amountHelperText,
+                     error: (values: Record<string, string>) => amountIsOver(values) || isNegative("amount")(values), },
                   { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
                   { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
@@ -551,25 +557,7 @@ if (existingLoc) {
           )}
 
           {role === "operator" && (
-            <AddItemDialog
-              key={`slip-${currentHandler}`}
-              title="สร้างใบเบิกจ่าย"
-              description="บันทึกคำขอเบิกวัตถุดิบ/สินค้าระหว่างผลิตไปยังฝ่ายผลิต"
-              successMessage="สร้างใบเบิกจ่ายแล้ว"
-              trigger={<Button variant="contained" startIcon={<Add />}>ใบเบิกจ่าย</Button>}
-              fields={[
-                { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: orderOptions[0] },
-                { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
-                { name: "amount", label: "จำนวนที่ต้องการเบิก", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
-                { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
-                { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005" },
-                { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
-                { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
-                { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
-              ]}
-              onAutoFill={autoFillRecord}
-              onSubmit={handleRequisition}
-            />
+            <RequisitionDialog onCreated={loadAll} />
           )}
         </>
       }

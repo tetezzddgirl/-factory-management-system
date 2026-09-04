@@ -59,6 +59,10 @@ export function RequisitionDialog({ defaultOrderID, trigger, onCreated }: Requis
     });
   }
 
+  function isNegative(field: string) {
+    return (values: Record<string, string>) => Number(values[field]) < 0;
+  }
+
   function amountHelperText(values: Record<string, string>): string | undefined {
     const loc = findLoc(values);
     if (!loc) return undefined;
@@ -124,7 +128,8 @@ export function RequisitionDialog({ defaultOrderID, trigger, onCreated }: Requis
         { name: "orderID", label: "หมายเลขใบสั่งผลิต", type: "select", options: orderOptions, defaultValue: defaultOrderOption },
         { name: "item", label: "รหัส / ชื่อสินค้าระหว่างผลิต", type: "select", options: workInProcess.map((i) => `${i.wipID} — ${i.wip}`), defaultValue: firstWip ? `${firstWip.wipID} — ${firstWip.wip}` : "" },
         { name: "location", label: "Location", type: "select", options: LOCATION_MASTER, defaultValue: LOCATION_MASTER[0] },
-        { name: "amount", label: "จำนวนที่ต้องการเบิก", type: "number", defaultValue: "0", helperText: amountHelperText, error: amountIsOver },
+        { name: "amount", label: "จำนวนที่ต้องการเบิก", type: "number", defaultValue: "0", helperText: amountHelperText,
+          error: (values: Record<string, string>) => amountIsOver(values) || isNegative("amount")(values), },
         { name: "unit", label: "หน่วย", defaultValue: "ชิ้น" },
         { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "เลือก Location หรือกรอก Pallet ที่มีอยู่แล้ว ระบบจะดึงข้อมูลที่เหลือให้อัตโนมัติ" },
         { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },

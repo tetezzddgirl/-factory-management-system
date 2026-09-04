@@ -106,8 +106,12 @@ func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if o.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if o.OrderID == "" {
-    	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("060102"), 3)
+    	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("20060102"), 3)
     	if err != nil {
         	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         	return
@@ -233,7 +237,7 @@ func (h *WorkOrderHandler) UpdateWork(c *gin.Context) {
 }
 
 func (h *WorkOrderHandler) PreviewNextOrderID(c *gin.Context) {
-	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("20260102"), 3)
+	id, err := nextSeqID(h.db, &models.ProductionOrder{}, "order_id", "WO", time.Now().Format("20060102"), 3)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
