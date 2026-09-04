@@ -182,7 +182,6 @@ export default function ProductionFgDetails({
           onClick={onClose} 
           variant="contained" 
           disableElevation
-          sx={{ bgcolor: "#475467", "&:hover": { bgcolor: "#344054" } }}
         >
           ปิดหน้าต่าง
         </Button>

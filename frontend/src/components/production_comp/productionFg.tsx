@@ -201,7 +201,7 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
         onClose={() => setOpenDialog(false)} 
         maxWidth="sm" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3} }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         <ProductionFgForm 
           orderID={orderID || ""}
@@ -219,7 +219,7 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
         onClose={() => setDetailDialogOpen(false)} 
         maxWidth="sm" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         {selectedTransfer && (() => {
           const fgID = selectedTransfer.finishedGoodsId || selectedTransfer.FinishedGoodsID || "";

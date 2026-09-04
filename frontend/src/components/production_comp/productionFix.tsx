@@ -150,7 +150,7 @@ export default function ProductionFix({ orderID, orderName }: ProductionFixProps
         open={detailOpen}
         onClose={() => {
           setDetailOpen(false);
-          fetchInspections(); // รีเฟรชตารางเมื่อปิด Popup
+          fetchInspections();
         }}
         inspectionID={selectedInspectionID}
         orderID={orderID}
