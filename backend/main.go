@@ -150,6 +150,10 @@ func main() {
 
 		api.DELETE("/production/transfers/:id", productionHandler.DeleteTransfer)
 
+		r.POST("/production/finished-goods", productionHandler.CreateFinishedGood)
+		r.GET("/production/finished-goods", productionHandler.ListFinishedGoods)
+		r.DELETE("/production/finished-goods/:id", productionHandler.DeleteFinishedGood)
+
 		// Quality
 		api.GET("/quality/requirements", qualityHandler.ListRequirements)
 		api.POST("/quality/requirements", qualityHandler.CreateRequirement)
@@ -161,7 +165,7 @@ func main() {
 		api.GET("/quality/points/:pointId/inspections", qualityHandler.GetInspectionsByPointID)
 		api.GET("/quality/orders/:id/inspections", qualityHandler.GetInspectionsByOrderID)
 		api.POST("/quality/corrections", qualityHandler.CreateCorrection)
-		
+
 		api.GET("/quality/inspections/:id", qualityHandler.GetInspectionByID)
 		api.GET("/quality/inspections/:id/items", qualityHandler.GetInspectionItems)
 		api.GET("/quality/corrections/inspection/:inspectionId", qualityHandler.GetCorrectionByInspectionID)
