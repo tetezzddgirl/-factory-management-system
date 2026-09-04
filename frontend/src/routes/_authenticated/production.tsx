@@ -201,20 +201,6 @@ function ProductionPage() {
                         </Stack>
                         <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} />
 
-                        <Stack direction="row" spacing={2} sx={{ color: "text.secondary", mb: 1 }}>
-                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                            <CogIcon sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">{order.machines || "-"}</Typography>
-                          </Stack>
-                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                            <Schedule sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">
-                              {order.startDate
-                                ? new Date(order.startDate).toLocaleDateString("th-TH")
-                                : "-"}
-                            </Typography>
-                          </Stack>
-                        </Stack>
                       </CardContent>
                     </CardActionArea>
                   </Card>

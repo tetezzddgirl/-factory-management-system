@@ -21,7 +21,7 @@ export const ROLES: { key: RoleKey; label: string; short: string; color: string 
   // { key: "qc",          label: "เจ้าหน้าที่ฝ่ายควบคุมคุณภาพ",     short: "QC",          color: "#F59E0B" },
   // { key: "maintenance", label: "เจ้าหน้าที่ฝ่ายซ่อมบำรุง",         short: "Maintenance", color: "#EF4444" },
   // { key: "shipping",    label: "เจ้าหน้าที่ฝ่ายจัดส่งสินค้า",       short: "Shipping",    color: "#8B5CF6" },
-  // { key: "admin",       label: "ผู้ดูแลระบบ",                        short: "Admin",       color: "#334155" },
+  { key: "admin",       label: "ผู้ดูแลระบบ",                        short: "Admin",       color: "#334155" },
   // { key: "executive",   label: "ผู้บริหาร",                          short: "Executive",   color: "#0F172A" },
 ];
 

@@ -15,8 +15,8 @@ import ProductionStatus from "@/components/production_comp/productionStatus";
 import ProductionWip from "@/components/production_comp/productionWip";
 import ProductionFg from "@/components/production_comp/productionFg";
 import { RequisitionForm } from "@/components/production_comp/requisitionForm";
+import { IssuesForm } from '@/components/production_comp/issuesForm';
 
-import { RequisitionDialog } from "@/components/requisition-dialog";
 
 interface ProductionReport {
   reportId?: string;
@@ -64,7 +64,8 @@ function RouteComponent() {
   const [tabValue, setTabValue] = useState(0);
   
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
-  const [openReqDialog, setOpenReqDialog] = useState(false); // 👈 เพิ่ม State คุม Dialog ขอเบิก
+  const [openReqDialog, setOpenReqDialog] = useState(false);
+  const [openIssuesDialog, setOpenIssuesDialog] = useState(false);
 
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
@@ -203,17 +204,6 @@ function RouteComponent() {
                   </Typography>
                 </Stack>
                 <LinearProgress variant="determinate" value={progressPct} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
-                
-                <Stack direction="row" spacing={3}>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <Person fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">Operator</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <CogIcon fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">{order.machines || "-"}</Typography>
-                  </Stack>
-                </Stack>
               </Box>
 
             </Stack>
@@ -242,7 +232,16 @@ function RouteComponent() {
                   ขอเบิก
                 </Button>
               </Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary">แจ้งปัญหา</Button></Grid>
+              <Grid size={{ xs: 6 }}>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={() => setOpenIssuesDialog(true)}
+                >
+                  แจ้งปัญหา
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
 
@@ -330,6 +329,25 @@ function RouteComponent() {
               orderName={order.name} 
               onCancel={() => setOpenReqDialog(false)}
               onCreated={() => setOpenReqDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={openIssuesDialog}
+        onClose={() => setOpenIssuesDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {order && (
+            <IssuesForm 
+              orderID={order.orderID} 
+              orderName={order.name} 
+              onCancel={() => setOpenIssuesDialog(false)}
+              onCreated={() => setOpenIssuesDialog(false)}
             />
           )}
         </DialogContent>

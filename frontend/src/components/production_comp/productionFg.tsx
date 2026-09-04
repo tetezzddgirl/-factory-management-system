@@ -128,11 +128,11 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
           disableElevation
           onClick={() => setOpenDialog(true)}
           sx={{
-            bgcolor: "#4a90e2", color: "#fff", borderRadius: 2, fontWeight: 600, px: 4,
+            bgcolor: "#4a90e2", color: "#fff", fontWeight: 600, px: 4,
             textTransform: "none", "&:hover": { bgcolor: "#357abd" },
           }}
         >
-          + เพิ่ม
+          + เพิ่มสินค้าสำเร็จรูป
         </Button>
       </Box>
 

@@ -173,17 +173,6 @@ function RouteComponent() {
               </Typography>
             </Box>
             <LinearProgress variant="determinate" value={progressPct} sx={{ height: 8, borderRadius: 4, mb: 1.5 }} />
-            
-            <Box sx={{ display: 'flex', gap: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Person fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">Operator</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CogIcon fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">{order.machines || "-"}</Typography>
-              </Box>
-            </Box>
           </Box>
 
         </Box>
