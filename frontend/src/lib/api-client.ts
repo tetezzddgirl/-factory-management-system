@@ -39,7 +39,7 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
 
 export type ApiMachine = { id: string; name: string; status: string; hours: number };
 
-export type ApiProductionLine = { id: string; name: string; status: string };
+export type ApiProductionLine = { id: number; name: string };
 
 export type ApiProductionPlan = {
   planID: string;
@@ -161,9 +161,18 @@ export const machinesApi = {
 };
 
 export const productionLinesApi = {
-  list: () => apiFetch<ApiProductionLine[]>("/api/production-lines"),
-  create: (l: ApiProductionLine) =>
-    apiFetch<ApiProductionLine>("/api/production-lines", { method: "POST", body: JSON.stringify(l) }),
+  list: async () => {
+    const raw = await apiFetch<any[]>("/api/production-lines");
+    return raw.map((r) => ({
+      id: r.production_line_id,
+      name: r.productionline_name,
+    })) as ApiProductionLine[];
+  },
+  create: (l: { name: string }) =>
+  apiFetch<ApiProductionLine>("/api/production-lines", {
+    method: "POST",
+    body: JSON.stringify({ productionline_name: l.name }),
+  }),
 };
 
 export const plansApi = {
@@ -365,10 +374,10 @@ export type ApiWorkOrder = {
   name: string;
   status: string;
   amount: number;
-  machines: string;
   startDate: string;
   endDate: string;
   planID: string;
+  production_line_id?: number;
 };
 
 export type ApiWork = { workID: string; work: string; description?: string; startDate: string; endDate: string; orderID: string };
@@ -380,10 +389,10 @@ export const workOrdersApi = {
   getNextID: () => apiFetch<{ orderID: string }>("/api/work-orders/next-id"),
   create: (o: Omit<ApiWorkOrder, "orderID" | "timestamp"> & { orderID?: string }) =>
     apiFetch<ApiWorkOrder>("/api/work-orders", { method: "POST", body: JSON.stringify(o) }),
-  updateStatus: (orderID: string, status: string, machines?: string) =>
+  updateStatus: (orderID: string, status: string) =>
     apiFetch<{ ok: boolean }>(`/api/work-orders/${orderID}`, {
       method: "PUT",
-      body: JSON.stringify({ status, machines }),
+      body: JSON.stringify({ status }),
     }),
 };
 

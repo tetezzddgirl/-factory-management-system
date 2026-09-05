@@ -1,5 +1,5 @@
 import type { PlanRow } from "@/components/plan-detail-dialog";
-import type { ApiProductionPlan } from "./api-client";
+import type { ApiProductionPlan, ApiProductionLine } from "./api-client";
 
 // แปลงค่าจาก <input type="date"> (เช่น "2025-07-03") ให้เป็น ISO datetime เต็มรูปแบบ (RFC3339)
 // ก่อนส่งให้ backend เสมอ - Go's time.Time ต้องการรูปแบบนี้เป๊ะๆ ไม่งั้นจะได้ "bad json" กลับมา
@@ -25,13 +25,9 @@ export function toDateInputValue(iso: string | null | undefined): string {
   return d.toISOString().slice(0, 10);
 }
 
-// backend ProductionOrder ไม่มี field priority แยก จึงเข้ารหัสไว้ใน "machines" เป็น line::priority
-export function encodeLine(line: string, priority: string) {
-  return `${line}::${priority}`;
-}
-export function decodeLine(machines: string): { line: string; priority: string } {
-  const [line, priority] = machines.split("::");
-  return { line: line || "-", priority: priority || "ปกติ" };
+// หาชื่อสายการผลิตจาก production_line_id — ใช้แทนที่ decodeLine เดิม (ไม่ต้อง encode/decode string อีกแล้ว)
+export function lineNameFromID(id: number | undefined, lines: ApiProductionLine[]): string {
+  return lines.find((l) => l.id === id)?.name ?? "-";
 }
 
 /** แปลงแผนการผลิตจาก backend (ApiProductionPlan) เป็น PlanRow ที่ UI ใช้ — รวม formula/line/startDate ที่ backend เก็บจริงแล้ว
