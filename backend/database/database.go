@@ -64,7 +64,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Resources{},
 		&models.Work{},
 		&models.Issue{},
-		&models.Inventory{},
+		&models.FinishedGoods{},
 
 		// บุคลากร (Personnel)
 		&models.Personnel{},

@@ -231,6 +231,31 @@ func (h *ProductionHandler) GetReportsByOrderID(c *gin.Context) {
 	c.JSON(http.StatusOK, reports)
 }
 
+// UpdateReport แก้ไขรายงานการผลิต
+func (h *ProductionHandler) UpdateReport(c *gin.Context) {
+	reportID := c.Param("reportId")
+	var payload models.ProductionReport
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json: " + err.Error()})
+		return
+	}
+
+	var existingReport models.ProductionReport
+	if err := h.db.WithContext(c.Request.Context()).Where(`"reportId" = ?`, reportID).First(&existingReport).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Report not found"})
+		return
+	}
+
+	// อัปเดตข้อมูล
+	if err := h.db.WithContext(c.Request.Context()).Model(&existingReport).Updates(payload).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingReport)
+}
+
 // ==========================================
 // 5. Transfers (โอนย้าย)
 // ==========================================
@@ -274,36 +299,10 @@ func (h *ProductionHandler) GetTransfersByOrderID(c *gin.Context) {
 	c.JSON(http.StatusOK, transfers)
 }
 
-// UpdateReport แก้ไขรายงานการผลิต
-func (h *ProductionHandler) UpdateReport(c *gin.Context) {
-	reportID := c.Param("reportId")
-	var payload models.ProductionReport
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json: " + err.Error()})
-		return
-	}
-
-	var existingReport models.ProductionReport
-	if err := h.db.WithContext(c.Request.Context()).Where(`"reportId" = ?`, reportID).First(&existingReport).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Report not found"})
-		return
-	}
-
-	// อัปเดตข้อมูล
-	if err := h.db.WithContext(c.Request.Context()).Model(&existingReport).Updates(payload).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, existingReport)
-}
-
 // DeleteTransfer ลบข้อมูล Transfer Record
 func (h *ProductionHandler) DeleteTransfer(c *gin.Context) {
 	transferID := c.Param("id")
 
-	// ลบข้อมูลที่ transferId ตรงกัน
 	if err := h.db.WithContext(c.Request.Context()).
 		Where(`"transferId" = ?`, transferID).
 		Delete(&models.TransferRecord{}).Error; err != nil {
@@ -313,4 +312,53 @@ func (h *ProductionHandler) DeleteTransfer(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Transfer record deleted successfully"})
+}
+
+// ==========================================
+// 6. Finished Goods (สินค้าสำเร็จรูป)
+// ==========================================
+
+// CreateFinishedGood สร้างข้อมูล Finished Goods
+func (h *ProductionHandler) CreateFinishedGood(c *gin.Context) {
+	var fg models.FinishedGoods
+	if err := c.ShouldBindJSON(&fg); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json: " + err.Error()})
+		return
+	}
+
+	if fg.FinishedGoodsID == "" {
+		fg.FinishedGoodsID = "FG-" + time.Now().Format("20060102150405")
+	}
+
+	if err := h.db.WithContext(c.Request.Context()).Create(&fg).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, fg)
+}
+
+// ListFinishedGoods ดึงรายการ Finished Goods ทั้งหมด
+func (h *ProductionHandler) ListFinishedGoods(c *gin.Context) {
+	var fgs []models.FinishedGoods
+	if err := h.db.WithContext(c.Request.Context()).Find(&fgs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, fgs)
+}
+
+// DeleteFinishedGood ลบข้อมูล Finished Goods (สำหรับ Rollback)
+func (h *ProductionHandler) DeleteFinishedGood(c *gin.Context) {
+	fgID := c.Param("id")
+
+	if err := h.db.WithContext(c.Request.Context()).
+		Where(`"finished_goods_id" = ?`, fgID).
+		Delete(&models.FinishedGoods{}).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Finished good deleted successfully"})
 }
