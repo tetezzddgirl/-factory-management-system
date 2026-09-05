@@ -75,6 +75,10 @@ func Migrate(db *gorm.DB) error {
 		&models.Inspection{},
 		&models.InspectionItem{},
 		&models.CorrectionRecord{},
+
+		// การแจ้งเตือน (์Notification)
+		&models.Notification{},
+		
 	); err != nil {
 		return err
 	}

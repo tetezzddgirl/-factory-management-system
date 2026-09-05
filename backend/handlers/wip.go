@@ -170,6 +170,14 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+		if err := CreateNotification(h.db, "warehouse",
+		fmt.Sprintf("WIP รับเข้าใหม่ Lot %s", body.LotNumber),
+		fmt.Sprintf("Pallet %s จำนวน %d ที่ตำแหน่ง %s", body.PalletNumber, body.Amount, body.Location),
+		"info",
+		body.WipLocationID,
+	); err != nil {
+		fmt.Println("⚠️ สร้างการแจ้งเตือนไม่สำเร็จ:", err)
+	}
 	c.JSON(http.StatusOK, loc)
 }
 
