@@ -61,7 +61,18 @@ type TransferRecord struct {
 	TransferDateTime time.Time `gorm:"column:transferDateTime" json:"transferDateTime"`
 	ReceivedBy       string    `gorm:"column:receivedBy" json:"receivedBy"`
 
-	OrderID       *string `gorm:"column:order_id" json:"OrderID"`
-	InventoryID   *string `gorm:"column:inventoryID" json:"InventoryID"`
-	WIPLocationID *string `gorm:"column:wipLocationID" json:"WIPLocationID"`
+	OrderID         *string `gorm:"column:order_id" json:"OrderID"`
+	FinishedGoodsID *string `gorm:"column:finished_goods_id" json:"FinishedGoodsID"`
+	WIPLocationID   *string `gorm:"column:wipLocationID" json:"WIPLocationID"`
+}
+
+type FinishedGoods struct {
+	FinishedGoodsID string `gorm:"primaryKey;column:finished_goods_id" json:"finishedGoodsId"`
+	Quantity        int    `gorm:"column:quantity" json:"quantity"`
+	ProductName     string `gorm:"column:product_name" json:"productName"`
+	PalletNumber    string `gorm:"column:pallet_number" json:"palletNumber"`
+
+	OrderID *string `gorm:"column:order_id" json:"orderID,omitempty"`
+
+	TransferRecords []TransferRecord `gorm:"foreignKey:FinishedGoodsID" json:"transferRecords"`
 }

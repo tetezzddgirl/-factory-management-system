@@ -93,12 +93,3 @@ type RequisitionSlip struct {
 	OrderID       string    `json:"orderID"`
 	WipLocationID string    `json:"wipID" gorm:"column:wip_location_id"`
 }
-
-type Inventory struct {
-	InventoryID string `gorm:"primaryKey;column:inventoryID" json:"inventoryId"`
-	Name        string `gorm:"column:name" json:"name"`
-	Quantity    int    `gorm:"column:quantity" json:"quantity"`
-	Unit        string `gorm:"column:unit" json:"unit"`
-
-	TransferRecords []TransferRecord `gorm:"foreignKey:InventoryID" json:"transferRecords"`
-}

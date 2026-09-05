@@ -51,6 +51,7 @@ function RouteComponent() {
   const { id: orderID } = Route.useSearch() as QualityManagementSearch;
 
   const [order, setOrder] = useState<ProductionOrder | null>(null);
+  const [totalFgAmount, setTotalFgAmount] = useState<number>(0); // State สำหรับเก็บยอด FG รวม
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
@@ -60,14 +61,32 @@ function RouteComponent() {
     try {
       if (!isSilent) setLoading(true);
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // 1. ดึงข้อมูล Order
+      const resOrder = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, { headers });
+      if (!resOrder.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
+      const orderData = await resOrder.json();
+      setOrder(orderData);
+      
+      // 2. ดึงข้อมูล Finished Goods เพื่อคำนวณหลอด Progress
+      try {
+        const resFg = await fetch(`http://localhost:8090/api/production/finished-goods`, { headers });
+        if (resFg.ok) {
+          const fgList = await resFg.json();
+          // กรองเอาเฉพาะ FG ที่เป็นของ Order นี้
+          const orderFgList = (fgList || []).filter((fg: any) => 
+            fg.orderID === orderID || fg.OrderID === orderID || fg.order_id === orderID
+          );
+          
+          // หาผลรวมจำนวน Quantity ทั้งหมด
+          const sum = orderFgList.reduce((acc: number, curr: any) => acc + (Number(curr.quantity) || 0), 0);
+          setTotalFgAmount(sum);
+        }
+      } catch (err) {
+        console.error("Failed to fetch FG for progress bar:", err);
+      }
 
-      if (!res.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
-      const data = await res.json();
-      setOrder(data);
       setError(null);
     } catch (err: any) {
       if (!isSilent) setError(err.message || "เกิดข้อผิดพลาด");
@@ -123,7 +142,8 @@ function RouteComponent() {
     );
   }
 
-  const done = order.report?.goodQuantity || 0;
+  // คำนวณความคืบหน้า (Progress) จากผลรวม FG
+  const done = totalFgAmount;
   const target = order.amount || 1;
   const progressPct = Math.min(100, Math.round((done / target) * 100));
   const chipProps = getStatusChipProps(order.status);
@@ -173,17 +193,6 @@ function RouteComponent() {
               </Typography>
             </Box>
             <LinearProgress variant="determinate" value={progressPct} sx={{ height: 8, borderRadius: 4, mb: 1.5 }} />
-            
-            <Box sx={{ display: 'flex', gap: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Person fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">Operator</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CogIcon fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">{order.machines || "-"}</Typography>
-              </Box>
-            </Box>
           </Box>
 
         </Box>

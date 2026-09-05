@@ -24,9 +24,9 @@ export interface TransferRecord {
 
 interface ProductionFgDetailProps {
   transferData: TransferRecord | null;
-  paletteNumber: string;
-  fgName: string;
-  amount: number;
+  palletNumber: string; // เปลี่ยนจาก paletteNumber
+  productName: string;  // เปลี่ยนจาก fgName
+  quantity: number;     // เปลี่ยนจาก amount
   orderID?: string;
   orderName?: string;
   onClose: () => void;
@@ -34,9 +34,9 @@ interface ProductionFgDetailProps {
 
 export default function ProductionFgDetails({
   transferData,
-  paletteNumber,
-  fgName,
-  amount,
+  palletNumber, // เปลี่ยนชื่อ Props
+  productName,  // เปลี่ยนชื่อ Props
+  quantity,     // เปลี่ยนชื่อ Props
   orderID,
   orderName,
   onClose,
@@ -108,23 +108,23 @@ export default function ProductionFgDetails({
         <Grid container spacing={3}>
           {/* แถว 1: รหัสพาเลท และ ชื่อสินค้า */}
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="body2" color="text.secondary">รหัสพาเลท (Palette)</Typography>
+            <Typography variant="body2" color="text.secondary">รหัสพาเลท (Pallet)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {paletteNumber || "-"}
+              {palletNumber || "-"}
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="body2" color="text.secondary">ชื่อสินค้า (FG Name)</Typography>
+            <Typography variant="body2" color="text.secondary">ชื่อสินค้า (Product Name)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {fgName || "-"}
+              {productName || "-"}
             </Typography>
           </Grid>
 
           {/* แถว 2: จำนวน และ สถานะ */}
           <Grid size={{ xs: 12, sm: 6 }}>
-            <Typography variant="body2" color="text.secondary">จำนวน (Amount)</Typography>
+            <Typography variant="body2" color="text.secondary">จำนวน (Quantity)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {amount ? amount.toLocaleString() : "0"}
+              {quantity ? quantity.toLocaleString() : "0"}
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -182,7 +182,6 @@ export default function ProductionFgDetails({
           onClick={onClose} 
           variant="contained" 
           disableElevation
-          sx={{ bgcolor: "#475467", "&:hover": { bgcolor: "#344054" } }}
         >
           ปิดหน้าต่าง
         </Button>

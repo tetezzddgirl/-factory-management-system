@@ -23,8 +23,8 @@ interface TransferRecord {
   status: string;
   wipLocationID?: string;
   WIPLocationID?: string;
-  inventoryID?: string;
-  InventoryID?: string;
+  finishedGoodsId?: string; // อัปเดตให้ตรงกับ DB ใหม่
+  FinishedGoodsID?: string; // อัปเดตให้ตรงกับ DB ใหม่
   createDateTime: string;
   createdBy: string;
   remark: string;
@@ -32,12 +32,11 @@ interface TransferRecord {
   receivedBy?: string;
 }
 
-interface InventoryItem {
-  inventoryID: string;
-  paletteNumber: string;
-  amount: number;
-  fgID?: string;
-  fgName?: string;
+interface FinishedGoodsItem {
+  finishedGoodsId: string;
+  palletNumber: string;
+  quantity: number;
+  productName: string;
 }
 
 interface ProductionFgProps {
@@ -47,7 +46,7 @@ interface ProductionFgProps {
 
 export default function ProductionFg({ orderID, orderName }: ProductionFgProps) {
   const [transferList, setTransferList] = useState<TransferRecord[]>([]);
-  const [inventoryMap, setInventoryMap] = useState<Record<string, InventoryItem>>({});
+  const [fgMap, setFgMap] = useState<Record<string, FinishedGoodsItem>>({});
   const [loading, setLoading] = useState<boolean>(true);
   
   const [openDialog, setOpenDialog] = useState(false);
@@ -65,19 +64,19 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
       const token = localStorage.getItem("ff:token") || localStorage.getItem("token") || "";
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [resTransfers, resInventory] = await Promise.all([
+      const [resTransfers, resFg] = await Promise.all([
         fetch(`http://localhost:8090/api/production/orders/${orderID}/transfers`, { headers }),
-        fetch(`http://localhost:8090/api/inventory`, { headers }),
+        fetch(`http://localhost:8090/api/production/finished-goods`, { headers }), // อัปเดต Endpoint
       ]);
 
-      if (resInventory.ok) {
-        const invData: InventoryItem[] = await resInventory.json();
-        const mapping: Record<string, InventoryItem> = {};
-        (invData || []).forEach((item: any) => {
-          const id = item.inventoryID || item.InventoryID || item.id;
+      if (resFg.ok) {
+        const fgData: FinishedGoodsItem[] = await resFg.json();
+        const mapping: Record<string, FinishedGoodsItem> = {};
+        (fgData || []).forEach((item: any) => {
+          const id = item.finishedGoodsId || item.FinishedGoodsID || item.id;
           if (id) mapping[id] = item;
         });
-        setInventoryMap(mapping);
+        setFgMap(mapping);
       }
 
       if (resTransfers.ok) {
@@ -128,11 +127,11 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
           disableElevation
           onClick={() => setOpenDialog(true)}
           sx={{
-            bgcolor: "#4a90e2", color: "#fff", borderRadius: 2, fontWeight: 600, px: 4,
+            bgcolor: "#4a90e2", color: "#fff", fontWeight: 600, px: 4,
             textTransform: "none", "&:hover": { bgcolor: "#357abd" },
           }}
         >
-          + เพิ่ม
+          + เพิ่มสินค้าสำเร็จรูป
         </Button>
       </Box>
 
@@ -162,20 +161,20 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
               </TableRow>
             ) : (
               transferList.map((transfer) => {
-                const invID = transfer.inventoryID || transfer.InventoryID || "";
-                const invInfo = inventoryMap[invID] || ({} as Partial<InventoryItem>);
-                const fgName = invInfo.fgName || "-";
+                const fgID = transfer.finishedGoodsId || transfer.FinishedGoodsID || "";
+                const fgInfo = fgMap[fgID] || ({} as Partial<FinishedGoodsItem>);
+                const productName = fgInfo.productName || "-";
 
                 return (
                   <TableRow key={transfer.transferID} hover>
                     <TableCell align="center" sx={{ fontWeight: 500 }}>
-                      {invInfo.paletteNumber || "-"}
+                      {fgInfo.palletNumber || "-"}
                     </TableCell>
                     <TableCell align="center">
-                      {fgName}
+                      {productName}
                     </TableCell>
                     <TableCell align="center">
-                      {invInfo.amount ? invInfo.amount.toLocaleString() : "0"}
+                      {fgInfo.quantity ? fgInfo.quantity.toLocaleString() : "0"}
                     </TableCell>
                     <TableCell align="center">
                       {getStatusChip(transfer.status)}
@@ -202,7 +201,7 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
         onClose={() => setOpenDialog(false)} 
         maxWidth="sm" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3} }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         <ProductionFgForm 
           orderID={orderID || ""}
@@ -220,19 +219,19 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
         onClose={() => setDetailDialogOpen(false)} 
         maxWidth="sm" 
         fullWidth 
-        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
       >
         {selectedTransfer && (() => {
-          const invID = selectedTransfer.inventoryID || selectedTransfer.InventoryID || "";
-          const invInfo = inventoryMap[invID] || ({} as Partial<InventoryItem>);
-          const fgName = invInfo.fgName || "-";
+          const fgID = selectedTransfer.finishedGoodsId || selectedTransfer.FinishedGoodsID || "";
+          const fgInfo = fgMap[fgID] || ({} as Partial<FinishedGoodsItem>);
+          const productName = fgInfo.productName || "-";
 
           return (
             <ProductionFgDetails
               transferData={selectedTransfer as FgTransferRecord}
-              paletteNumber={invInfo.paletteNumber || "-"}
-              fgName={fgName}
-              amount={invInfo.amount || 0}
+              palletNumber={fgInfo.palletNumber || "-"}
+              productName={productName}
+              quantity={fgInfo.quantity || 0}
               orderID={orderID}
               orderName={orderName}
               onClose={() => setDetailDialogOpen(false)}

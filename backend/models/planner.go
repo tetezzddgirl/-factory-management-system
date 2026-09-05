@@ -46,6 +46,8 @@ type ProductionOrder struct {
 	ProductionEvents        []ProductionEvent         `gorm:"foreignKey:OrderID" json:"events"`
 	ProductionReport        *ProductionReport         `gorm:"foreignKey:OrderID" json:"report"`
 	TransferRecords         []TransferRecord          `gorm:"foreignKey:OrderID" json:"transferRecords"`
+
+	FinishedGoods []FinishedGoods `gorm:"foreignKey:OrderID;references:OrderID" json:"finishedGoods,omitempty"`
 }
 
 type Resources struct {

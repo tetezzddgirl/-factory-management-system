@@ -4,7 +4,7 @@ import {
   Box, Typography, Button, Chip, LinearProgress, Stack, Grid, 
   Avatar, Tabs, Tab, Dialog, CircularProgress, Alert, DialogContent,
 } from '@mui/material';
-import { Factory, Person, Settings as CogIcon } from '@mui/icons-material';
+import { Factory } from '@mui/icons-material';
 import { PageShell } from "@/components/page-shell";
 
 import ProductionDetails from "@/components/production_comp/productionDetails";
@@ -15,8 +15,8 @@ import ProductionStatus from "@/components/production_comp/productionStatus";
 import ProductionWip from "@/components/production_comp/productionWip";
 import ProductionFg from "@/components/production_comp/productionFg";
 import { RequisitionForm } from "@/components/production_comp/requisitionForm";
+import { IssuesForm } from '@/components/production_comp/issuesForm';
 
-import { RequisitionDialog } from "@/components/requisition-dialog";
 
 interface ProductionReport {
   reportId?: string;
@@ -59,26 +59,48 @@ function RouteComponent() {
   const { id: orderID } = useSearch({ from: '/_authenticated/sub/productionManagement' });
 
   const [order, setOrder] = useState<ProductionOrder | null>(null);
+  // State ใหม่สำหรับเก็บยอด FG รวมที่ทำได้
+  const [totalFgAmount, setTotalFgAmount] = useState<number>(0);
+  
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
-  const [openReqDialog, setOpenReqDialog] = useState(false); // 👈 เพิ่ม State คุม Dialog ขอเบิก
+  const [openReqDialog, setOpenReqDialog] = useState(false);
+  const [openIssuesDialog, setOpenIssuesDialog] = useState(false);
 
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
     try {
       if (!isSilent) setLoading(true);
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ดึงข้อมูล Order
+      const resOrder = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, { headers });
+      if (!resOrder.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
+      const orderData = await resOrder.json();
+      setOrder(orderData);
+      
+      // ดึงข้อมูล Finished Goods เพื่อคำนวณหลอด Progress
+      try {
+        const resFg = await fetch(`http://localhost:8090/api/production/finished-goods`, { headers });
+        if (resFg.ok) {
+          const fgList = await resFg.json();
+          // กรองเอาเฉพาะ FG ที่เป็นของ Order นี้
+          const orderFgList = (fgList || []).filter((fg: any) => 
+            fg.orderID === orderID || fg.OrderID === orderID || fg.order_id === orderID
+          );
+          
+          // หาผลรวมจำนวน Quantity ทั้งหมด
+          const sum = orderFgList.reduce((acc: number, curr: any) => acc + (Number(curr.quantity) || 0), 0);
+          setTotalFgAmount(sum);
+        }
+      } catch (err) {
+        console.error("Failed to fetch FG for progress bar:", err);
+      }
 
-      if (!res.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
-      const data = await res.json();
-      setOrder(data);
       setError(null);
     } catch (err: any) {
       if (!isSilent) setError(err.message || "เกิดข้อผิดพลาด");
@@ -159,7 +181,8 @@ function RouteComponent() {
     );
   }
 
-  const done = 0;
+  // คำนวณความคืบหน้า (Progress) จาก FG ที่รวมมา
+  const done = totalFgAmount;
   const target = order.amount || 1;
   const progressPct = Math.min(100, Math.round((done / target) * 100));
 
@@ -203,17 +226,6 @@ function RouteComponent() {
                   </Typography>
                 </Stack>
                 <LinearProgress variant="determinate" value={progressPct} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
-                
-                <Stack direction="row" spacing={3}>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <Person fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">Operator</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <CogIcon fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">{order.machines || "-"}</Typography>
-                  </Stack>
-                </Stack>
               </Box>
 
             </Stack>
@@ -242,7 +254,16 @@ function RouteComponent() {
                   ขอเบิก
                 </Button>
               </Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary">แจ้งปัญหา</Button></Grid>
+              <Grid size={{ xs: 6 }}>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={() => setOpenIssuesDialog(true)}
+                >
+                  แจ้งปัญหา
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
 
@@ -330,6 +351,25 @@ function RouteComponent() {
               orderName={order.name} 
               onCancel={() => setOpenReqDialog(false)}
               onCreated={() => setOpenReqDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={openIssuesDialog}
+        onClose={() => setOpenIssuesDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {order && (
+            <IssuesForm 
+              orderID={order.orderID} 
+              orderName={order.name} 
+              onCancel={() => setOpenIssuesDialog(false)}
+              onCreated={() => setOpenIssuesDialog(false)}
             />
           )}
         </DialogContent>

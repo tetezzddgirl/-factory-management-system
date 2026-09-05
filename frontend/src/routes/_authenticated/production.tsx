@@ -1,11 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import {
-  Factory,
-  Settings as CogIcon,
-  Schedule,
-} from "@mui/icons-material";
+import { Factory } from "@mui/icons-material";
 import {
   Box,
   Card,
@@ -53,6 +49,7 @@ interface ProductionOrder {
 function ProductionPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
+  const [fgTotals, setFgTotals] = useState<Record<string, number>>({}); // เก็บผลรวม FG ของแต่ละ OrderID
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,15 +65,33 @@ function ProductionPage() {
         throw new Error("ไม่พบ Token กรุณาเข้าสู่ระบบ");
       }
 
-      const res = await fetch("http://localhost:8090/api/production/orders", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const headers = { Authorization: `Bearer ${token}` };
 
-      if (!res.ok) throw new Error("ดึงข้อมูลคำสั่งผลิตไม่สำเร็จ");
-      const data = await res.json();
-      setOrders(data || []);
+      // ยิง API ดึง Order และ FG พร้อมกัน
+      const [resOrders, resFg] = await Promise.all([
+        fetch("http://localhost:8090/api/production/orders", { headers }),
+        fetch("http://localhost:8090/api/production/finished-goods", { headers })
+      ]);
+
+      if (!resOrders.ok) throw new Error("ดึงข้อมูลคำสั่งผลิตไม่สำเร็จ");
+      const dataOrders = await resOrders.json();
+      setOrders(dataOrders || []);
+
+      // จัดการข้อมูล FG เพื่อรวม quantity ตาม OrderID
+      if (resFg.ok) {
+        const dataFg = await resFg.json();
+        const totals: Record<string, number> = {};
+        
+        (dataFg || []).forEach((fg: any) => {
+          const oid = fg.orderID || fg.OrderID || fg.order_id;
+          if (oid) {
+            totals[oid] = (totals[oid] || 0) + (Number(fg.quantity) || 0);
+          }
+        });
+        
+        setFgTotals(totals);
+      }
+
       setError(null);
     } catch (err: any) {
       if (!isSilent) setError(err.message || "เกิดข้อผิดพลาด");
@@ -127,7 +142,8 @@ function ProductionPage() {
       ) : (
         <Grid container spacing={2}>
           {orders.map((order, i) => {
-            const done = order.report?.goodQuantity || 0;
+            // ดึงผลรวมยอด FG ของ Order นี้ ถ้าไม่มีให้เป็น 0
+            const done = fgTotals[order.orderID] || 0;
             const target = order.amount || 1;
             const pct = Math.min(100, Math.round((done / target) * 100));
 
@@ -201,20 +217,6 @@ function ProductionPage() {
                         </Stack>
                         <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} />
 
-                        <Stack direction="row" spacing={2} sx={{ color: "text.secondary", mb: 1 }}>
-                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                            <CogIcon sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">{order.machines || "-"}</Typography>
-                          </Stack>
-                          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                            <Schedule sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">
-                              {order.startDate
-                                ? new Date(order.startDate).toLocaleDateString("th-TH")
-                                : "-"}
-                            </Typography>
-                          </Stack>
-                        </Stack>
                       </CardContent>
                     </CardActionArea>
                   </Card>

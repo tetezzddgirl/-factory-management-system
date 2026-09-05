@@ -48,7 +48,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Resources{},
 		&models.Work{},
 		&models.Issue{},
-		&models.Inventory{},
+		&models.FinishedGoods{},
 
 		// บุคลากร (Personnel)
 		&models.Personnel{},
@@ -78,7 +78,6 @@ func Migrate(db *gorm.DB) error {
 
 		// การแจ้งเตือน (์Notification)
 		&models.Notification{},
-		
 	); err != nil {
 		return err
 	}
