@@ -34,6 +34,7 @@ func (h *IssueHandler) CreateIssue(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+
 	if iss.IssueID == "" {
 		iss.IssueID = fmt.Sprintf("ISS-%d", time.Now().UnixNano())
 	}
@@ -46,6 +47,15 @@ func (h *IssueHandler) CreateIssue(c *gin.Context) {
 	if err := h.db.Create(&iss).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if err := CreateNotification(h.db, "planner",
+		fmt.Sprintf("แจ้งปัญหาใหม่: %s", iss.Issue),
+		iss.Description,
+		"warning",
+		iss.IssueID,
+	); err != nil {
+		fmt.Println("⚠️ สร้างการแจ้งเตือนไม่สำเร็จ:", err) 
 	}
 	c.JSON(http.StatusOK, iss)
 }

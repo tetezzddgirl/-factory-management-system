@@ -1,36 +1,67 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Badge, Box, Divider, IconButton, List, ListItem, ListItemText,
   Menu, Stack, Typography, Chip, Button,
 } from "@mui/material";
 import { NotificationsOutlined, Circle } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import { notificationsApi, type ApiNotification } from "@/lib/api-client";
+import { useRole } from "@/lib/roles";
 
-type Notif = {
-  id: string;
-  title: string;
-  desc: string;
-  time: string;
-  type: "info" | "warning" | "success" | "error";
-  unread: boolean;
-};
-
-const seed: Notif[] = [
-  { id: "n1", title: "แผนการผลิต PLN-2455 รอตรวจสอบ",  desc: "QC ต้องอนุมัติก่อนสร้างใบสั่งผลิต", time: "2 นาทีก่อน", type: "warning", unread: true },
-  { id: "n2", title: "เครื่องจักร M-04 แจ้งเสีย",       desc: "รอมอบหมายช่างซ่อมบำรุง",           time: "8 นาทีก่อน", type: "error",   unread: true },
-  { id: "n3", title: "วัตถุดิบ RM-002 ต่ำกว่าเกณฑ์",     desc: "คงเหลือ 12% — ควรสั่งเพิ่ม",         time: "15 นาทีก่อน", type: "warning", unread: true },
-  { id: "n4", title: "งาน JOB-2449 ผลิตเสร็จแล้ว",       desc: "ส่งเข้าคลังพร้อม QC final",           time: "1 ชม.ก่อน",   type: "success", unread: false },
-  { id: "n5", title: "สูตรการผลิต ขวด PET 500ml v3 อนุมัติแล้ว", desc: "โดย จันทร์เพ็ญ (QC)",               time: "3 ชม.ก่อน",   type: "info",    unread: false },
-];
-
-const typeColor: Record<Notif["type"], string> = {
+const typeColor: Record<string, string> = {
   info: "#4A90E2", warning: "#F59E0B", success: "#10B981", error: "#EF4444",
 };
 
+function timeAgo(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "เมื่อสักครู่";
+  if (mins < 60) return `${mins} นาทีก่อน`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} ชม.ก่อน`;
+  const days = Math.floor(hrs / 24);
+  return `${days} วันก่อน`;
+}
+
 export function NotificationBell() {
-  const [items, setItems] = useState(seed);
+  const { role } = useRole();
+  const [items, setItems] = useState<ApiNotification[]>([]);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const unread = items.filter((n) => n.unread).length;
+  const unread = items.filter((n) => !n.isRead).length;
+
+  async function load() {
+    try {
+      const data = await notificationsApi.list(role);
+      setItems(data ?? []);
+    } catch {
+      // เงียบไว้พอ ไม่ต้องเด้ง error รบกวนแค่เพราะกระดิ่งโหลดไม่ทัน
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // ใช้ pattern polling ทุก 3 วิ แบบเดียวกับ productionManagement.tsx เพื่อความ consistent
+    const interval = setInterval(load, 3000);
+    return () => clearInterval(interval);
+  }, [role]);
+
+  async function markOneRead(id: string) {
+    setItems((prev) => prev.map((n) => (n.notificationID === id ? { ...n, isRead: true } : n)));
+    try {
+      await notificationsApi.markRead(id);
+    } catch {
+      load(); // ถ้า backend fail ให้ sync สถานะจริงกลับมาจาก server
+    }
+  }
+
+  async function markAllRead() {
+    setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await notificationsApi.markAllRead(role);
+    } catch {
+      load();
+    }
+  }
 
   return (
     <>
@@ -49,35 +80,31 @@ export function NotificationBell() {
       >
         <Stack direction="row" sx={{ px: 2, py: 1.5, justifyContent: "space-between", alignItems: "center" }}>
           <Typography sx={{ fontWeight: 700 }}>การแจ้งเตือน</Typography>
-          <Button
-            size="small"
-            onClick={() => setItems((prev) => prev.map((n) => ({ ...n, unread: false })))}
-            disabled={unread === 0}
-          >
+          <Button size="small" onClick={markAllRead} disabled={unread === 0}>
             อ่านทั้งหมด
           </Button>
         </Stack>
         <Divider />
         <List sx={{ py: 0 }}>
           {items.map((n, i) => (
-            <motion.div key={n.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+            <motion.div key={n.notificationID} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
               <ListItem
-                onClick={() => setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, unread: false } : x)))}
+                onClick={() => markOneRead(n.notificationID)}
                 sx={{
                   py: 1.25, cursor: "pointer",
-                  bgcolor: n.unread ? "rgba(74,144,226,0.06)" : "transparent",
+                  bgcolor: !n.isRead ? "rgba(74,144,226,0.06)" : "transparent",
                   "&:hover": { bgcolor: "rgba(74,144,226,0.1)" },
                 }}
               >
-                <Box sx={{ mr: 1.5, mt: 0.5, color: typeColor[n.type] }}>
+                <Box sx={{ mr: 1.5, mt: 0.5, color: typeColor[n.type] ?? typeColor.info }}>
                   <Circle sx={{ fontSize: 10 }} />
                 </Box>
                 <ListItemText
-                  primary={<Typography sx={{ fontSize: 14, fontWeight: n.unread ? 700 : 500 }}>{n.title}</Typography>}
+                  primary={<Typography sx={{ fontSize: 14, fontWeight: !n.isRead ? 700 : 500 }}>{n.title}</Typography>}
                   secondary={
                     <>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{n.desc}</Typography>
-                      <Typography variant="caption" color="text.disabled">{n.time}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{n.description}</Typography>
+                      <Typography variant="caption" color="text.disabled">{timeAgo(n.createdAt)}</Typography>
                     </>
                   }
                 />

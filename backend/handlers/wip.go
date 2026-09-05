@@ -77,7 +77,6 @@ func (h *WipHandler) UpdateWorkInProcessAmount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-
 func (h *WipHandler) ListWipLocations(c *gin.Context) {
 	out := []models.WIPLocation{}
 	q := h.db.Order("wip_location_id")
@@ -110,8 +109,6 @@ func (h *WipHandler) PreviewNextLocationCodes(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"palletNumber": palletNumber, "lotNumber": lotNumber})
 }
-
-
 
 func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 	var body struct {
@@ -155,6 +152,14 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 	if err := h.db.Create(&loc).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+		if err := CreateNotification(h.db, "warehouse",
+		fmt.Sprintf("WIP รับเข้าใหม่ Lot %s", body.LotNumber),
+		fmt.Sprintf("Pallet %s จำนวน %d ที่ตำแหน่ง %s", body.PalletNumber, body.Amount, body.Location),
+		"info",
+		body.WipLocationID,
+	); err != nil {
+		fmt.Println("⚠️ สร้างการแจ้งเตือนไม่สำเร็จ:", err)
 	}
 	c.JSON(http.StatusOK, loc)
 }
