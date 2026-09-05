@@ -22,7 +22,7 @@ func NewProductionLineHandler(db *gorm.DB) *ProductionLineHandler {
 // ListProductionLines คืนรายการสายการผลิตทั้งหมด — ใช้เติม dropdown ตอนสร้างแผนการผลิต/ใบสั่งผลิต
 func (h *ProductionLineHandler) ListProductionLines(c *gin.Context) {
 	out := []models.ProductionLine{}
-	if err := h.db.Order("id").Find(&out).Error; err != nil {
+	if err := h.db.Order("production_line_id").Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

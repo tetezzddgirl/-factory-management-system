@@ -14,7 +14,7 @@ import { PlanSavedDialog } from "@/components/plan-saved-dialog";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
 import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, computeRequiredMaterials, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
-import { fromApiPlan, toISO, toDateInputValue, encodeLine } from "@/lib/plan-utils";
+import { fromApiPlan, toISO, toDateInputValue } from "@/lib/plan-utils";
 
 export const Route = createFileRoute("/_authenticated/planning")({
   head: () => ({ meta: [{ title: "วางแผนการผลิต — FactoryFlow" }] }),
@@ -221,10 +221,10 @@ function PlanningPage() {
         name: r.product,
         status: "รอมอบหมาย",
         amount: r.qty,
-        machines: encodeLine(r.line, r.priority),
         startDate: toISO(r.startDate),
         endDate: toISO(r.due),
         planID: orderPlan?.planID ?? "-",
+        production_line_id: r.productionLineID,
       });
       setOrderPlan(null);
       setOrder(r);
@@ -268,7 +268,7 @@ function PlanningPage() {
     const workNames = rs.map((r) => r.work).filter(Boolean);
     if (!order || !pending) return;
     try {
-      await workOrdersApi.updateStatus(pending.orderID, "กำลังผลิต", encodeLine(order.line, order.priority));
+      await workOrdersApi.updateStatus(pending.orderID, "กำลังผลิต");
       // สร้างเฉพาะงานที่ยังไม่เคยบันทึกลง backend (ไม่มี workID เดิมอยู่แล้ว) กันงานซ้ำตอนเปิด dialog มอบหมายซ้ำ
       await Promise.all(
         rs.filter((r) => r.work && !existingWorkIdsRef.current.has(r.workID)).map((r) =>

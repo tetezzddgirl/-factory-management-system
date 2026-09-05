@@ -29,13 +29,13 @@ type orderOut struct {
 	Name      string    `json:"name"`
 	Status    string    `json:"status"`
 	Amount    int       `json:"amount"`
-	Machines  string    `json:"machines"`
 	StartDate time.Time `json:"startDate"`
 	EndDate   time.Time `json:"endDate"`
 	PlanID    string    `json:"planID"`
 	ProductID string    `json:"productID"`
 	FormulaID     string    `json:"formulaID"`
 	RefFormulaID  string    `json:"refFormulaID"`
+	ProductionlineID *uint `json:"production_line_id"`
 }
 
 func toOrderOut(o models.ProductionOrder, refFormulas map[string]models.RefFormula) orderOut {
@@ -46,13 +46,13 @@ func toOrderOut(o models.ProductionOrder, refFormulas map[string]models.RefFormu
 		Name:      o.Name,
 		Status:    o.Status,
 		Amount:    o.Amount,
-		Machines:  o.Machines,
 		StartDate: o.StartDate,
 		EndDate:   o.EndDate,
 		PlanID:    o.PlanID,
 		ProductID: rb.ProductID,
 		FormulaID:     rb.FormulaID,
 		RefFormulaID:  o.RefFormulaID,
+		ProductionlineID:  o.ProductionlineID,
 	}
 }
 
@@ -147,15 +147,14 @@ func (h *WorkOrderHandler) CreateWorkOrder(c *gin.Context) {
 func (h *WorkOrderHandler) UpdateWorkOrderStatus(c *gin.Context) {
 	id := c.Param("id")
 	var body struct {
-		Status   string `json:"status"`
-		Machines string `json:"machines"`
+		Status string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
 	if err := h.db.Model(&models.ProductionOrder{}).Where("order_id = ?", id).
-		Updates(map[string]any{"status": body.Status, "machines": body.Machines}).Error; err != nil {
+		Updates(map[string]any{"status": body.Status}).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
