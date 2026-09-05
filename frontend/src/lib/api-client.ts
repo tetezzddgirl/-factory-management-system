@@ -25,7 +25,14 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const raw = await res.text();
+  try {
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    // 🔍 ชั่วคราว: log raw response ที่ parse ไม่ผ่าน เพื่อหา byte ที่เกินมา
+    console.error(`[apiFetch] JSON parse failed for ${path}. Raw response:`, JSON.stringify(raw));
+    throw e;
+  }
 }
 
 // ---- ชนิดข้อมูลที่ตรงกับ backend (Go structs ใน models/) ----
@@ -389,4 +396,26 @@ export const workApi = {
     apiFetch<{ message: string }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, { method: "DELETE" }),
   update: (workID: string, w: Partial<ApiWork>) =>
     apiFetch<{ ok: boolean }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, { method: "PUT", body: JSON.stringify(w) }),
+};
+
+// ---- การแจ้งเตือน (Notifications) ----
+
+export type ApiNotification = {
+  notificationID: string;
+  recipientRole: string;
+  title: string;
+  description: string;
+  type: "info" | "warning" | "success" | "error";
+  refID: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export const notificationsApi = {
+  list: (role: string) =>
+    apiFetch<ApiNotification[]>(`/api/notifications?role=${encodeURIComponent(role)}`),
+  markRead: (notificationID: string) =>
+    apiFetch<{ ok: boolean }>(`/api/notifications/${encodeURIComponent(notificationID)}/read`, { method: "PUT" }),
+  markAllRead: (role: string) =>
+    apiFetch<{ ok: boolean }>(`/api/notifications/read-all?role=${encodeURIComponent(role)}`, { method: "PUT" }),
 };

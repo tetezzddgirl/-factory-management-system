@@ -36,6 +36,7 @@ func main() {
 	issueHandler := handlers.NewIssueHandler(db)
 	wipHandler := handlers.NewWipHandler(db)
 	workOrderHandler := handlers.NewWorkOrderHandler(db)
+	notificationHandler := handlers.NewNotificationHandler(db)
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -127,6 +128,11 @@ func main() {
 		api.POST("/work-orders/work", workOrderHandler.CreateWork)
 		api.DELETE("/work-orders/work/:id", workOrderHandler.DeleteWork)
 		api.PUT("/work-orders/work/:id", workOrderHandler.UpdateWork)
+
+		// การแจ้งเตือน (Notifications)
+		api.GET("/notifications", notificationHandler.ListNotifications)
+		api.PUT("/notifications/:id/read", notificationHandler.MarkNotificationRead)
+		api.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsRead)
 	}
 
 	log.Println("listening on :" + cfg.ServerPort)

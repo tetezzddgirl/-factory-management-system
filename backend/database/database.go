@@ -61,6 +61,9 @@ func Migrate(db *gorm.DB) error {
 		&models.WIPLocation{},
 		&models.WorkInProcessRecord{},
 		&models.RequisitionSlip{},
+
+		// การแจ้งเตือน (์Notification)
+		&models.Notification{},
 		
 	); err != nil {
 		return err
