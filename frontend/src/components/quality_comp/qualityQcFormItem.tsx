@@ -33,7 +33,7 @@ export default function QualityQcFormItem({
   return (
     <Box>
       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: "#334155" }}>
-        รายการที่ต้องตรวจสอบ ({items.length} รายการ)
+        รายการที่ต้องตรวจสอบ ({items.length} รายการ) *
       </Typography>
       <Stack spacing={2}>
         {items.map((item, idx) => (
@@ -49,8 +49,9 @@ export default function QualityQcFormItem({
               </Box>
 
               <TextField
+                required
                 size="small"
-                label="ค่าที่วัดได้ (Actual Value)"
+                label="ค่าที่วัดได้"
                 value={itemsData[item.requirementID]?.actualValue || ""}
                 onChange={(e) => onChange(item.requirementID, "actualValue", e.target.value)}
                 sx={{ width: { xs: "100%", md: 150 } }}

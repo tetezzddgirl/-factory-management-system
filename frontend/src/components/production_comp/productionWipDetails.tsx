@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface TransferRecord {
   transferType: string;
@@ -41,7 +42,33 @@ export default function ProductionWipDetails({
   orderName,
   onClose,
 }: ProductionWipDetailProps) {
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Failed to load personnel list:", e);
+      }
+    })();
+  }, []);
+
   if (!transferData) return null;
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    // ถ้าใน DB เก็บแค่ ID (เช่น PSN-003) ให้เอามาแปลงเปรียบเทียบกับ Map
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   const getStatusChip = (status?: string) => {
     if (!status || status === "Pending") {
@@ -89,7 +116,6 @@ export default function ProductionWipDetails({
 
         {/* --- ส่วนแสดงรายละเอียดการโอนย้าย --- */}
         <Grid container spacing={3}>
-          {/* แถว 1: รหัสพาเลท และ ชื่อสินค้า */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">รหัสพาเลท (Palette)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
@@ -103,7 +129,6 @@ export default function ProductionWipDetails({
             </Typography>
           </Grid>
 
-          {/* แถว 2: จำนวน และ สถานะ */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">จำนวน (Amount)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
@@ -115,7 +140,6 @@ export default function ProductionWipDetails({
             {getStatusChip(transferData.status)}
           </Grid>
 
-          {/* แถว 3: เวลาบันทึก และ ผู้บันทึก */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">เวลาที่บันทึก (Create Date)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
@@ -127,11 +151,10 @@ export default function ProductionWipDetails({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้บันทึก (Created By)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {transferData.createdBy || "-"}
+              {getPersonnelDisplay(transferData.createdBy)}
             </Typography>
           </Grid>
 
-          {/* แถว 4: เวลาที่รับ และ ผู้รับ (Transfer Data) */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">เวลาที่รับ (Transfer Date)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
@@ -143,11 +166,10 @@ export default function ProductionWipDetails({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้รับ (Received By)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {transferData.receivedBy || "-"}
+              {getPersonnelDisplay(transferData.receivedBy)}
             </Typography>
           </Grid>
 
-          {/* แถว 5: หมายเหตุ */}
           <Grid size={{ xs: 12 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>หมายเหตุ (Remark)</Typography>
             <Box sx={{ p: 1.5, bgcolor: "#f1f5f9", borderRadius: 1.5, border: "1px solid #e2e8f0" }}>

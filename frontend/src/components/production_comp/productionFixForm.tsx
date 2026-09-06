@@ -155,7 +155,6 @@ export default function ProductionFixForm({
 
       if (!res.ok) throw new Error("บันทึกข้อมูลการแก้ไขไม่สำเร็จ");
 
-      alert("บันทึกผลการแก้ไขเรียบร้อยแล้ว");
       setIsEditing(false);
       await fetchDetailData();
     } catch (error: any) {

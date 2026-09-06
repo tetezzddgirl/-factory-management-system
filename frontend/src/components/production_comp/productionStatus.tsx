@@ -49,6 +49,7 @@ export default function ProductionStatus({
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
   const [changedBy, setChangedBy] = useState<string>("");
   const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -58,12 +59,25 @@ export default function ProductionStatus({
       try {
         const people = await personnelApi.list();
         setPersonnel(people ?? []);
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
       } catch (err) {
         console.error("Failed to load personnel:", err);
       }
     };
     fetchPersonnel();
   }, []);
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   const fetchHistory = async () => {
     if (!orderId) return;
@@ -123,12 +137,9 @@ export default function ProductionStatus({
     setConfirmOpen(true);
   };
 
-  // ✅ เอา fetch API ออกเพื่อไม่ให้บันทึกซ้ำ ให้ส่งค่ากลับไปหน้าหลักแทน
   const handleConfirmSubmit = () => {
     setConfirmOpen(false);
     const formattedChangedBy = changedBy.split(" — ")[0] || changedBy;
-    
-    // ส่ง status และ changedBy กลับไปให้ Parent Component บันทึก
     onSave(selectedStatus, formattedChangedBy);
   };
 
@@ -223,7 +234,9 @@ export default function ProductionStatus({
                         sx={{ bgcolor: getStatusDisplay(row.newStatus, true).bgcolor, color: "#fff", fontWeight: "bold", minWidth: 100 }}
                       />
                     </TableCell>
-                    <TableCell align="center" sx={{ color: "#334155" }}>{row.changedBy}</TableCell>
+                    <TableCell align="center" sx={{ color: "#334155" }}>
+                      {getPersonnelDisplay(row.changedBy)}
+                    </TableCell>
                     <TableCell align="center" sx={{ color: "#334155" }}>{new Date(row.changedDateTime).toLocaleString("th-TH")}</TableCell>
                   </TableRow>
                 ))

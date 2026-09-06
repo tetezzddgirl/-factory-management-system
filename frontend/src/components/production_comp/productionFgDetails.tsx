@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface TransferRecord {
   transferType: string;
@@ -24,9 +25,9 @@ export interface TransferRecord {
 
 interface ProductionFgDetailProps {
   transferData: TransferRecord | null;
-  palletNumber: string; // เปลี่ยนจาก paletteNumber
-  productName: string;  // เปลี่ยนจาก fgName
-  quantity: number;     // เปลี่ยนจาก amount
+  palletNumber: string;
+  productName: string;
+  quantity: number;
   orderID?: string;
   orderName?: string;
   onClose: () => void;
@@ -34,14 +35,39 @@ interface ProductionFgDetailProps {
 
 export default function ProductionFgDetails({
   transferData,
-  palletNumber, // เปลี่ยนชื่อ Props
-  productName,  // เปลี่ยนชื่อ Props
-  quantity,     // เปลี่ยนชื่อ Props
+  palletNumber,
+  productName,
+  quantity,
   orderID,
   orderName,
   onClose,
 }: ProductionFgDetailProps) {
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Failed to load personnel list:", e);
+      }
+    })();
+  }, []);
+
   if (!transferData) return null;
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   const getStatusChip = (status?: string) => {
     if (!status || status === "Pending" || status === "รอรับ") {
@@ -144,7 +170,7 @@ export default function ProductionFgDetails({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้บันทึก (Created By)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {transferData.createdBy || "-"}
+              {getPersonnelDisplay(transferData.createdBy)}
             </Typography>
           </Grid>
 
@@ -160,7 +186,7 @@ export default function ProductionFgDetails({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้รับ (Received By)</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {transferData.receivedBy || "-"}
+              {getPersonnelDisplay(transferData.receivedBy)}
             </Typography>
           </Grid>
 

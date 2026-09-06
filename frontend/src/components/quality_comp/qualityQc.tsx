@@ -21,6 +21,7 @@ import { Add as AddIcon } from "@mui/icons-material";
 import QualityQcForm, { QcPointExtended } from "./qualityQcForm";
 import QualityQcDetail from "./qualityQcDetail";
 import { useRole } from "@/lib/roles";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface InspectionRecord {
   inspectionID: string;
@@ -39,6 +40,7 @@ interface QualityQcProps {
 export default function QualityQc({ orderID, orderName }: QualityQcProps) {
   const [inspections, setInspections] = useState<InspectionRecord[]>([]);
   const [points, setPoints] = useState<QcPointExtended[]>([]);
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
   const [selectedPoint, setSelectedPoint] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   
@@ -58,6 +60,20 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
         localStorage.getItem("token") ||
         "";
       const headers = { Authorization: `Bearer ${token}` };
+
+      // ดึงรายชื่อพนักงานมาเก็บไว้แปลงค่า
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Error fetching personnel:", e);
+      }
 
       try {
         const resPoints = await fetch(`http://localhost:8090/api/quality/orders/${orderID}/points`, { headers });
@@ -88,6 +104,12 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   const pointNameMap = points.reduce<Record<string, string>>((acc, pt) => {
     acc[pt.inspectionPointID] = pt.pointName;
@@ -247,7 +269,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
                   <TableCell align="center">
                     {row.inspectionDateTime ? new Date(row.inspectionDateTime).toLocaleString("th-TH") : "-"}
                   </TableCell>
-                  <TableCell align="center">{row.inspectedBy || "-"}</TableCell>
+                  <TableCell align="center">{getPersonnelDisplay(row.inspectedBy)}</TableCell>
                   <TableCell align="center">
                     {renderStatusChip(row.status)}
                   </TableCell>

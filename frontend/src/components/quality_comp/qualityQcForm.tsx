@@ -167,11 +167,6 @@ export default function QualityQcForm({
       return;
     }
 
-    if (!formData.remark.trim()) {
-      toast.error("กรุณาระบุหมายเหตุภาพรวม");
-      return;
-    }
-
     setConfirmOpen(true);
   };
 
@@ -355,7 +350,6 @@ export default function QualityQcForm({
               <TextField
                 label="หมายเหตุภาพรวม"
                 fullWidth
-                required
                 multiline
                 rows={1}
                 placeholder="ระบุหมายเหตุภาพรวม (จำเป็นต้องกรอก)..."
@@ -381,7 +375,6 @@ export default function QualityQcForm({
               !formData.inspectionPointID ||
               !formData.overallResult ||
               !formData.inspectedBy.trim() ||
-              !formData.remark.trim() ||
               (formData.overallResult === "Fail" && !formData.actionGuideline.trim())
             }
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
