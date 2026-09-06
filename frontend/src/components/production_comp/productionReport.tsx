@@ -16,6 +16,8 @@ import {
   Grid
 } from "@mui/material";
 import { toast } from "sonner";
+// 1. นำเข้า useRole
+import { useRole } from "@/lib/roles";
 
 interface ProductionReportProps {
   orderID?: string;
@@ -23,6 +25,10 @@ interface ProductionReportProps {
 }
 
 export default function ProductionReport({ orderID, orderName }: ProductionReportProps) {
+  // 2. เรียกใช้ useRole และกำหนดสิทธิ์
+  const { role } = useRole();
+  const canAccess = role === "operator" || role === "admin";
+
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -193,91 +199,108 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
                   </Grid>
                 </Grid>
                 
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5 }}>
-                  <Button variant="outlined" size="small" onClick={handleEdit} sx={{ borderRadius: 2, textTransform: "none" }}>
-                    แก้ไขข้อมูล
-                  </Button>
-                </Box>
+                {/* 3. ซ่อนปุ่มแก้ไข หากไม่ใช่ operator หรือ admin */}
+                {canAccess && (
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5 }}>
+                    <Button variant="outlined" size="small" onClick={handleEdit} sx={{ borderRadius: 2, textTransform: "none" }}>
+                      แก้ไขข้อมูล
+                    </Button>
+                  </Box>
+                )}
               </Box>
             ) : (
               <>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="datetime-local" label="เวลาเริ่มผลิตจริง" name="actualStartDateTime" value={formData.actualStartDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="datetime-local" label="เวลาผลิตเสร็จจริง" name="actualEndDateTime" value={formData.actualEndDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดผลิตรวม" name="actualQuantity" value={formData.actualQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดของดี" name="goodQuantity" value={formData.goodQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดของเสีย" name="scrapQuantity" value={formData.scrapQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="number" label="จำนวนพาเลท" name="palletQuantity" value={formData.palletQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField select fullWidth size="small" label="ผลการผลิต" name="productionResult" value={formData.productionResult} onChange={handleChange}>
-                      <MenuItem value="Pass">Pass (ผ่าน)</MenuItem>
-                      <MenuItem value="Fail">Fail (ไม่ผ่าน)</MenuItem>
-                      <MenuItem value="Partial">Partial (ผ่านบางส่วน)</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField fullWidth multiline rows={3} size="small" label="หมายเหตุ / สาเหตุของเสีย" name="remark" value={formData.remark} onChange={handleChange} placeholder="ระบุหมายเหตุเพิ่มเติม..." />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField fullWidth disabled size="small" label="ผู้บันทึก" name="recordedBy" value={formData.recordedBy} slotProps={{ input: { readOnly: true } }} helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ" />
-                  </Grid>
-                </Grid>
+                {/* 4. ตรวจสอบสิทธิ์สำหรับหน้าฟอร์ม (ถ้าเพิ่งเริ่มและยังไม่มีข้อมูล) */}
+                {canAccess ? (
+                  <>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth size="small" type="datetime-local" label="เวลาเริ่มผลิตจริง" name="actualStartDateTime" value={formData.actualStartDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth size="small" type="datetime-local" label="เวลาผลิตเสร็จจริง" name="actualEndDateTime" value={formData.actualEndDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField fullWidth size="small" type="number" label="ยอดผลิตรวม" name="actualQuantity" value={formData.actualQuantity} onChange={handleChange} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField fullWidth size="small" type="number" label="ยอดของดี" name="goodQuantity" value={formData.goodQuantity} onChange={handleChange} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField fullWidth size="small" type="number" label="ยอดของเสีย" name="scrapQuantity" value={formData.scrapQuantity} onChange={handleChange} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth size="small" type="number" label="จำนวนพาเลท" name="palletQuantity" value={formData.palletQuantity} onChange={handleChange} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField select fullWidth size="small" label="ผลการผลิต" name="productionResult" value={formData.productionResult} onChange={handleChange}>
+                          <MenuItem value="Pass">Pass (ผ่าน)</MenuItem>
+                          <MenuItem value="Fail">Fail (ไม่ผ่าน)</MenuItem>
+                          <MenuItem value="Partial">Partial (ผ่านบางส่วน)</MenuItem>
+                        </TextField>
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField fullWidth multiline rows={3} size="small" label="หมายเหตุ / สาเหตุของเสีย" name="remark" value={formData.remark} onChange={handleChange} placeholder="ระบุหมายเหตุเพิ่มเติม..." />
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField fullWidth disabled size="small" label="ผู้บันทึก" name="recordedBy" value={formData.recordedBy} slotProps={{ input: { readOnly: true } }} helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ" />
+                      </Grid>
+                    </Grid>
 
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    onClick={() => setConfirmOpen(true)}
-                    sx={{
-                      bgcolor: "#4a90e2", color: "#fff", fontWeight: 600,
-                      px: 3.5, py: 0.8, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
-                    }}
-                  >
-                    บันทึกผล
-                  </Button>
-                </Box>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                      <Button
+                        variant="contained"
+                        disableElevation
+                        onClick={() => setConfirmOpen(true)}
+                        sx={{
+                          bgcolor: "#4a90e2", color: "#fff", fontWeight: 600,
+                          px: 3.5, py: 0.8, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
+                        }}
+                      >
+                        บันทึกผล
+                      </Button>
+                    </Box>
+                  </>
+                ) : (
+                  <Box sx={{ textAlign: "center", py: 4 }}>
+                    <Typography sx={{ color: "text.secondary" }}>
+                      ยังไม่มีการบันทึกรายงานผลการผลิต
+                    </Typography>
+                  </Box>
+                )}
               </>
             )}
           </Stack>
         </CardContent>
       </Card>
 
-      <Dialog
-        open={confirmOpen}
-        onClose={() => !loading && setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
-      >
-        <DialogContent>
-          <Typography color="text.secondary">
-            คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
-            ยกเลิก
-          </Button>
-          <Button
-            onClick={() => { setConfirmOpen(false); handleSave(); }}
-            variant="contained"
-            disabled={loading}
-            sx={{ width: 100 }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* ซ่อน Dialog ถ้าไม่มีสิทธิ์ เพื่อความปลอดภัย */}
+      {canAccess && (
+        <Dialog
+          open={confirmOpen}
+          onClose={() => !loading && setConfirmOpen(false)}
+          sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
+        >
+          <DialogContent>
+            <Typography color="text.secondary">
+              คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={() => { setConfirmOpen(false); handleSave(); }}
+              variant="contained"
+              disabled={loading}
+              sx={{ width: 100 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 }

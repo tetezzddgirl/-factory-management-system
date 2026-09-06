@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { Factory } from '@mui/icons-material';
 import { PageShell } from "@/components/page-shell";
+import { useRole } from "@/lib/roles";
 
 import ProductionDetails from "@/components/production_comp/productionDetails";
 import ProductionFix from "@/components/production_comp/productionFix";
@@ -16,6 +17,7 @@ import ProductionWip from "@/components/production_comp/productionWip";
 import ProductionFg from "@/components/production_comp/productionFg";
 import { RequisitionForm } from "@/components/production_comp/requisitionForm";
 import { IssuesForm } from '@/components/production_comp/issuesForm';
+import ProductionStatusHistory from "@/components/production_comp/productionStatusHistory";
 
 
 interface ProductionReport {
@@ -56,6 +58,7 @@ export const Route = createFileRoute('/_authenticated/sub/productionManagement')
 });
 
 function RouteComponent() {
+  const { role } = useRole();
   const { id: orderID } = useSearch({ from: '/_authenticated/sub/productionManagement' });
 
   const [order, setOrder] = useState<ProductionOrder | null>(null);
@@ -69,6 +72,7 @@ function RouteComponent() {
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [openReqDialog, setOpenReqDialog] = useState(false);
   const [openIssuesDialog, setOpenIssuesDialog] = useState(false);
+  const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
 
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
@@ -187,6 +191,7 @@ function RouteComponent() {
   const progressPct = Math.min(100, Math.round((done / target) * 100));
 
   const chipProps = getStatusChipProps(order.status);
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <PageShell title="" description="">
@@ -233,6 +238,7 @@ function RouteComponent() {
 
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container spacing={2}>
+              {canAccess && (
               <Grid size={{ xs: 6 }}>
                 <Button 
                   fullWidth 
@@ -240,30 +246,57 @@ function RouteComponent() {
                   color="primary" 
                   onClick={() => setOpenStatusDialog(true)}
                 >
-                  แก้ไขสถานะ
+                  เปลี่ยนสถานะ
                 </Button>
               </Grid>
-              <Grid size={{ xs: 6 }}><Button fullWidth variant="contained" color="primary">แจ้งเสีย</Button></Grid>
+              )}
+              {(role !== "operator" && role !== "admin") && (
               <Grid size={{ xs: 6 }}>
                 <Button 
                   fullWidth 
                   variant="contained" 
                   color="primary" 
-                  onClick={() => setOpenReqDialog(true)}
+                  onClick={() => setOpenHistoryDialog(true)}
                 >
-                  ขอเบิก
+                  ประวัติการเปลี่ยนสถานะ
                 </Button>
               </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={() => setOpenIssuesDialog(true)}
-                >
-                  แจ้งปัญหา
-                </Button>
-              </Grid>
+              )}
+              {canAccess && (
+                <>
+                  <Grid size={{ xs: 6 }}>
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      color="primary"
+                    >
+                      แจ้งเสีย
+                    </Button>
+                  </Grid>
+
+                  <Grid size={{ xs: 6 }}>
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      color="primary" 
+                      onClick={() => setOpenReqDialog(true)}
+                    >
+                      ขอเบิก
+                    </Button>
+                  </Grid>
+
+                  <Grid size={{ xs: 6 }}>
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      color="primary" 
+                      onClick={() => setOpenIssuesDialog(true)}
+                    >
+                      แจ้งปัญหา
+                    </Button>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </Grid>
 
@@ -334,6 +367,19 @@ function RouteComponent() {
           initialStatus={order.status}
           onSave={handleSaveStatus}
           onCancel={() => setOpenStatusDialog(false)}
+        />
+      </Dialog>
+      <Dialog
+        open={openHistoryDialog}
+        onClose={() => setOpenHistoryDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        <ProductionStatusHistory
+          orderId={order.orderID}
+          orderName={order.name}
+          onClose={() => setOpenHistoryDialog(false)}
         />
       </Dialog>
 

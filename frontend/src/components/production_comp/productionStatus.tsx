@@ -103,7 +103,7 @@ export default function ProductionStatus({
       {/* ส่วนหัว */}
       <Box sx={{ p: 3, pb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: "#1b2559" }}>
-          แก้ไขสถานะการผลิต
+          เปลี่ยนสถานะการผลิต
         </Typography>
         <Typography variant="body2" sx={{ color: "#475467", mt: 0.5 }}>
           {orderName} • {orderId}

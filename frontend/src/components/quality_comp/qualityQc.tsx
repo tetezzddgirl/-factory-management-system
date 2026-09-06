@@ -198,7 +198,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
           </Select>
         </FormControl>
         
-        {role === "qc" && (
+        {(role === "qc" || role === "admin") && (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -255,7 +255,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
                     <Button
                       size="small"
                       variant="outlined"
-                      sx={{ textTransform: "none", borderRadius: 1.5 }}
+                      sx={{ textTransform: "none"}}
                       onClick={() => handleOpenDetail(row.inspectionID)}
                     >
                       รายละเอียด

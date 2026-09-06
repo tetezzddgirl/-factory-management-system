@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import ProductionEvenForm, { EventData } from "./productionEvenForm";
 import ProductionEvenDetail from "./productionEvenDetail";
+import { useRole } from "@/lib/roles";
 
 export interface EventItem {
   id?: number;
@@ -37,6 +38,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
 
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const { role } = useRole();
 
   const handleOpenDetail = (event: EventItem) => {
     setSelectedEvent(event);
@@ -102,9 +104,11 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
       setLoading(false);
     }
   };
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
+      {canAccess && (
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           variant="contained"
@@ -118,6 +122,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
           + เพิ่มเหตุการณ์
         </Button>
       </Box>
+      )}
 
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
         <Table sx={{ minWidth: 700 }}>

@@ -107,7 +107,7 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
       {/* 3. ตรวจสอบ Role === "qc" ก่อนแสดงปุ่ม */}
-      {role === "qc" && (
+      {(role === "qc" || role === "admin") && (
         <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
           <Button
             variant="contained"
