@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"time"
+	"strings"
+	"fmt"
 
 	"factoryflow/models"
 
@@ -91,7 +93,6 @@ func (h *ProductionHandler) UpdateOrderStatus(c *gin.Context) {
 	orderID := c.Param("id")
 	var payload struct {
 		Status    string `json:"status" binding:"required"`
-		Reason    string `json:"reason"`
 		ChangedBy string `json:"changedBy"`
 	}
 
@@ -106,16 +107,26 @@ func (h *ProductionHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	// ตัดเอาเฉพาะ ID พนักงาน
+	cleanChangedBy := strings.TrimSpace(payload.ChangedBy)
+	if strings.Contains(cleanChangedBy, " — ") {
+		cleanChangedBy = strings.TrimSpace(strings.Split(cleanChangedBy, " — ")[0])
+	} else if strings.Contains(cleanChangedBy, " - ") {
+		cleanChangedBy = strings.TrimSpace(strings.Split(cleanChangedBy, " - ")[0])
+	}
+
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		uniqueHistoryID := fmt.Sprintf("HIST-%s-%d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%100000)
+
 		history := models.ProductionStatusHistory{
-			HistoryID:       "HIST-" + time.Now().Format("20060102150405"),
+			HistoryID:       uniqueHistoryID,
 			OrderID:         order.OrderID,
 			PreviousStatus:  order.Status,
 			NewStatus:       payload.Status,
 			ChangedDateTime: time.Now(),
-			Reason:          payload.Reason,
-			ChangedBy:       payload.ChangedBy,
+			ChangedBy:       cleanChangedBy, // เอา Reason ออกไปแล้ว
 		}
+
 		if err := tx.Create(&history).Error; err != nil {
 			return err
 		}
@@ -137,9 +148,11 @@ func (h *ProductionHandler) GetStatusHistoryByOrderID(c *gin.Context) {
 	orderID := c.Param("id")
 	var history []models.ProductionStatusHistory
 
+	// หมายเหตุ: เช็คชื่อ field ใน DB ว่าเป็น changed_date_time หรือ "changedDateTime"
+	// แนะนำใช้ snake_case มาตรฐาน PostgreSQL: changed_date_time DESC
 	if err := h.db.WithContext(c.Request.Context()).
-		Where(`"order_id" = ?`, orderID).
-		Order(`"changedDateTime" DESC`).
+		Where("order_id = ?", orderID).
+		Order("changed_date_time DESC").
 		Find(&history).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
