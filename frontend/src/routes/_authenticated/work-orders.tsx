@@ -77,10 +77,10 @@ function WorkOrdersPage() {
   /** ตรวจสอบทรัพยากรของใบสั่งผลิต — ถ้าสินค้านี้มีสูตรการผลิต (Formula) ในระบบ คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่สั่งผลิต
    *  เทียบกับยอดคงเหลือจริงในคลัง ถ้ายังไม่มีสูตร fallback เป็นตัวเลขประมาณการ (เดิม) เพื่อให้ demo flow ทำงานต่อได้ */
   function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
-    const matchedProduct = products.find((p) => p.name === product);
+    const matchedProduct = products.find((p) => p.product_name === product);
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * 1.25));
     const materials = matchedProduct
-      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.productID, target).map((m) => ({
+      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
           name: m.name, required: m.required, available: m.available, unit: m.unit,
         }))
       : [
@@ -103,7 +103,7 @@ function WorkOrdersPage() {
 
   /** ขั้นตอนการผลิตของสินค้าตัวหนึ่ง (ไว้โชว์ตอนมอบหมายงาน) — หา bomID จากสูตรของสินค้านั้นก่อน แล้วดึงขั้นตอนที่ผูกกับ bomID นั้น */
   function stepsForProduct(product: string) {
-    const productID = products.find((p) => p.name === product)?.productID;
+    const productID = products.find((p) => p.product_name === product)?.product_id;
     if (!productID) return undefined;
     const formulaID = formulaIDFor(formulas, productID);
     if (!formulaID) return undefined;

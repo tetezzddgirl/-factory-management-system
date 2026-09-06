@@ -246,7 +246,11 @@ func (h *WipHandler) CreateWipRecord(c *gin.Context) {
 
 func (h *WipHandler) ListRequisitionSlips(c *gin.Context) {
 	out := []models.RequisitionSlip{}
-	if err := h.db.Order("timestamp DESC").Find(&out).Error; err != nil {
+	if err := h.db.
+		Select("requisition_slips.*, wip_locations.wip_id AS wip_id").
+		Joins("JOIN wip_locations ON wip_locations.wip_location_id = requisition_slips.wip_location_id").
+		Order("requisition_slips.timestamp DESC").
+		Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -259,7 +263,26 @@ func (h *WipHandler) CreateRequisitionSlip(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
-	if slip.Amount < 0 { 
+
+	// รองรับฟอร์มที่ส่งมาแค่ wipID (ไม่ได้ระบุตำแหน่งจัดเก็บเจาะจง)
+	// ให้หาตำแหน่งที่มีของ WIP นั้นเก็บอยู่มาใช้แทนโดยอัตโนมัติ
+	if slip.WipLocationID == "" && slip.WipID != "" {
+		var loc models.WIPLocation
+		if err := h.db.Where("wip_id = ?", slip.WipID).First(&loc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบตำแหน่งจัดเก็บของสินค้านี้"})
+			return
+		}
+		slip.WipLocationID = loc.WipLocationID
+	}
+
+	var location models.WIPLocation
+	if err := h.db.Where("wip_location_id = ?", slip.WipLocationID).First(&location).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wip location not found"})
+		return
+	}
+	slip.WipID = location.WipID
+
+	if slip.Amount < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}

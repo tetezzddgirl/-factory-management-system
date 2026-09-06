@@ -91,5 +91,6 @@ type RequisitionSlip struct {
 	Approver      string    `json:"approver"`
 	ApproveTime   time.Time `json:"approveTime"`
 	OrderID       string    `json:"orderID"`
-	WipLocationID string    `json:"wipID" gorm:"column:wip_location_id"`
+	WipID   	  string 	`json:"wipID" gorm:"->;column:wip_id"`
+	WipLocationID string    `json:"wipLocationID" gorm:"column:wip_location_id"`
 }

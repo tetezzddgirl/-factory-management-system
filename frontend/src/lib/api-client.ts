@@ -64,7 +64,7 @@ export type ApiRawMaterial = {
 
 // ---- สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/FOR master data) ----
 
-export type ApiProduct = { productID: string; name: string; unit: string };
+export type ApiProduct = { product_id: string; product_name: string;};
 export type ApiFormulaItem = { id: number; formulaID: string; productID: string; rmID: string; qtyPerUnit: number; unit: string };
 
 export const productsApi = {
@@ -133,7 +133,7 @@ export function formulaOptions(formulas: ApiFormulaItem[], products: ApiProduct[
   const seen = new Map<string, string>();
   for (const f of formulas) {
     if (seen.has(f.formulaID)) continue;
-    const productName = products.find((p) => p.productID === f.productID)?.name ?? f.productID;
+    const productName = products.find((p) => p.product_id === f.productID)?.product_name ?? f.productID;
     seen.set(f.formulaID, `${f.formulaID}${FOR_LABEL_SEP}${productName}`);
   }
   return Array.from(seen.values());
@@ -148,7 +148,7 @@ export function formulaIDFromOption(option: string): string {
 export function formulaOptionFor(formulas: ApiFormulaItem[], products: ApiProduct[], formulaID: string): string {
   if (!formulaID) return "";
   const match = formulas.find((f) => f.formulaID === formulaID);
-  const productName = match ? products.find((p) => p.productID === match.productID)?.name ?? match.productID : undefined;
+  const productName = match ? products.find((p) => p.product_id === match.productID)?.product_name ?? match.productID : undefined;
   return productName ? `${formulaID}${FOR_LABEL_SEP}${productName}` : formulaID;
 }
 
