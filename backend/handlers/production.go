@@ -294,12 +294,28 @@ func (h *ProductionHandler) CreateTransfer(c *gin.Context) {
 		return
 	}
 
+	// กำหนด Timezone ประเทศไทย (UTC+7)
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	// สร้าง TransferID ในรูปแบบ TRF-YYYYMMDDHHMMSS ตามเวลาไทย
 	if transfer.TransferID == "" {
-		transfer.TransferID = "TRF-" + time.Now().Format("20060102150405")
+		transfer.TransferID = fmt.Sprintf("TRF-%s", now.Format("20060102150405"))
 	}
+
+	// กำหนดเวลาที่บันทึกตามเวลาไทย
 	if transfer.CreateDateTime.IsZero() {
-		transfer.CreateDateTime = time.Now()
+		transfer.CreateDateTime = now
 	}
+
+	// ตัดเอาเฉพาะรหัสพนักงาน (ป้องกันติดชื่อเต็ม เช่น "PSN-001 — สมชาย")
+	cleanCreatedBy := strings.TrimSpace(transfer.CreatedBy)
+	if strings.Contains(cleanCreatedBy, " — ") {
+		cleanCreatedBy = strings.TrimSpace(strings.Split(cleanCreatedBy, " — ")[0])
+	} else if strings.Contains(cleanCreatedBy, " - ") {
+		cleanCreatedBy = strings.TrimSpace(strings.Split(cleanCreatedBy, " - ")[0])
+	}
+	transfer.CreatedBy = cleanCreatedBy
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&transfer).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
