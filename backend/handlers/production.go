@@ -115,16 +115,20 @@ func (h *ProductionHandler) UpdateOrderStatus(c *gin.Context) {
 		cleanChangedBy = strings.TrimSpace(strings.Split(cleanChangedBy, " - ")[0])
 	}
 
+	// กำหนด Timezone ประเทศไทย (UTC+7)
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		uniqueHistoryID := fmt.Sprintf("HIST-%s-%d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%100000)
+		uniqueHistoryID := fmt.Sprintf("HIST-%s-%05d", now.Format("20060102150405"), now.Nanosecond()%100000)
 
 		history := models.ProductionStatusHistory{
 			HistoryID:       uniqueHistoryID,
 			OrderID:         order.OrderID,
 			PreviousStatus:  order.Status,
 			NewStatus:       payload.Status,
-			ChangedDateTime: time.Now(),
-			ChangedBy:       cleanChangedBy, // เอา Reason ออกไปแล้ว
+			ChangedDateTime: now,
+			ChangedBy:       cleanChangedBy,
 		}
 
 		if err := tx.Create(&history).Error; err != nil {
@@ -298,17 +302,11 @@ func (h *ProductionHandler) CreateTransfer(c *gin.Context) {
 	loc := time.FixedZone("ICT", 7*60*60)
 	now := time.Now().In(loc)
 
-	// สร้าง TransferID ในรูปแบบ TRF-YYYYMMDDHHMMSS ตามเวลาไทย
-	if transfer.TransferID == "" {
-		transfer.TransferID = fmt.Sprintf("TRF-%s", now.Format("20060102150405"))
-	}
+	// บังคับสร้างใหม่ทับค่าจาก Frontend ทันที
+	transfer.TransferID = fmt.Sprintf("TRF-%s", now.Format("20060102150405"))
+	transfer.CreateDateTime = now
 
-	// กำหนดเวลาที่บันทึกตามเวลาไทย
-	if transfer.CreateDateTime.IsZero() {
-		transfer.CreateDateTime = now
-	}
-
-	// ตัดเอาเฉพาะรหัสพนักงาน (ป้องกันติดชื่อเต็ม เช่น "PSN-001 — สมชาย")
+	// ทำความสะอาดรหัสพนักงาน
 	cleanCreatedBy := strings.TrimSpace(transfer.CreatedBy)
 	if strings.Contains(cleanCreatedBy, " — ") {
 		cleanCreatedBy = strings.TrimSpace(strings.Split(cleanCreatedBy, " — ")[0])
