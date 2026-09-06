@@ -126,7 +126,7 @@ export default function ProductionFix({ orderID, orderName }: ProductionFixProps
                     <Button
                       size="small"
                       variant="outlined"
-                      sx={{ textTransform: "none", borderRadius: 1.5 }}
+                      sx={{ textTransform: "none"}}
                       onClick={() => handleOpenAction(row.inspectionID)}
                     >
                       รายละเอียด/บันทึก

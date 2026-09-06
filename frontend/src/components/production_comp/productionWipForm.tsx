@@ -68,7 +68,10 @@ export default function ProductionWipForm({
     fetchWipOptions();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // แก้ Type ของ e ให้รองรับทั้ง Input และ TextArea
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError(null);
@@ -268,9 +271,22 @@ export default function ProductionWipForm({
               label="จำนวน"
               name="amount"
               value={formData.amount}
-              onChange={handleChange}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || Number(val) > 0) {
+                  handleChange(e);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (["-", "+", "e", "E"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               placeholder="ระบุจำนวน"
               slotProps={{
+                htmlInput: {
+                  min: 1,
+                },
                 input: {
                   endAdornment: displayUnit ? (
                     <InputAdornment position="end">{displayUnit}</InputAdornment>
@@ -289,7 +305,6 @@ export default function ProductionWipForm({
               placeholder="ระบุชื่อพนักงาน"
             />
             
-            {/* ฟิลด์สำหรับกรอกหมายเหตุ */}
             <TextField
               fullWidth
               multiline
