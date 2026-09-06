@@ -17,7 +17,10 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  Autocomplete,
 } from "@mui/material";
+import { toast } from "sonner";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 import QualityQcFormItem, { ItemData } from "./qualityQcFormItem";
 
 export interface InspectItemDetail {
@@ -35,7 +38,7 @@ export interface QcPointExtended {
 }
 
 interface QualityQcFormProps {
-  open?: boolean; // ปรับให้เป็น optional เพื่อรับค่าจาก Parent
+  open?: boolean;
   onClose: () => void;
   orderID: string;
   orderName?: string;
@@ -53,6 +56,7 @@ export default function QualityQcForm({
   initialPointID,
   onSuccess,
 }: QualityQcFormProps) {
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -61,10 +65,23 @@ export default function QualityQcForm({
     overallResult: "" as "Pass" | "Fail" | "",
     actionGuideline: "",
     remark: "",
-    inspectedBy: "",
+    inspectedBy: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
   });
 
   const [itemsData, setItemsData] = useState<Record<string, ItemData>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (e) {
+        console.error("Failed to load personnel:", e);
+      }
+    })();
+  }, []);
+
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
 
   const selectedPointDetails = points.find(
     (p) => p.inspectionPointID === formData.inspectionPointID
@@ -119,7 +136,7 @@ export default function QualityQcForm({
     e.preventDefault();
 
     if (!formData.inspectionPointID) {
-      alert("กรุณาเลือกจุดตรวจ");
+      toast.error("กรุณาเลือกจุดตรวจ");
       return;
     }
 
@@ -130,13 +147,28 @@ export default function QualityQcForm({
       });
 
       if (missingItems.length > 0) {
-        alert("กรุณากดเลือก 'ผ่าน/ไม่ผ่าน' ให้ครบทุกรายการย่อย");
+        toast.error("กรุณากดเลือก 'ผ่าน/ไม่ผ่าน' ให้ครบทุกรายการย่อย");
         return;
       }
     }
 
     if (formData.overallResult === "") {
-      alert("กรุณาเลือก สรุปผลการประเมินจุดตรวจ (Overall Result) ด้านล่างสุด");
+      toast.error("กรุณาเลือก สรุปผลการประเมินจุดตรวจ (Overall Result)");
+      return;
+    }
+
+    if (formData.overallResult === "Fail" && !formData.actionGuideline.trim()) {
+      toast.error("กรุณาระบุแนวทางการดำเนินการ (Action Guideline)");
+      return;
+    }
+
+    if (!formData.inspectedBy.trim()) {
+      toast.error("กรุณาเลือกชื่อผู้ตรวจสอบ");
+      return;
+    }
+
+    if (!formData.remark.trim()) {
+      toast.error("กรุณาระบุหมายเหตุภาพรวม");
       return;
     }
 
@@ -153,7 +185,6 @@ export default function QualityQcForm({
         localStorage.getItem("token") ||
         "";
 
-      // 1. จัดเตรียม Payload รายการที่ต้องตรวจสอบ (InspectionItems)
       const itemsPayload = currentInspectItems.map((item) => {
         const data = itemsData[item.requirementID];
         return {
@@ -170,7 +201,7 @@ export default function QualityQcForm({
         overallResult: formData.overallResult,
         actionGuideline: formData.overallResult === "Fail" ? formData.actionGuideline : "",
         remark: formData.remark,
-        inspectedBy: formData.inspectedBy,
+        inspectedBy: formData.inspectedBy.split(" — ")[0] || formData.inspectedBy,
         inspectionDateTime: new Date().toISOString(),
         status: formData.overallResult === "Fail" ? "Pending" : formData.overallResult,
         items: itemsPayload,
@@ -187,11 +218,12 @@ export default function QualityQcForm({
 
       if (!resInspection.ok) throw new Error("บันทึกข้อมูล Inspection ไม่สำเร็จ");
 
+      toast.success("บันทึกผลการตรวจคุณภาพสำเร็จ");
       onSuccess();
       onClose();
     } catch (error) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
       setLoading(false);
     }
@@ -299,23 +331,34 @@ export default function QualityQcForm({
                 value={formData.actionGuideline}
                 onChange={(e) => handleChange("actionGuideline", e.target.value)}
                 sx={{ bgcolor: "#fff" }}
-                placeholder="ระบุแนวทางแก้ไข เช่น คัดแยกของเสีย, ปรับตั้งเครื่องจักร..."
+                placeholder="ระบุแนวทางแก้ไข เช่น คัดแยกของเสีย, ปรับตั้งเครื่องจักร (จำเป็นต้องกรอก)..."
                 helperText="* ระบบจะบันทึกสถานะใบตรวจนี้เป็น Pending อัตโนมัติ เพื่อรอการแก้ไข"
               />
             )}
 
             <Stack direction={{ xs: "column", sm: "row" } as const} spacing={2}>
-              <TextField
-                label="ชื่อผู้ตรวจสอบ (Inspected By)"
+              <Autocomplete
                 fullWidth
-                required
+                options={personnelOptions}
                 value={formData.inspectedBy}
-                onChange={(e) => handleChange("inspectedBy", e.target.value)}
-                sx={{ bgcolor: "#fff" }}
+                onChange={(_, v) => handleChange("inspectedBy", v || "")}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    label="ชื่อผู้ตรวจสอบ (Inspected By)" 
+                    placeholder="เลือกผู้ตรวจสอบ" 
+                    required 
+                    sx={{ bgcolor: "#fff" }}
+                  />
+                )}
               />
               <TextField
-                label="หมายเหตุภาพรวม (ถ้ามี)"
+                label="หมายเหตุภาพรวม"
                 fullWidth
+                required
+                multiline
+                rows={1}
+                placeholder="ระบุหมายเหตุภาพรวม (จำเป็นต้องกรอก)..."
                 value={formData.remark}
                 onChange={(e) => handleChange("remark", e.target.value)}
                 sx={{ bgcolor: "#fff" }}
@@ -326,13 +369,21 @@ export default function QualityQcForm({
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={onClose} disabled={loading} color="inherit" sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={onClose} disabled={loading} color="inherit" sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button
             type="submit"
             variant="contained"
-            disabled={loading || points.length === 0 || !formData.inspectionPointID}
+            disabled={
+              loading ||
+              points.length === 0 ||
+              !formData.inspectionPointID ||
+              !formData.overallResult ||
+              !formData.inspectedBy.trim() ||
+              !formData.remark.trim() ||
+              (formData.overallResult === "Fail" && !formData.actionGuideline.trim())
+            }
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
             sx={{ width: 100 }}
           >
@@ -341,7 +392,6 @@ export default function QualityQcForm({
         </DialogActions>
       </form>
 
-      {/* Confirmation Dialog ยังต้องใช้อยู่ */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: "#1e293b" }}>
           ยืนยันการบันทึกข้อมูล
@@ -352,7 +402,7 @@ export default function QualityQcForm({
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button

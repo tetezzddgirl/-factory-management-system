@@ -16,7 +16,6 @@ import {
   InputAdornment, 
   Autocomplete,
 } from "@mui/material";
-import { getSession } from "@/lib/auth";
 import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionWipFormProps {
@@ -48,7 +47,7 @@ export default function ProductionWipForm({
     PalletNumber: "",
     wipID: "",
     amount: "",
-    createdBy: "",
+    createdBy: "", // เริ่มต้นเป็นค่าว่าง
     remark: "",
   });
 
@@ -67,15 +66,7 @@ export default function ProductionWipForm({
           setWipOptions(data || []);
         }
 
-        const people = peopleRes ?? [];
-        setPersonnel(people);
-
-        // ตั้งค่าผู้บันทึกอัตโนมัติจากเซสชัน
-        const currentUserEmail = getSession()?.email ?? "";
-        const currentUserRow = people.find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
-        const defaultUser = currentUserRow ? `${currentUserRow.id} — ${currentUserRow.name}` : "";
-
-        setFormData((prev) => ({ ...prev, createdBy: defaultUser }));
+        setPersonnel(peopleRes ?? []);
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }
@@ -109,13 +100,13 @@ export default function ProductionWipForm({
   };
 
   const resetForm = () => {
-    setFormData((prev) => ({
+    setFormData({
       PalletNumber: "",
       wipID: "",
       amount: "",
-      createdBy: prev.createdBy, // คงค่าคนบันทึกไว้
+      createdBy: "", // รีเซ็ตเป็นค่าว่าง
       remark: "", 
-    }));
+    });
   };
 
   const handleConfirm = async () => {
@@ -161,7 +152,7 @@ export default function ProductionWipForm({
         const transferPayload = {
           transferID: `TRF-${timestamp}`,
           transferType: "WIP",
-          createdBy: formData.createdBy.split(" — ")[0] || formData.createdBy, // ส่งแค่รหัสพนักงาน
+          createdBy: formData.createdBy.split(" — ")[0] || formData.createdBy,
           createDateTime: new Date().toISOString(),
           status: "Pending",
           remark: formData.remark ? `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})` : `นำเข้าจากใบสั่งผลิต ${orderID}`,
@@ -315,7 +306,7 @@ export default function ProductionWipForm({
                 <TextField 
                   {...params} 
                   label="พนักงานรับผิดชอบ" 
-                  placeholder="ระบุชื่อพนักงาน" 
+                  placeholder="เลือกรายชื่อพนักงาน" 
                   required 
                 />
               )}

@@ -13,10 +13,12 @@ import {
   Dialog,
   MenuItem,
   CircularProgress,
-  Grid
+  Grid,
+  Autocomplete
 } from "@mui/material";
 import { toast } from "sonner";
 import { useRole } from "@/lib/roles";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionReportProps {
   orderID?: string;
@@ -27,6 +29,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
   const { role } = useRole();
   const canAccess = role === "operator" || role === "admin";
 
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -42,8 +45,21 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     palletQuantity: "",
     productionResult: "Pass",
     remark: "",
-    recordedBy: "นายสมมติ ทดสอบ (Mock)",
+    recordedBy: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
   });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (e) {
+        console.error("Failed to load personnel:", e);
+      }
+    })();
+  }, []);
+
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
 
   const fetchReport = useCallback(async () => {
     if (!orderID) return;
@@ -70,7 +86,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
             palletQuantity: report.palletQuantity?.toString() || "",
             productionResult: report.productionResult || "Pass",
             remark: report.remark || "",
-            recordedBy: report.recordedBy || "นายสมมติ ทดสอบ (Mock)",
+            recordedBy: report.recordedBy || "",
           });
           setIsSaved(true);
         }
@@ -84,19 +100,16 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     fetchReport();
   }, [fetchReport]);
 
-  // รองรับทั้ง HTMLInputElement และ HTMLTextAreaElement
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // ดักการพิมพ์ตัวเลขไม่ให้ใส่ค่าลบหรือสัญลักษณ์แปลกปลอม
   const handleNumberKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (["-", "+", "e", "E"].includes(e.key)) {
       e.preventDefault();
     }
   };
 
-  // ตรวจสอบว่ากรอกครบทุกช่องก่อนเปิด Dialog
   const handleValidateAndOpenConfirm = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -108,7 +121,8 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
       formData.scrapQuantity === "" ||
       formData.palletQuantity === "" ||
       !formData.productionResult ||
-      !formData.remark.trim()
+      !formData.remark.trim() ||
+      !formData.recordedBy.trim()
     ) {
       toast.error("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
       return;
@@ -219,7 +233,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
                       <strong>ยอดของเสีย (Reject):</strong> {formData.scrapQuantity || "0"} ชิ้น<br />
                       <strong>ผลการผลิต:</strong> {formData.productionResult || "-"}<br />
                       <strong>หมายเหตุ:</strong> {formData.remark || "-"}<br />
-                      <strong>ผู้บันทึก:</strong> {formData.recordedBy}
+                      <strong>ผู้บันทึก:</strong> {formData.recordedBy || "-"}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -362,7 +376,20 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
                         />
                       </Grid>
                       <Grid size={{ xs: 12 }}>
-                        <TextField fullWidth disabled size="small" label="ผู้บันทึก" name="recordedBy" value={formData.recordedBy} slotProps={{ input: { readOnly: true } }} helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ" />
+                        <Autocomplete
+                          options={personnelOptions}
+                          value={formData.recordedBy}
+                          onChange={(_, v) => setFormData((prev) => ({ ...prev, recordedBy: v || "" }))}
+                          renderInput={(params) => (
+                            <TextField 
+                              {...params} 
+                              size="small"
+                              label="ผู้บันทึก" 
+                              placeholder="เลือกผู้บันทึกรายการ" 
+                              required 
+                            />
+                          )}
+                        />
                       </Grid>
                     </Grid>
 

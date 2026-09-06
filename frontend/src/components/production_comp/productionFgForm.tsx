@@ -13,7 +13,9 @@ import {
   Divider,
   Alert,
   InputAdornment,
+  Autocomplete,
 } from "@mui/material";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionFgFormProps {
   orderID: string;
@@ -34,6 +36,7 @@ export default function ProductionFgForm({
   onClose,
   onSave,
 }: ProductionFgFormProps) {
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,9 +48,21 @@ export default function ProductionFgForm({
     palletNumber: "",
     productName: orderName || "",
     quantity: "",
-    createdBy: "",
+    createdBy: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
     remark: "",
   });
+
+  // ดึงรายชื่อพนักงาน
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (err) {
+        console.error("Failed to load personnel:", err);
+      }
+    })();
+  }, []);
 
   // ค้นหาชื่อสินค้าและหน่วยอัตโนมัติ
   useEffect(() => {
@@ -84,7 +99,8 @@ export default function ProductionFgForm({
     fetchProductDetails();
   }, [orderName]);
 
-  // ✅ รองรับทั้ง HTMLInputElement และ HTMLTextAreaElement
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -93,10 +109,22 @@ export default function ProductionFgForm({
     if (error) setError(null);
   };
 
+  const handleAutocompleteChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.productName) {
-      setError("กรุณาระบุชื่อสินค้าสำเร็จรูป (FG Name)");
+    if (
+      !formData.palletNumber.trim() ||
+      !formData.productName.trim() ||
+      !formData.quantity ||
+      Number(formData.quantity) <= 0 ||
+      !formData.createdBy.trim() ||
+      !formData.remark.trim()
+    ) {
+      setError("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
       return;
     }
     setError(null);
@@ -162,10 +190,10 @@ export default function ProductionFgForm({
         const transferPayload = {
           transferID: `TRF-FG-${timestamp}`,
           transferType: "FG",
-          createdBy: formData.createdBy,
+          createdBy: formData.createdBy.split(" — ")[0] || formData.createdBy,
           createDateTime: new Date().toISOString(),
           status: "Pending",
-          remark: formData.remark ? `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})` : `นำเข้าจากใบสั่งผลิต ${orderID}`,
+          remark: `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})`,
           order_id: orderID,
           OrderID: orderID,
           orderID: orderID,
@@ -272,10 +300,8 @@ export default function ProductionFgForm({
                 },
               }}
               sx={{ bgcolor: "#f9fafb" }}
-              helperText="* ดึงข้อมูลชื่อสินค้าอัตโนมัติตามชื่อคำสั่งผลิต"
             />
 
-            {/* ✅ ฟิลด์จำนวนที่รับได้เฉพาะค่าบวก */}
             <TextField
               required
               fullWidth
@@ -307,17 +333,22 @@ export default function ProductionFgForm({
               }}
             />
 
-            <TextField
-              required
-              fullWidth
-              label="พนักงานรับผิดชอบ"
-              name="createdBy"
+            <Autocomplete
+              options={personnelOptions}
               value={formData.createdBy}
-              onChange={handleChange}
-              placeholder="ระบุชื่อพนักงาน"
+              onChange={(_, v) => handleAutocompleteChange("createdBy", v || "")}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="พนักงานรับผิดชอบ" 
+                  placeholder="เลือกรายชื่อพนักงาน" 
+                  required 
+                />
+              )}
             />
             
             <TextField
+              required
               fullWidth
               multiline
               rows={2}
@@ -325,7 +356,7 @@ export default function ProductionFgForm({
               name="remark"
               value={formData.remark}
               onChange={handleChange}
-              placeholder="ระบุหมายเหตุ (ถ้ามี)"
+              placeholder="ระบุหมายเหตุ (จำเป็นต้องกรอก)"
             />
           </Stack>
         </DialogContent>
@@ -346,7 +377,6 @@ export default function ProductionFgForm({
         </DialogActions>
       </Box>
 
-      {/* Dialog ยืนยันการบันทึก */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}
