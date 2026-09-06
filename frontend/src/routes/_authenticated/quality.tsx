@@ -146,13 +146,12 @@ function QualityPage() {
       ) : (
         <Grid container spacing={2}>
           {orders.map((order, i) => {
-            // ดึงผลรวมยอด FG ของ Order นี้ ถ้าไม่มีให้เป็น 0
             const done = fgTotals[order.orderID] || 0;
             const target = order.amount || 1;
             const pct = Math.min(100, Math.round((done / target) * 100));
 
             return (
-              <Grid key={order.orderID} size={{ xs: 12, md: 6 }}>
+              <Grid key={order.orderID} size={{ xs: 12, md: 4 }}>
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
