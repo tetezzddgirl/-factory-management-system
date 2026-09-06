@@ -24,6 +24,6 @@ func SeedWarehouseRecord(db *gorm.DB) {
 	})
 
 	upsert(db, "slip_id", []models.RequisitionSlip{
-		{Timestamp: now.Add(-4 * time.Hour), SlipID: "SID-001", Amount: 500, Status: "รออนุมัติ", Handler: "มาลี ศรีสุข", OrderID: "WO-20250702-001", WipLocationID: "WLO-001"},
+		{Timestamp: now.Add(-4 * time.Hour), SlipID: "SID-001", Amount: 500, Status: "รออนุมัติ", Handler: "มาลี ศรีสุข", OrderID: "WO-20250702-001",WipID: "WIP-001", WipLocationID: "WLO-001"},
 	})
 }

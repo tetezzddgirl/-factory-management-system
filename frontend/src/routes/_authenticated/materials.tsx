@@ -90,8 +90,8 @@ function MaterialsPage() {
   const materialsPerOrder = workOrders
     .filter((o) => o.status !== "เสร็จสิ้น" && o.status !== "ยกเลิก")
     .map((o) => {
-      const product = products.find((p) => p.name === o.name);
-      const materials = product ? computeRequiredMaterials(formulas, rawMaterial, product.productID, o.amount) : [];
+      const product = products.find((p) => p.product_name === o.name);
+      const materials = product ? computeRequiredMaterials(formulas, rawMaterial, product.product_id, o.amount) : [];
       return { order: o, materials };
     })
     .filter((x) => x.materials.length > 0);

@@ -59,7 +59,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
 
   /** คำนวณวัตถุดิบที่ต้องใช้ใหม่ (เหมือนตอนสร้างแผนการผลิตใหม่) ทุกครั้งที่สินค้าหรือจำนวนที่ผลิตเปลี่ยน */
   function recomputeMaterials(productName: string, targetStr: string) {
-    const productID = products.find((p) => p.name === productName)?.productID;
+    const productID = products.find((p) => p.product_name === productName)?.product_id;
     const amount = Number(targetStr) || 0;
     if (!productID || !amount) {
       setRequiredMaterials("");
@@ -95,7 +95,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
 
   function handleProductChange(v: string) {
     setProduct(v);
-    const productID = products.find((p) => p.name === v)?.productID;
+    const productID = products.find((p) => p.product_name === v)?.product_id;
     const formulaID = productID ? formulas.find((f) => f.productID === productID)?.formulaID ?? "" : "";
     setFormula(formulaOptionFor(formulas, products, formulaID));
     recomputeMaterials(v, target);
@@ -127,7 +127,7 @@ export function CopyTemplateDialog({ open, plans, products, formulas, rawMateria
           <TextField label="หมายเลขแผนการผลิต" value={planID} slotProps={{ input: { readOnly: true } }} helperText="ระบบกำหนดให้อัตโนมัติ" />
           <TextField label="ชื่อแผนการผลิต" value={name} onChange={(e) => setName(e.target.value)} />
           <TextField select label="สินค้า" value={product} onChange={(e) => handleProductChange(e.target.value)}>
-            {products.map((p) => <MenuItem key={p.productID} value={p.name}>{p.name}</MenuItem>)}
+            {products.map((p) => <MenuItem key={p.product_id} value={p.product_name}>{p.product_name}</MenuItem>)}
           </TextField>
           <TextField select label="สูตรการผลิต" value={formula} onChange={(e) => setFormula(e.target.value)} >
             {formulaOptions(formulas, products).map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
