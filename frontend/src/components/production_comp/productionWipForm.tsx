@@ -14,7 +14,10 @@ import {
   Divider,
   Alert,
   InputAdornment, 
+  Autocomplete,
 } from "@mui/material";
+import { getSession } from "@/lib/auth";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionWipFormProps {
   orderID: string;
@@ -36,11 +39,11 @@ export default function ProductionWipForm({
   onSave,
 }: ProductionWipFormProps) {
   const [wipOptions, setWipOptions] = useState<WorkInProcessItem[]>([]);
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Form States (เพิ่ม remark)
   const [formData, setFormData] = useState({
     PalletNumber: "",
     wipID: "",
@@ -49,26 +52,39 @@ export default function ProductionWipForm({
     remark: "",
   });
 
-  // ดึงข้อมูล Work In Process เพื่อทำเป็นตัวเลือก Dropdown
   useEffect(() => {
-    const fetchWipOptions = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem("ff:token") || localStorage.getItem("token") || "";
-        const res = await fetch("http://localhost:8090/api/wip", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        
+        const [wipRes, peopleRes] = await Promise.all([
+          fetch("http://localhost:8090/api/wip", { headers: { Authorization: `Bearer ${token}` } }),
+          personnelApi.list()
+        ]);
+
+        if (wipRes.ok) {
+          const data = await wipRes.json();
           setWipOptions(data || []);
         }
+
+        const people = peopleRes ?? [];
+        setPersonnel(people);
+
+        // ตั้งค่าผู้บันทึกอัตโนมัติจากเซสชัน
+        const currentUserEmail = getSession()?.email ?? "";
+        const currentUserRow = people.find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
+        const defaultUser = currentUserRow ? `${currentUserRow.id} — ${currentUserRow.name}` : "";
+
+        setFormData((prev) => ({ ...prev, createdBy: defaultUser }));
       } catch (err) {
-        console.error("Failed to fetch WIP options:", err);
+        console.error("Failed to fetch data:", err);
       }
     };
-    fetchWipOptions();
+    fetchData();
   }, []);
 
-  // แก้ Type ของ e ให้รองรับทั้ง Input และ TextArea
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -77,10 +93,15 @@ export default function ProductionWipForm({
     if (error) setError(null);
   };
 
+  const handleAutocompleteChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.wipID) {
-      setError("กรุณาเลือกชื่อสินค้า (WIP Name)");
+    if (!formData.PalletNumber.trim() || !formData.wipID || !formData.amount || !formData.createdBy.trim() || !formData.remark.trim()) {
+      setError("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
       return;
     }
     setError(null);
@@ -88,13 +109,13 @@ export default function ProductionWipForm({
   };
 
   const resetForm = () => {
-    setFormData({
+    setFormData((prev) => ({
       PalletNumber: "",
       wipID: "",
       amount: "",
-      createdBy: "",
-      remark: "", // รีเซ็ต remark
-    });
+      createdBy: prev.createdBy, // คงค่าคนบันทึกไว้
+      remark: "", 
+    }));
   };
 
   const handleConfirm = async () => {
@@ -109,9 +130,6 @@ export default function ProductionWipForm({
     };
 
     try {
-      // -----------------------------------------------------------
-      // 1. บันทึกตาราง WIP Location
-      // -----------------------------------------------------------
       const timestamp = Date.now();
       const generatedLotNumber = `${orderID}-${timestamp}`; 
 
@@ -139,17 +157,13 @@ export default function ProductionWipForm({
       
       generatedWipLocationID = locData.wipLocationID || locData.WipLocationID || locData.wip_location_id || locData.id;
 
-      // -----------------------------------------------------------
-      // 2. บันทึกตาราง Transfer Record
-      // -----------------------------------------------------------
       try {
         const transferPayload = {
           transferID: `TRF-${timestamp}`,
           transferType: "WIP",
-          createdBy: formData.createdBy,
+          createdBy: formData.createdBy.split(" — ")[0] || formData.createdBy, // ส่งแค่รหัสพนักงาน
           createDateTime: new Date().toISOString(),
           status: "Pending",
-          // ถ้าระบุหมายเหตุมา ให้ต่อท้ายประโยคเริ่มต้น
           remark: formData.remark ? `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})` : `นำเข้าจากใบสั่งผลิต ${orderID}`,
           order_id: orderID,
           OrderID: orderID,
@@ -284,9 +298,7 @@ export default function ProductionWipForm({
               }}
               placeholder="ระบุจำนวน"
               slotProps={{
-                htmlInput: {
-                  min: 1,
-                },
+                htmlInput: { min: 1 },
                 input: {
                   endAdornment: displayUnit ? (
                     <InputAdornment position="end">{displayUnit}</InputAdornment>
@@ -295,17 +307,22 @@ export default function ProductionWipForm({
               }}
             />
 
-            <TextField
-              required
-              fullWidth
-              label="พนักงานรับผิดชอบ"
-              name="createdBy"
+            <Autocomplete
+              options={personnelOptions}
               value={formData.createdBy}
-              onChange={handleChange}
-              placeholder="ระบุชื่อพนักงาน"
+              onChange={(_, v) => handleAutocompleteChange("createdBy", v || "")}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="พนักงานรับผิดชอบ" 
+                  placeholder="ระบุชื่อพนักงาน" 
+                  required 
+                />
+              )}
             />
             
             <TextField
+              required
               fullWidth
               multiline
               rows={2}
@@ -313,7 +330,7 @@ export default function ProductionWipForm({
               name="remark"
               value={formData.remark}
               onChange={handleChange}
-              placeholder="ระบุหมายเหตุ (ถ้ามี)"
+              placeholder="ระบุหมายเหตุ (จำเป็นต้องกรอก)"
             />
           </Stack>
         </DialogContent>

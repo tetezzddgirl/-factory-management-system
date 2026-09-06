@@ -39,7 +39,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
     orderID: "",
     item: "",
     location: LOCATION_MASTER[0] || "",
-    amount: "0",
+    amount: "", // เริ่มต้นเป็นค่าว่าง
     unit: "ชิ้น",
     palletNumber: "",
     lotNumber: "",
@@ -168,6 +168,11 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
     const target = workInProcess.find((i) => i.wipID === code);
     const loc = findLoc(formData);
 
+    if (qty <= 0) {
+      toast.error("กรุณาระบุจำนวนที่ต้องการเบิกมากกว่า 0");
+      return;
+    }
+
     if (target && qty > target.amount) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit}`);
       return;
@@ -260,14 +265,31 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
                 />
               </Grid>
 
+              {/* ปรับให้กรอกได้เฉพาะค่าบวก */}
               <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField
                   fullWidth
                   label="จำนวนที่ต้องการเบิก"
                   type="number"
                   required
+                  placeholder="ระบุจำนวน"
                   value={formData.amount}
-                  onChange={(e) => handleChange("amount", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) > 0) {
+                      handleChange("amount", val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (["-", "+", "e", "E"].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  slotProps={{
+                    htmlInput: {
+                      min: 1,
+                    },
+                  }}
                   error={helperInfo?.isOver}
                   helperText={helperInfo?.text}
                 />
@@ -332,7 +354,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
           <Button 
             type="submit" 
             variant="contained" 
-            disabled={isSubmitting || helperInfo?.isOver}
+            disabled={isSubmitting || helperInfo?.isOver || !formData.amount || Number(formData.amount) <= 0}
             sx={{ width: 100 }}
           >
             ขอเบิก
