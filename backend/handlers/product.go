@@ -41,9 +41,6 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	if p.ProductID == "" {
 		p.ProductID = fmt.Sprintf("PRD-%d", time.Now().UnixNano())
 	}
-	if p.Unit == "" {
-		p.Unit = "ชิ้น"
-	}
 	if err := h.db.Create(&p).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
