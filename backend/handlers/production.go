@@ -173,12 +173,24 @@ func (h *ProductionHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	if event.EventID == "" {
-		event.EventID = "EVT-" + time.Now().Format("20060102150405")
-	}
+	// กำหนด Timezone ประเทศไทย (UTC+7)
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	// บังคับสร้าง ID ในรูปแบบ EVT-YYYYMMDDHHMMSS ตามเวลาไทย
+	event.EventID = fmt.Sprintf("EVT-%s", now.Format("20060102150405"))
+
 	if event.StartDateTime.IsZero() {
-		event.StartDateTime = time.Now()
+		event.StartDateTime = now
 	}
+
+	cleanRecordedBy := strings.TrimSpace(event.RecordedBy)
+	if strings.Contains(cleanRecordedBy, " — ") {
+		cleanRecordedBy = strings.TrimSpace(strings.Split(cleanRecordedBy, " — ")[0])
+	} else if strings.Contains(cleanRecordedBy, " - ") {
+		cleanRecordedBy = strings.TrimSpace(strings.Split(cleanRecordedBy, " - ")[0])
+	}
+	event.RecordedBy = cleanRecordedBy
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&event).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -216,9 +228,10 @@ func (h *ProductionHandler) CreateReport(c *gin.Context) {
 		return
 	}
 
-	if report.ReportID == "" {
-		report.ReportID = "REP-" + time.Now().Format("20060102150405")
-	}
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	report.ReportID = fmt.Sprintf("REP-%s", now.Format("20060102150405"))
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&report).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -338,10 +351,10 @@ func (h *ProductionHandler) CreateFinishedGood(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json: " + err.Error()})
 		return
 	}
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
 
-	if fg.FinishedGoodsID == "" {
-		fg.FinishedGoodsID = "FG-" + time.Now().Format("20060102150405")
-	}
+	fg.FinishedGoodsID = fmt.Sprintf("FG-%s", now.Format("20060102150405"))
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&fg).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
