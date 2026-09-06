@@ -20,6 +20,7 @@ import {
 import { Add as AddIcon } from "@mui/icons-material";
 import QualityQcForm, { QcPointExtended } from "./qualityQcForm";
 import QualityQcDetail from "./qualityQcDetail";
+import { useRole } from "@/lib/roles";
 
 export interface InspectionRecord {
   inspectionID: string;
@@ -44,6 +45,8 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedInspectionID, setSelectedInspectionID] = useState<string>("");
+
+  const { role } = useRole();
 
   const fetchData = useCallback(async () => {
     if (!orderID) return;
@@ -194,7 +197,8 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
             ))}
           </Select>
         </FormControl>
-
+        
+        {role === "qc" && (
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -207,6 +211,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
         >
           เพิ่มผลตรวจ
         </Button>
+        )}
       </Box>
 
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>

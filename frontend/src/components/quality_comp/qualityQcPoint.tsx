@@ -14,6 +14,8 @@ import {
 
 import QualityQcPointAdd from "./qualityQcPointAdd";
 import QualityQcPointDetails from "./qualityQcPointDetails";
+// 1. นำเข้า useRole
+import { useRole } from "@/lib/roles";
 
 export interface QcPointItem {
   id?: number;
@@ -30,6 +32,9 @@ interface QualityQcPointProps {
 }
 
 export default function QualityQcPoint({ orderID, orderName }: QualityQcPointProps) {
+  // 2. เรียกใช้งาน useRole
+  const { role } = useRole();
+
   const [qcPointList, setQcPointList] = useState<QcPointItem[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -101,20 +106,22 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
-      {/* ส่วนปุ่ม + เพิ่มจุดตรวจ */}
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
-        <Button
-          variant="contained"
-          disableElevation
-          onClick={() => setOpenDialog(true)}
-          sx={{
-            bgcolor: "#4a90e2", color: "#fff", fontWeight: 600, px: 4,
-            textTransform: "none", "&:hover": { bgcolor: "#357abd" },
-          }}
-        >
-          + เพิ่มจุดตรวจ
-        </Button>
-      </Box>
+      {/* 3. ตรวจสอบ Role === "qc" ก่อนแสดงปุ่ม */}
+      {role === "qc" && (
+        <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={() => setOpenDialog(true)}
+            sx={{
+              bgcolor: "#4a90e2", color: "#fff", fontWeight: 600, px: 4,
+              textTransform: "none", "&:hover": { bgcolor: "#357abd" },
+            }}
+          >
+            + เพิ่มจุดตรวจ
+          </Button>
+        </Box>
+      )}
 
       {/* ตารางแสดงผล */}
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
@@ -169,8 +176,7 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
         </Table>
       </TableContainer>
 
-      {/* Popup Form */}
-{/* Popup Form เพิ่มจุดตรวจ */}
+      {/* Popup Form เพิ่มจุดตรวจ */}
       <Dialog 
         open={openDialog} 
         onClose={() => !loading && setOpenDialog(false)} 
