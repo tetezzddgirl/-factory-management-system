@@ -164,7 +164,7 @@ export default function ProductionDetails({ orderID, orderName }: ProductionDeta
           </Paper>
         </Grid>
 
-        {/* Box 4: เครื่องจักรและสายการผลิต */}
+        {/* Box 4: เครื่องจักรและสายการผลิต 
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper elevation={0} sx={{ p: 2.5, height: "100%", borderRadius: 2, border: "1px solid #e2e8f0" }}>
             <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mb: 1.5 }}>
@@ -181,7 +181,7 @@ export default function ProductionDetails({ orderID, orderName }: ProductionDeta
               </Box>
             </Stack>
           </Paper>
-        </Grid>
+        </Grid>*/}
 
         {/* Box 5: ช่วงเวลาการผลิต */}
         <Grid size={{ xs: 12, md: 6 }}>

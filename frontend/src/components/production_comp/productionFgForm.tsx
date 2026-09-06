@@ -121,10 +121,9 @@ export default function ProductionFgForm({
       !formData.productName.trim() ||
       !formData.quantity ||
       Number(formData.quantity) <= 0 ||
-      !formData.createdBy.trim() ||
-      !formData.remark.trim()
+      !formData.createdBy.trim()
     ) {
-      setError("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+      setError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
     setError(null);
@@ -348,7 +347,6 @@ export default function ProductionFgForm({
             />
             
             <TextField
-              required
               fullWidth
               multiline
               rows={2}
@@ -356,7 +354,7 @@ export default function ProductionFgForm({
               name="remark"
               value={formData.remark}
               onChange={handleChange}
-              placeholder="ระบุหมายเหตุ (จำเป็นต้องกรอก)"
+              placeholder="ระบุหมายเหตุ"
             />
           </Stack>
         </DialogContent>

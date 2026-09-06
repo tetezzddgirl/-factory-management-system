@@ -91,8 +91,8 @@ export default function ProductionWipForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.PalletNumber.trim() || !formData.wipID || !formData.amount || !formData.createdBy.trim() || !formData.remark.trim()) {
-      setError("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+    if (!formData.PalletNumber.trim() || !formData.wipID || !formData.amount || !formData.createdBy.trim()) {
+      setError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
     setError(null);
@@ -313,7 +313,6 @@ export default function ProductionWipForm({
             />
             
             <TextField
-              required
               fullWidth
               multiline
               rows={2}
@@ -321,7 +320,7 @@ export default function ProductionWipForm({
               name="remark"
               value={formData.remark}
               onChange={handleChange}
-              placeholder="ระบุหมายเหตุ (จำเป็นต้องกรอก)"
+              placeholder="ระบุหมายเหตุ"
             />
           </Stack>
         </DialogContent>

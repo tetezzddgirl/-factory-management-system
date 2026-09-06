@@ -123,7 +123,7 @@ function RouteComponent() {
     }
   }, [orderID, fetchOrderDetails]);
 
-  const handleSaveStatus = async (newStatus: string) => {
+  const handleSaveStatus = async (newStatus: string, changedBy: string) => {
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
       const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}/status`, {
@@ -134,8 +134,7 @@ function RouteComponent() {
         },
         body: JSON.stringify({
           status: newStatus,
-          reason: `Updated to ${newStatus} via Management UI`,
-          changedBy: "Operator",
+          changedBy: changedBy,
         }),
       });
 
@@ -143,6 +142,7 @@ function RouteComponent() {
       
       setOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       setOpenStatusDialog(false); 
+      fetchOrderDetails(true); // รีเฟรชข้อมูลล่าสุด
     } catch (err: any) {
       alert(err.message);
     }

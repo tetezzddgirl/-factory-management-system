@@ -15,7 +15,6 @@ import {
   CircularProgress 
 } from "@mui/material";
 import { toast } from "sonner";
-import { getSession } from "@/lib/auth";
 import {
   issuesApi, personnelApi,
   type ApiPersonnel, type ApiIssue,
@@ -32,7 +31,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
   const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   
   const [formData, setFormData] = useState({
-    reporterID: "",
+    reporterID: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
     problem: "",
     description: "",
   });
@@ -45,16 +44,6 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
       try {
         const people = await personnelApi.list();
         setPersonnel(people ?? []);
-
-        // ตั้งค่าผู้แจ้งปัญหาอัตโนมัติจากเซสชันปัจจุบัน
-        const currentUserEmail = getSession()?.email ?? "";
-        const currentReporterRow = (people ?? []).find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
-        const defaultReporter = currentReporterRow ? `${currentReporterRow.id} — ${currentReporterRow.name}` : "";
-
-        setFormData(prev => ({
-          ...prev,
-          reporterID: defaultReporter,
-        }));
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "โหลดข้อมูลไม่สำเร็จ");
       } finally {
@@ -151,7 +140,14 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
                   options={personnelOptions}
                   value={formData.reporterID}
                   onChange={(_, v) => handleChange("reporterID", v || "")}
-                  renderInput={(params) => <TextField {...params} label="เจ้าหน้าที่ผู้แจ้งปัญหา" placeholder="PSN-001 สมชาย ใจดี" required />}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      label="เจ้าหน้าที่ผู้แจ้งปัญหา" 
+                      placeholder="เลือกเจ้าหน้าที่ผู้แจ้งปัญหา" 
+                      required 
+                    />
+                  )}
                 />
               </Grid>
 
@@ -184,7 +180,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button 
@@ -198,7 +194,6 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
         </DialogActions>
       </Box>
 
-      {/* Dialog ยืนยันการแจ้งปัญหา */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}
@@ -210,7 +205,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button

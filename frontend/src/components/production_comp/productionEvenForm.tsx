@@ -83,7 +83,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
     if (
       !formData.eventType ||
       !formData.startTime ||
-      !formData.endTime ||
+      // เอา !formData.endTime ออกตรงนี้
       !formData.description.trim() ||
       !formData.impact.trim() ||
       !formData.recordedBy.trim()
@@ -120,7 +120,6 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
   const isFormInvalid =
     !formData.eventType ||
     !formData.startTime ||
-    !formData.endTime ||
     !formData.description.trim() ||
     !formData.impact.trim() ||
     !formData.recordedBy.trim();
