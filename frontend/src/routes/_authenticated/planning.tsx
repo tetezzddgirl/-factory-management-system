@@ -301,6 +301,7 @@ function PlanningPage() {
       description="สร้างและติดตามแผนการผลิตของโรงงาน"
       icon={<CalendarMonth />}
       actions={
+        role === "planner" ? (
         <>
           <Button variant="contained" startIcon={<Add />} endIcon={<ArrowDropDown />} onClick={(e) => setMenuEl(e.currentTarget)}>
             สร้างแผน
@@ -345,6 +346,7 @@ function PlanningPage() {
             />
           </Box>
         </>
+        ) : undefined
       }
     >
       <PlanDetailDialog
