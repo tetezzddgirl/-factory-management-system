@@ -51,6 +51,9 @@ export type ApiProductionPlan = {
   endDate?: string | null;
   productID?: string;
   formulaID?: string;
+  done: number;
+  target: number;
+  progress: number;
 };
 
 export type ApiRawMaterial = {

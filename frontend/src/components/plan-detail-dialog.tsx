@@ -5,8 +5,9 @@ import {
 import { Assignment } from "@mui/icons-material";
 
 export type PlanRow = {
-  planID: string; name: string; formulaID?: string; formula:string; amount: number; dueDate: string; status: string;
+  planID: string; name: string; formulaID?: string; formula: string; amount: number; dueDate: string; status: string;
   priority?: string; startDate?: string; owner?: string;
+  done?: number; progress?: number;
 };
 
 interface Props {
