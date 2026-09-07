@@ -68,7 +68,6 @@ type WorkInProcessRecord struct {
 	Timestamp     time.Time `json:"timestamp"`
 	WipRecordID   string    `json:"wipRecordID" gorm:"primaryKey;column:wip_record_id"`
 	Type          string    `json:"type"`
-	// InStage       string    `json:"inStage"`
 	Amount        int       `json:"amount"`
 	LeftAmount    int       `json:"leftAmount"`
 	Handler       string    `json:"handler"`
@@ -81,18 +80,6 @@ type WorkInProcessRecord struct {
 func (WorkInProcessRecord) TableName() string {
 	return "work_in_process_records"
 }
-
-// type RequisitionSlip struct {
-// 	Timestamp     time.Time `json:"timestamp"`
-// 	SlipID        string    `json:"slipID" gorm:"primaryKey;column:slip_id"`
-// 	Amount        int       `json:"amount"`
-// 	Status        string    `json:"status"`
-// 	Handler       string    `json:"handler"`
-// 	Approver      string    `json:"approver"`
-// 	ApproveTime   time.Time `json:"approveTime"`
-// 	OrderID       string    `json:"orderID"`
-// 	WipLocationID string    `json:"wipID" gorm:"column:wip_location_id"`
-// }
 
 type RequisitionSlip struct {
 	Timestamp     time.Time `json:"timestamp"`
