@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { AutoAwesome } from "@mui/icons-material";
 import {
   Box, Card, CardContent, Tabs, Tab, TextField, Button,
-  Typography, Divider, CircularProgress, Stack,
+  Typography, CircularProgress, Stack,
 } from "@mui/material";
 import { z } from "zod";
-import { login, signup, getSession } from "@/lib/auth";
+import { login, getSession } from "@/lib/auth";
 import { toast } from "sonner";
 
 const searchSchema = z.object({ redirect: z.string().optional() });
@@ -18,9 +18,10 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const emailSchema = z.string().trim().email("อีเมลไม่ถูกต้อง").max(255);
+// Sign-in accepts either a Friend email or a FactoryFlow account username
+// (FRESH-07).
+const identifierSchema = z.string().trim().min(1, "กรุณากรอกอีเมลหรือชื่อผู้ใช้").max(255);
 const passwordSchema = z.string().min(6, "รหัสผ่านอย่างน้อย 6 ตัวอักษร").max(72);
-const nameSchema = z.string().trim().min(1, "กรุณากรอกชื่อ").max(80);
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -35,60 +36,17 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const email = emailSchema.safeParse(fd.get("email"));
+    const identifier = identifierSchema.safeParse(fd.get("email"));
     const password = passwordSchema.safeParse(fd.get("password"));
-    if (!email.success) return toast.error(email.error.issues[0].message);
+    if (!identifier.success) return toast.error(identifier.error.issues[0].message);
     if (!password.success) return toast.error(password.error.issues[0].message);
     setLoading(true);
     try {
-      await login(email.data, password.data);
+      await login(identifier.data, password.data);
       toast.success("ยินดีต้อนรับกลับมา!");
       navigate({ to: redirect ?? "/", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "เข้าสู่ระบบไม่สำเร็จ");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const name = nameSchema.safeParse(fd.get("name"));
-    const email = emailSchema.safeParse(fd.get("email"));
-    const password = passwordSchema.safeParse(fd.get("password"));
-    if (!name.success) return toast.error(name.error.issues[0].message);
-    if (!email.success) return toast.error(email.error.issues[0].message);
-    if (!password.success) return toast.error(password.error.issues[0].message);
-    setLoading(true);
-    try {
-      // หมายเหตุ: backend Go ปัจจุบันยังไม่รองรับ display name ตอน signup
-      await signup(email.data, password.data);
-      toast.success("สร้างบัญชีสำเร็จ!");
-      navigate({ to: redirect ?? "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "สมัครสมาชิกไม่สำเร็จ");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDemo() {
-    setLoading(true);
-    const email = "demo@factoryflow.app";
-    const password = "DemoFactory!2026";
-    try {
-      try {
-        await login(email, password);
-      } catch {
-        // ยังไม่มีบัญชี demo ในฐานข้อมูล → สมัครแล้วเข้าสู่ระบบใหม่
-        await signup(email, password);
-        await login(email, password);
-      }
-      toast.success("เข้าสู่ระบบด้วยบัญชีทดลอง");
-      navigate({ to: redirect ?? "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "เข้าสู่ระบบด้วยบัญชีทดลองไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
@@ -141,13 +99,12 @@ function AuthPage() {
           <CardContent sx={{ p: 3 }}>
             <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth" sx={{ mb: 2 }}>
               <Tab label="เข้าสู่ระบบ" />
-              <Tab label="สมัครสมาชิก" />
             </Tabs>
 
             {tab === 0 && (
               <Box component="form" onSubmit={handleSignIn}>
                 <Stack spacing={2}>
-                  <TextField name="email" type="email" label="อีเมล" placeholder="you@example.com" autoComplete="email" required />
+                  <TextField name="email" type="text" label="อีเมลหรือชื่อผู้ใช้" placeholder="you@example.com หรือ username" autoComplete="username" required />
                   <TextField name="password" type="password" label="รหัสผ่าน" autoComplete="current-password" required />
                   <Button type="submit" variant="contained" size="large" disabled={loading}>
                     {loading ? <CircularProgress size={22} color="inherit" /> : "เข้าสู่ระบบ"}
@@ -155,28 +112,6 @@ function AuthPage() {
                 </Stack>
               </Box>
             )}
-
-            {tab === 1 && (
-              <Box component="form" onSubmit={handleSignUp}>
-                <Stack spacing={2}>
-                  <TextField name="name" label="ชื่อที่แสดง" placeholder="สมชาย ใจดี" autoComplete="name" required />
-                  <TextField name="email" type="email" label="อีเมล" placeholder="you@example.com" autoComplete="email" required />
-                  <TextField name="password" type="password" label="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)" autoComplete="new-password" required />
-                  <Button type="submit" variant="contained" size="large" disabled={loading}>
-                    {loading ? <CircularProgress size={22} color="inherit" /> : "สมัครสมาชิก"}
-                  </Button>
-                </Stack>
-              </Box>
-            )}
-
-            <Divider sx={{ my: 2.5, fontSize: 12, color: "text.secondary" }}>หรือ</Divider>
-
-            <Button fullWidth variant="outlined" onClick={handleDemo} disabled={loading}>
-              {loading ? <CircularProgress size={22} /> : "🚀 ใช้บัญชีทดลอง (เข้าเลย)"}
-            </Button>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", mt: 1 }}>
-              demo@factoryflow.app · DemoFactory!2026
-            </Typography>
           </CardContent>
         </Card>
 

@@ -1,32 +1,19 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppBar, Box, Chip, IconButton, Stack, Toolbar, Typography } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import { AppSidebar } from "@/components/app-sidebar";
-import { getSession, login, signup } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { NotificationBell } from "@/components/notification-bell";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { RoleContext, ROLE_MAP, ROLES, type RoleKey } from "@/lib/roles";
 
-const DEMO_EMAIL = "demo@factoryflow.app";
-const DEMO_PASSWORD = "password123";
-
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    let session = getSession();
+  beforeLoad: () => {
+    const session = getSession();
     if (!session) {
-      try {
-        await login(DEMO_EMAIL, DEMO_PASSWORD);
-      } catch {
-        try {
-          await signup(DEMO_EMAIL, DEMO_PASSWORD);
-          await login(DEMO_EMAIL, DEMO_PASSWORD);
-        } catch (e) {
-          console.error("เข้าสู่ระบบด้วยบัญชีทดลองไม่สำเร็จ:", e);
-        }
-      }
-      session = getSession();
+      throw redirect({ to: "/auth" });
     }
     return { user: session };
   },

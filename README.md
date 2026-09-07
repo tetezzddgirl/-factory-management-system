@@ -5,7 +5,7 @@
 ```
 .
 ├── frontend/     # React + Vite + TanStack Router + MUI
-├── backend/      # Go + chi + pgx + JWT + PostgreSQL
+├── backend/      # Go + Gin + GORM + JWT + PostgreSQL
 └── docker-compose.yml   # รัน postgres + backend พร้อมกัน
 ```
 

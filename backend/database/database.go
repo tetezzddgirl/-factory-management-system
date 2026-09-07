@@ -67,6 +67,19 @@ func Migrate(db *gorm.DB) error {
 		&models.Inspection{},
 		&models.InspectionItem{},
 		&models.CorrectionRecord{},
+
+		// ── FactoryFlow foundation (FRESH-03) — ADDITIVE ─────────────────────
+		// Five ported FactoryFlow tables for a later Personnel / User-account /
+		// Task capability. Added to the SAME AutoMigrate call so Friend's flow
+		// is unchanged; the FactoryFlow-specific machinery (id generators, CHECK
+		// constraints, FKs among these five, triggers, the email-history
+		// recorder) is applied additively by ensureFactoryFlowSchema below.
+		// GORM creates the bare tables; it never drops or renames anything.
+		&models.Employee{},
+		&models.UserAccount{},
+		&models.Task{},
+		&models.TaskAssignment{},
+		&models.EmployeeEmailHistory{},
 	); err != nil {
 		return err
 	}
@@ -75,6 +88,13 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 	if err := db.Exec(`ALTER TABLE work_in_process_records DROP COLUMN IF EXISTS wip_id`).Error; err != nil {
+		return err
+	}
+
+	// FRESH-03 — finish the FactoryFlow foundation tables with the DDL GORM
+	// AutoMigrate cannot express (idempotent; touches only the five tables
+	// above; never references a Friend table). See database/factoryflow_schema.go.
+	if err := ensureFactoryFlowSchema(db); err != nil {
 		return err
 	}
 

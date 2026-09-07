@@ -58,7 +58,14 @@ export type ApiRawMaterial = {
 // ---- สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/FOR master data) ----
 
 export type ApiProduct = { productID: string; name: string; unit: string };
-export type ApiFormulaItem = { id: number; formulaID: string; productID: string; rmID: string; qtyPerUnit: number; unit: string };
+export type ApiFormulaItem = {
+  id: number;
+  formulaID: string;
+  productID: string;
+  rmID: string;
+  qtyPerUnit: number;
+  unit: string;
+};
 
 export const productsApi = {
   list: () => apiFetch<ApiProduct[]>("/api/products"),
@@ -73,7 +80,13 @@ export const formulasApi = {
 };
 
 export type ApiFormulaStep = {
-  id: number; formulaID: string; stepNo: number; stepName: string; description: string; machine: string; durationMinutes: number;
+  id: number;
+  formulaID: string;
+  stepNo: number;
+  stepName: string;
+  description: string;
+  machine: string;
+  durationMinutes: number;
 };
 
 export const formulaStepsApi = {
@@ -138,10 +151,16 @@ export function formulaIDFromOption(option: string): string {
 }
 
 /** ประกอบตัวเลือกแบบ "BOM-001 — ชื่อสินค้า" จาก bomID ล้วนๆ ไว้ตั้งค่าเริ่มต้นให้ตรงกับ options ของ dropdown */
-export function formulaOptionFor(formulas: ApiFormulaItem[], products: ApiProduct[], formulaID: string): string {
+export function formulaOptionFor(
+  formulas: ApiFormulaItem[],
+  products: ApiProduct[],
+  formulaID: string,
+): string {
   if (!formulaID) return "";
   const match = formulas.find((f) => f.formulaID === formulaID);
-  const productName = match ? products.find((p) => p.productID === match.productID)?.name ?? match.productID : undefined;
+  const productName = match
+    ? (products.find((p) => p.productID === match.productID)?.name ?? match.productID)
+    : undefined;
   return productName ? `${formulaID}${FOR_LABEL_SEP}${productName}` : formulaID;
 }
 
@@ -156,7 +175,10 @@ export const machinesApi = {
 export const productionLinesApi = {
   list: () => apiFetch<ApiProductionLine[]>("/api/production-lines"),
   create: (l: ApiProductionLine) =>
-    apiFetch<ApiProductionLine>("/api/production-lines", { method: "POST", body: JSON.stringify(l) }),
+    apiFetch<ApiProductionLine>("/api/production-lines", {
+      method: "POST",
+      body: JSON.stringify(l),
+    }),
 };
 
 export const plansApi = {
@@ -206,13 +228,18 @@ export type ApiRawMaterialRecord = {
 
 export const materialLocationsApi = {
   list: (rmID?: string) =>
-    apiFetch<ApiRawMaterialLocation[]>(`/api/materials/locations${rmID ? `?rmID=${encodeURIComponent(rmID)}` : ""}`),
+    apiFetch<ApiRawMaterialLocation[]>(
+      `/api/materials/locations${rmID ? `?rmID=${encodeURIComponent(rmID)}` : ""}`,
+    ),
   previewNextCodes: (orderID?: string) =>
     apiFetch<{ palletNumber: string; lotNumber: string }>(
       `/api/materials/locations/next-code${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`,
     ),
   create: (loc: Omit<ApiRawMaterialLocation, "rmLocationID"> & { rmLocationID?: string }) =>
-    apiFetch<ApiRawMaterialLocation>("/api/materials/locations", { method: "POST", body: JSON.stringify(loc) }),
+    apiFetch<ApiRawMaterialLocation>("/api/materials/locations", {
+      method: "POST",
+      body: JSON.stringify(loc),
+    }),
   update: (rmLocationID: string, amount: number, location: string) =>
     apiFetch<{ ok: boolean }>(`/api/materials/locations/${rmLocationID}`, {
       method: "PUT",
@@ -222,28 +249,170 @@ export const materialLocationsApi = {
 
 export const materialRecordsApi = {
   list: (rmID?: string) =>
-    apiFetch<ApiRawMaterialRecord[]>(`/api/materials/records${rmID ? `?rmID=${encodeURIComponent(rmID)}` : ""}`),
+    apiFetch<ApiRawMaterialRecord[]>(
+      `/api/materials/records${rmID ? `?rmID=${encodeURIComponent(rmID)}` : ""}`,
+    ),
   create: (rec: Omit<ApiRawMaterialRecord, "rmRecordID" | "timestamp"> & { rmRecordID?: string }) =>
-    apiFetch<ApiRawMaterialRecord>("/api/materials/records", { method: "POST", body: JSON.stringify(rec) }),
+    apiFetch<ApiRawMaterialRecord>("/api/materials/records", {
+      method: "POST",
+      body: JSON.stringify(rec),
+    }),
 };
 
 // ---- บุคลากร (Personnel) ----
 
-export type ApiPersonnel = { id: string; name: string; role: string; dept: string; status: string; email?: string };
+export type ApiPersonnel = {
+  id: string;
+  name: string;
+  role: string;
+  dept: string;
+  status: string;
+  email?: string;
+};
 
 export const personnelApi = {
   list: () => apiFetch<ApiPersonnel[]>("/api/personnel"),
   create: (p: Omit<ApiPersonnel, "id"> & { id?: string }) =>
     apiFetch<ApiPersonnel>("/api/personnel", { method: "POST", body: JSON.stringify(p) }),
   updateStatus: (id: string, status: string) =>
-    apiFetch<{ ok: boolean }>(`/api/personnel/${id}`, { method: "PUT", body: JSON.stringify({ status }) }),
+    apiFetch<{ ok: boolean }>(`/api/personnel/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+};
+
+// ---- บุคลากร FactoryFlow (Employee) — FRESH-04/05 backend, FRESH-06 UI ----
+// ใช้ apiFetch เดิม (แนบ JWT ของ Friend อัตโนมัติ + จัดการ 401 แบบเดิม)
+
+export type ApiEmployee = {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string | null;
+  department: string;
+  position: string;
+  role: string;
+  status: string;
+  shift: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EmployeeCreateInput = {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  department: string;
+  position?: string;
+  role: string;
+  status?: string;
+  shift?: string;
+  /** optional 1:1 login account — must be sent together (backend contract) */
+  username?: string;
+  password?: string;
+};
+
+export type EmployeeUpdateInput = Omit<EmployeeCreateInput, "username" | "password">;
+
+/** Safe view of an Employee's 1:1 login account (no password hash). FRESH-07. */
+export type ApiEmployeeAccount = {
+  userId: string;
+  username: string;
+  active: boolean;
+  lastLogin: string | null;
+};
+
+export const employeesApi = {
+  list: () => apiFetch<ApiEmployee[]>("/api/employees"),
+  get: (id: string) => apiFetch<ApiEmployee>(`/api/employees/${encodeURIComponent(id)}`),
+  create: (e: EmployeeCreateInput) =>
+    apiFetch<ApiEmployee>("/api/employees", { method: "POST", body: JSON.stringify(e) }),
+  update: (id: string, e: EmployeeUpdateInput) =>
+    apiFetch<ApiEmployee>(`/api/employees/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(e),
+    }),
+  remove: (id: string) =>
+    apiFetch<void>(`/api/employees/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  /** null when the employee has no login account */
+  getAccount: (id: string) =>
+    apiFetch<{ account: ApiEmployeeAccount | null }>(
+      `/api/employees/${encodeURIComponent(id)}/account`,
+    ).then((r) => r.account),
+};
+
+// ---- งาน FactoryFlow (Task) + การมอบหมายพนักงาน (Task Assignment) — FRESH-08 ----
+// backend: FRESH-08 handlers. Uses the same shared apiFetch (JWT + 401 handling).
+
+export type ApiTask = {
+  taskId: string;
+  title: string;
+  description: string;
+  machineId: string | null;
+  shift: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TaskInput = {
+  title: string;
+  description?: string;
+  machineId?: string | null;
+  shift?: string;
+  status?: string;
+};
+
+/** raw task_assignments row + the assigned employee's display fields (no secrets) */
+export type ApiTaskAssignment = {
+  assignmentId: string;
+  taskId: string;
+  employeeId: string;
+  assignedAt: string;
+  firstName: string;
+  lastName: string;
+  department: string;
+  position: string;
+};
+
+export const tasksApi = {
+  list: () => apiFetch<ApiTask[]>("/api/tasks"),
+  get: (id: string) => apiFetch<ApiTask>(`/api/tasks/${encodeURIComponent(id)}`),
+  create: (t: TaskInput) =>
+    apiFetch<ApiTask>("/api/tasks", { method: "POST", body: JSON.stringify(t) }),
+  update: (id: string, t: TaskInput) =>
+    apiFetch<ApiTask>(`/api/tasks/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(t),
+    }),
+  remove: (id: string) =>
+    apiFetch<void>(`/api/tasks/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  listAssignments: (taskId: string) =>
+    apiFetch<ApiTaskAssignment[]>(`/api/tasks/${encodeURIComponent(taskId)}/assignments`),
+  assign: (taskId: string, employeeId: string) =>
+    apiFetch<ApiTaskAssignment>(`/api/tasks/${encodeURIComponent(taskId)}/assignments`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId }),
+    }),
+  unassign: (taskId: string, assignmentId: string) =>
+    apiFetch<void>(
+      `/api/tasks/${encodeURIComponent(taskId)}/assignments/${encodeURIComponent(assignmentId)}`,
+      { method: "DELETE" },
+    ),
 };
 
 /** จับคู่บัญชีที่ล็อกอินอยู่ (email จาก session) กับรายชื่อบุคลากร เพื่อเอาชื่อ-สกุลจริงมาเติมในฟอร์มต่างๆ
  *  ถ้าไม่เจอคนที่ email ตรงกัน (เช่น ยังไม่ได้ผูกบัญชีไว้ในหน้าบุคลากร) จะ fallback ไปใช้ email แทน */
-export function resolveHandlerName(personnel: ApiPersonnel[], email: string | null | undefined): string {
+export function resolveHandlerName(
+  personnel: ApiPersonnel[],
+  email: string | null | undefined,
+): string {
   if (!email) return "";
-  const match = personnel.find((p) => p.email && p.email.trim().toLowerCase() === email.trim().toLowerCase());
+  const match = personnel.find(
+    (p) => p.email && p.email.trim().toLowerCase() === email.trim().toLowerCase(),
+  );
   return match?.name ?? email;
 }
 
@@ -265,13 +434,26 @@ export const issuesApi = {
   list: () => apiFetch<ApiIssue[]>("/api/issues"),
   create: (iss: Omit<ApiIssue, "issue_id" | "timestamp"> & { issue_id?: string }) =>
     apiFetch<ApiIssue>("/api/issues", { method: "POST", body: JSON.stringify(iss) }),
-  update: (issueID: string, body: { solution_provider_id?: string; solutions?: string; status: string }) =>
-    apiFetch<{ ok: boolean }>(`/api/issues/${issueID}`, { method: "PUT", body: JSON.stringify(body) }),
+  update: (
+    issueID: string,
+    body: { solution_provider_id?: string; solutions?: string; status: string },
+  ) =>
+    apiFetch<{ ok: boolean }>(`/api/issues/${issueID}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
 
 // ---- สินค้าระหว่างผลิต (Work In Process) ----
 
-export type ApiWorkInProcess = { wipID: string; wip: string; inStage: string; amount: number; unit: string; max: number };
+export type ApiWorkInProcess = {
+  wipID: string;
+  wip: string;
+  inStage: string;
+  amount: number;
+  unit: string;
+  max: number;
+};
 
 export type ApiWipLocation = {
   wipLocationID: string;
@@ -310,44 +492,59 @@ export type ApiRequisitionSlip = {
 
 export const wipApi = {
   list: () => apiFetch<ApiWorkInProcess[]>("/api/wip"),
-  create: (w: ApiWorkInProcess) => apiFetch<ApiWorkInProcess>("/api/wip", { method: "POST", body: JSON.stringify(w) }),
+  create: (w: ApiWorkInProcess) =>
+    apiFetch<ApiWorkInProcess>("/api/wip", { method: "POST", body: JSON.stringify(w) }),
   updateAmount: (wipID: string, amount: number) =>
-    apiFetch<{ ok: boolean }>(`/api/wip/${wipID}`, { method: "PUT", body: JSON.stringify({ amount }) }),
+    apiFetch<{ ok: boolean }>(`/api/wip/${wipID}`, {
+      method: "PUT",
+      body: JSON.stringify({ amount }),
+    }),
 };
 
 export const wipLocationsApi = {
-  list: (wipID?: string) => apiFetch<ApiWipLocation[]>(`/api/wip/locations${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`),
+  list: (wipID?: string) =>
+    apiFetch<ApiWipLocation[]>(
+      `/api/wip/locations${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`,
+    ),
   previewNextCodes: (orderID?: string) =>
     apiFetch<{ palletNumber: string; lotNumber: string }>(
       `/api/wip/locations/next-code${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`,
     ),
-  create: (loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string; orderID?: string }) =>
+  create: (
+    loc: Omit<ApiWipLocation, "wipLocationID"> & { wipLocationID?: string; orderID?: string },
+  ) =>
     apiFetch<ApiWipLocation>("/api/wip/locations", {
       method: "POST",
       body: JSON.stringify(loc),
     }),
-  update: (
-    wipLocationID: string,
-    amount: number,
-    location: string
-  ) =>
-    apiFetch<ApiWipLocation>(
-      `/api/wip/locations/${encodeURIComponent(wipLocationID)}`,
-      { method: "PUT", body: JSON.stringify({ amount, location }) }
-    ),
+  update: (wipLocationID: string, amount: number, location: string) =>
+    apiFetch<ApiWipLocation>(`/api/wip/locations/${encodeURIComponent(wipLocationID)}`, {
+      method: "PUT",
+      body: JSON.stringify({ amount, location }),
+    }),
 };
 
 export const wipRecordsApi = {
   list: (wipID?: string) =>
-    apiFetch<ApiWipRecord[]>(`/api/wip/records${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`),
+    apiFetch<ApiWipRecord[]>(
+      `/api/wip/records${wipID ? `?wipID=${encodeURIComponent(wipID)}` : ""}`,
+    ),
   create: (rec: Omit<ApiWipRecord, "wipRecordID" | "timestamp"> & { wipRecordID?: string }) =>
     apiFetch<ApiWipRecord>("/api/wip/records", { method: "POST", body: JSON.stringify(rec) }),
 };
 
 export const requisitionsApi = {
   list: () => apiFetch<ApiRequisitionSlip[]>("/api/wip/requisitions"),
-  create: (slip: Omit<ApiRequisitionSlip, "slipID" | "timestamp" | "status"> & { slipID?: string; status?: string }) =>
-    apiFetch<ApiRequisitionSlip>("/api/wip/requisitions", { method: "POST", body: JSON.stringify(slip) }),
+  create: (
+    slip: Omit<ApiRequisitionSlip, "slipID" | "timestamp" | "status"> & {
+      slipID?: string;
+      status?: string;
+    },
+  ) =>
+    apiFetch<ApiRequisitionSlip>("/api/wip/requisitions", {
+      method: "POST",
+      body: JSON.stringify(slip),
+    }),
 };
 
 // ---- ใบสั่งผลิต (Work Orders / Production Orders) ----
@@ -364,7 +561,14 @@ export type ApiWorkOrder = {
   planID: string;
 };
 
-export type ApiWork = { workID: string; work: string; description?: string; startDate: string; endDate: string; orderID: string };
+export type ApiWork = {
+  workID: string;
+  work: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  orderID: string;
+};
 
 export const workOrdersApi = {
   list: () => apiFetch<ApiWorkOrder[]>("/api/work-orders"),
@@ -382,11 +586,18 @@ export const workOrdersApi = {
 
 export const workApi = {
   list: (orderID?: string) =>
-    apiFetch<ApiWork[]>(`/api/work-orders/work${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`),
+    apiFetch<ApiWork[]>(
+      `/api/work-orders/work${orderID ? `?orderID=${encodeURIComponent(orderID)}` : ""}`,
+    ),
   create: (w: Omit<ApiWork, "workID"> & { workID?: string }) =>
     apiFetch<ApiWork>("/api/work-orders/work", { method: "POST", body: JSON.stringify(w) }),
   delete: (workID: string) =>
-    apiFetch<{ message: string }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, { method: "DELETE" }),
+    apiFetch<{ message: string }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, {
+      method: "DELETE",
+    }),
   update: (workID: string, w: Partial<ApiWork>) =>
-    apiFetch<{ ok: boolean }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, { method: "PUT", body: JSON.stringify(w) }),
+    apiFetch<{ ok: boolean }>(`/api/work-orders/work/${encodeURIComponent(workID)}`, {
+      method: "PUT",
+      body: JSON.stringify(w),
+    }),
 };

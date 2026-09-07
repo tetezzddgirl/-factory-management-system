@@ -2,17 +2,18 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Dashboard as DashboardIcon, CalendarMonth, Inventory2, Factory, VerifiedUser,
-  Settings as SettingsIcon, Build, Groups, ManageAccounts, LocalShipping, AutoAwesome, Logout,
-  Category, Layers, ReportProblem, Assignment,
+  Settings as SettingsIcon, Build, Groups, LocalShipping, AutoAwesome, Logout,
+  Category, Layers, ReportProblem, Assignment, TaskAlt,
 } from "@mui/icons-material";
 import {
   Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  Typography, Divider, Avatar, Tooltip,
+  Typography, Divider, Avatar, Tooltip, ButtonBase,
 } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSession, logout } from "@/lib/auth";
 import { toast } from "sonner";
 import { useRole, canAccess } from "@/lib/roles";
+import { SelfProfileDialog } from "@/components/self-profile-dialog";
 
 const items = [
   // { title: "แดชบอร์ด", url: "/", icon: DashboardIcon },
@@ -27,7 +28,10 @@ const items = [
   { title: "เครื่องจักร", url: "/machines", icon: SettingsIcon },
   { title: "ซ่อมบำรุง", url: "/maintenance", icon: Build },
   { title: "บุคลากร", url: "/personnel", icon: Groups },
-  { title: "บัญชีผู้ใช้", url: "/users", icon: ManageAccounts },
+  { title: "งานและการมอบหมาย", url: "/tasks", icon: TaskAlt },
+  // FRESH-14 — "บัญชีผู้ใช้" (/users) removed: account info is managed on "บุคลากร";
+  // each user edits their own via the "ข้อมูลของฉัน" dialog below. Backend account
+  // APIs / UserAccount model / login / password reset are untouched.
   { title: "คลัง & จัดส่ง", url: "/warehouse", icon: LocalShipping },
 ];
 
@@ -40,8 +44,12 @@ export function AppSidebar({ open }: { open: boolean }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { role } = useRole();
-  const visible = items.filter((it) => canAccess(role, it.url));
+  // FRESH-14 — "บุคลากร" is viewable by every authenticated role; admin-only
+  // controls are gated inside the page and enforced by the backend. Every other
+  // item keeps its original RoleContext-based visibility.
+  const visible = items.filter((it) => it.url === "/personnel" || canAccess(role, it.url));
 
   useEffect(() => {
     setEmail(getSession()?.email ?? null);
@@ -122,8 +130,18 @@ export function AppSidebar({ open }: { open: boolean }) {
 
       <Divider />
       <Box sx={{ p: 1.5 }}>
+        {/* FRESH-14 — the account block opens the "ข้อมูลของฉัน" self-profile dialog.
+            Same layout / avatar / typography as before, wrapped in a ButtonBase so
+            it is pointer- and keyboard-clickable. */}
         {open && email && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1, px: 1 }}>
+          <ButtonBase
+            onClick={() => setProfileOpen(true)}
+            sx={{
+              display: "flex", alignItems: "center", gap: 1.5, mb: 1, px: 1, py: 0.5,
+              width: "100%", textAlign: "left", borderRadius: 2,
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
             <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.light", fontSize: 13 }}>
               {(email[0] ?? "?").toUpperCase()}
             </Avatar>
@@ -131,7 +149,7 @@ export function AppSidebar({ open }: { open: boolean }) {
               <Typography variant="caption" noWrap sx={{ display: "block", fontWeight: 600 }}>{email}</Typography>
               <Typography variant="caption" color="text.secondary">ผู้ใช้งาน</Typography>
             </Box>
-          </Box>
+          </ButtonBase>
         )}
         <Tooltip title={open ? "" : "ออกจากระบบ"} placement="right">
           <ListItemButton onClick={handleSignOut} sx={{ minHeight: 42, justifyContent: open ? "flex-start" : "center", color: "error.main" }}>
@@ -142,6 +160,8 @@ export function AppSidebar({ open }: { open: boolean }) {
           </ListItemButton>
         </Tooltip>
       </Box>
+
+      <SelfProfileDialog open={profileOpen} onClose={() => setProfileOpen(false)} />
     </Drawer>
   );
 }
