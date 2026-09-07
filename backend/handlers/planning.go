@@ -34,22 +34,59 @@ type planOut struct {
 	ProductID string    `json:"productID"`
 	FormulaID     string    `json:"formulaID"`
 	RefFormulaID  string    `json:"refFormulaID"`
+	Done         int       `json:"done"`
+	Target       int       `json:"target"` 
+	Progress     float64   `json:"progress"`
 }
 
-func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula) planOut {
+func planProgressMap(db *gorm.DB) (map[string]struct{ Done, Target int }, error) {
+	type row struct {
+		PlanID string
+		Done   int
+		Target int
+	}
+	var rows []row
+	err := db.Table("production_orders po").
+		Select("po.plan_id AS plan_id, COALESCE(SUM(fg.quantity),0) AS done, COALESCE(SUM(po.amount),0) AS target").
+		Joins("LEFT JOIN finished_goods fg ON fg.order_id = po.order_id").
+		Where("po.status != ?", "ยกเลิก").
+		Group("po.plan_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]struct{ Done, Target int }, len(rows))
+	for _, r := range rows {
+		out[r.PlanID] = struct{ Done, Target int }{r.Done, r.Target}
+	}
+	return out, nil
+}
+
+func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula, progress map[string]struct{ Done, Target int }) planOut {
 	rb := refFormulas[p.RefFormulaID]
+	pg := progress[p.PlanID]
+	pct := 0.0
+	if pg.Target > 0 {
+		pct = float64(pg.Done) / float64(pg.Target) * 100
+		if pct > 100 {
+			pct = 100
+		}
+	}
 	return planOut{
-		Timestamp: p.Timestamp,
-		PlanID:    p.PlanID,
-		Name:      p.Name,
-		Status:    p.Status,
-		Amount:    p.Amount,
-		Priority:  p.Priority,
-		StartDate: p.StartDate,
-		EndDate:   p.EndDate,
-		ProductID: rb.ProductID,
-		FormulaID:     rb.FormulaID,
-		RefFormulaID:  p.RefFormulaID,
+		Timestamp:    p.Timestamp,
+		PlanID:       p.PlanID,
+		Name:         p.Name,
+		Status:       p.Status,
+		Amount:       p.Amount,
+		Priority:     p.Priority,
+		StartDate:    p.StartDate,
+		EndDate:      p.EndDate,
+		ProductID:    rb.ProductID,
+		FormulaID:    rb.FormulaID,
+		RefFormulaID: p.RefFormulaID,
+		Done:         pg.Done,
+		Target:       pg.Target,
+		Progress:     pct,
 	}
 }
 
@@ -82,9 +119,15 @@ func (h *PlanningHandler) ListPlans(c *gin.Context) {
 		return
 	}
 
+	progress, err := planProgressMap(h.db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	out := make([]planOut, 0, len(plans))
 	for _, p := range plans {
-		out = append(out, toPlanOut(p, refFormulas))
+		out = append(out, toPlanOut(p, refFormulas, progress))
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -124,6 +167,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
 
 	now := time.Now()
 	planID, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", now.Format("2006-01-02"), 3)
@@ -162,7 +206,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, toPlanOut(p, refFormulas))
+	c.JSON(http.StatusOK, toPlanOut(p, refFormulas, map[string]struct{ Done, Target int }{}))
 }
 
 // UpdatePlanProgress อัปเดตลำดับความสำคัญ (priority) และสถานะของแผนการผลิตตาม planID (path param: /api/plans/:id)

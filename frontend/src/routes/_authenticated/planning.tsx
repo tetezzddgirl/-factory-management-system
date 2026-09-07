@@ -399,7 +399,7 @@ function PlanningPage() {
       {!loading && !error && (
       <Grid container spacing={2}>
         {plans.map((p, i) => {
-          // const pct = Math.round((p.done / p.target) * 100);
+          const pct = p.amount > 0 ? Math.round((p.done ?? 0) / p.amount * 100) : 0;
           return (
             <Grid key={p.planID} size={{ xs: 12, md: 6 }}>
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} whileHover={{ y: -4 }}>
@@ -418,9 +418,11 @@ function PlanningPage() {
                       <Typography variant="body2" color="text.secondary">ความคืบหน้า</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {/* {p.done.toLocaleString()} / {p.amount.toLocaleString()} <Box component="span" sx={{ color: "primary.main" }}>({pct}%)</Box> */}
+                        {(p.done ?? 0).toLocaleString()} / {p.amount.toLocaleString()}{" "}
+                        <Box component="span" sx={{ color: "primary.main" }}>({pct}%)</Box>
                       </Typography>
                     </Stack>
-                    {/* <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} /> */}
+                    <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} />
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary" }}>
                       <TrendingUp sx={{ fontSize: 16 }} />
                       <Typography variant="caption">กำหนดเสร็จ: {p.dueDate}</Typography>
