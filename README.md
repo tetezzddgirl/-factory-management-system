@@ -1,12 +1,12 @@
 # บัญชีล็อกอิน admin
 
-Username  it.admin01
-Email  it.admin01@factoryflow.local
-Password  FactoryFlowDemo#2026
+Username:  it.admin01
+Email:  it.admin01@factoryflow.local
+Password:  FactoryFlowDemo#2026
 
-Username  it.admin02
-Email  it.admin02@factoryflow.local
-Password  FactoryFlowDemo#2026
+Username:  it.admin02
+Email:  it.admin02@factoryflow.local
+Password:  FactoryFlowDemo#2026
 
 ==================================================
 
