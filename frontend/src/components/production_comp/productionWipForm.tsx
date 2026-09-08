@@ -58,7 +58,7 @@ export default function ProductionWipForm({
         const token = localStorage.getItem("ff:token") || localStorage.getItem("token") || "";
         
         const [wipRes, peopleRes] = await Promise.all([
-          fetch("http://localhost:8090/api/wip", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("http://localhost:8080/api/wip", { headers: { Authorization: `Bearer ${token}` } }),
           personnelApi.list()
         ]);
 
@@ -146,7 +146,7 @@ export default function ProductionWipForm({
         location: "", 
       };
 
-      const locRes = await fetch("http://localhost:8090/api/wip/locations", {
+      const locRes = await fetch("http://localhost:8080/api/wip/locations", {
         method: "POST",
         headers,
         body: JSON.stringify(locationPayload),
@@ -171,7 +171,7 @@ export default function ProductionWipForm({
           WIPLocationID: generatedWipLocationID,
         };
 
-        const trfRes = await fetch("http://localhost:8090/api/production/transfers", {
+        const trfRes = await fetch("http://localhost:8080/api/production/transfers", {
           method: "POST",
           headers,
           body: JSON.stringify(transferPayload),
@@ -189,7 +189,7 @@ export default function ProductionWipForm({
 
       } catch (transferError: any) {
         if (generatedWipLocationID) {
-          await fetch(`http://localhost:8090/api/wip/locations/${generatedWipLocationID}`, {
+          await fetch(`http://localhost:8080/api/wip/locations/${generatedWipLocationID}`, {
             method: "DELETE",
             headers,
           }).catch((err) => console.error("Rollback ล้มเหลว:", err));

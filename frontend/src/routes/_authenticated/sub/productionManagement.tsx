@@ -82,14 +82,14 @@ function RouteComponent() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // ดึงข้อมูล Order
-      const resOrder = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, { headers });
+      const resOrder = await fetch(`http://localhost:8080/api/production/orders/${orderID}`, { headers });
       if (!resOrder.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
       const orderData = await resOrder.json();
       setOrder(orderData);
       
       // ดึงข้อมูล Finished Goods เพื่อคำนวณหลอด Progress
       try {
-        const resFg = await fetch(`http://localhost:8090/api/production/finished-goods`, { headers });
+        const resFg = await fetch(`http://localhost:8080/api/production/finished-goods`, { headers });
         if (resFg.ok) {
           const fgList = await resFg.json();
           // กรองเอาเฉพาะ FG ที่เป็นของ Order นี้
@@ -126,7 +126,7 @@ function RouteComponent() {
   const handleSaveStatus = async (newStatus: string) => {
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
-      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}/status`, {
+      const res = await fetch(`http://localhost:8080/api/production/orders/${orderID}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

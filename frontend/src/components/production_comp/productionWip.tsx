@@ -83,9 +83,9 @@ export default function ProductionWip({ orderID, orderName }: ProductionWipProps
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resTransfers, resLocations, resWip] = await Promise.all([
-        fetch(`http://localhost:8090/api/production/orders/${orderID}/transfers`, { headers }),
-        fetch(`http://localhost:8090/api/wip/locations`, { headers }),
-        fetch(`http://localhost:8090/api/wip`, { headers }),
+        fetch(`http://localhost:8080/api/production/orders/${orderID}/transfers`, { headers }),
+        fetch(`http://localhost:8080/api/wip/locations`, { headers }),
+        fetch(`http://localhost:8080/api/wip`, { headers }),
       ]);
 
       if (resWip.ok) {

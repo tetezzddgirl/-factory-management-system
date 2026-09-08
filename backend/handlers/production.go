@@ -362,3 +362,120 @@ func (h *ProductionHandler) DeleteFinishedGood(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Finished good deleted successfully"})
 }
+
+// PendingFGItem struct สำหรับส่งข้อมูลสินค้าสำเร็จรูปที่รอรับเข้าคลังไปให้หน้า Frontend
+type PendingFGItem struct {
+	TransferID       string    `json:"transferID"`
+	FinishedGoodsID string    `json:"finishedGoodsId"`
+	OrderID          string    `json:"orderID"`
+	ProductName      string    `json:"productName"`
+	Quantity         int       `json:"quantity"`
+	PalletNumber     string    `json:"palletNumber"`
+	Status           string    `json:"status"`
+	CreatedBy        string    `json:"createdBy"`
+	CreateDateTime   time.Time `json:"createDateTime"`
+	Remark           string    `json:"remark"`
+}
+
+// ListPendingFGTransfers ดึงรายการโอนย้ายสินค้าสำเร็จรูปที่ยังรอรับเข้าคลัง (status = Pending / รอรับ)
+func (h *ProductionHandler) ListPendingFGTransfers(c *gin.Context) {
+	var transfers []models.TransferRecord
+	if err := h.db.WithContext(c.Request.Context()).
+		Where(`"transferType" = 'FG' AND ("status" = 'Pending' OR "status" = 'รอรับ' OR "status" = '' OR "status" IS NULL)`).
+		Order(`"createDateTime" DESC`).
+		Find(&transfers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// รวบรวม FinishedGoodsID ทั้งหมดเพื่อดึงข้อมูลสินค้า
+	fgIDs := make([]string, 0)
+	for _, t := range transfers {
+		if t.FinishedGoodsID != nil && *t.FinishedGoodsID != "" {
+			fgIDs = append(fgIDs, *t.FinishedGoodsID)
+		}
+	}
+
+	var fgs []models.FinishedGoods
+	fgMap := make(map[string]models.FinishedGoods)
+	if len(fgIDs) > 0 {
+		if err := h.db.WithContext(c.Request.Context()).
+			Where(`"finished_goods_id" IN ?`, fgIDs).
+			Find(&fgs).Error; err == nil {
+			for _, fg := range fgs {
+				fgMap[fg.FinishedGoodsID] = fg
+			}
+		}
+	}
+
+	result := make([]PendingFGItem, 0)
+	for _, t := range transfers {
+		fgID := ""
+		if t.FinishedGoodsID != nil {
+			fgID = *t.FinishedGoodsID
+		}
+		orderID := ""
+		if t.OrderID != nil {
+			orderID = *t.OrderID
+		}
+
+		productName := "สินค้าสำเร็จรูป"
+		palletNumber := "-"
+		quantity := 0
+
+		if fg, ok := fgMap[fgID]; ok {
+			productName = fg.ProductName
+			palletNumber = fg.PalletNumber
+			quantity = fg.Quantity
+		}
+
+		result = append(result, PendingFGItem{
+			TransferID:       t.TransferID,
+			FinishedGoodsID: fgID,
+			OrderID:          orderID,
+			ProductName:      productName,
+			Quantity:         quantity,
+			PalletNumber:     palletNumber,
+			Status:           t.Status,
+			CreatedBy:        t.CreatedBy,
+			CreateDateTime:   t.CreateDateTime,
+			Remark:           t.Remark,
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// ReceiveTransfer อัปเดตสถานะการรับมอบสินค้าสำเร็จรูปเข้าคลัง
+func (h *ProductionHandler) ReceiveTransfer(c *gin.Context) {
+	transferID := c.Param("id")
+	var payload struct {
+		ReceivedBy string `json:"receivedBy"`
+	}
+	_ = c.ShouldBindJSON(&payload)
+
+	receivedBy := payload.ReceivedBy
+	if receivedBy == "" {
+		receivedBy = "เจ้าหน้าที่ฝ่ายคลังสินค้า"
+	}
+
+	now := time.Now()
+	if err := h.db.WithContext(c.Request.Context()).
+		Model(&models.TransferRecord{}).
+		Where(`"transferId" = ?`, transferID).
+		Updates(map[string]interface{}{
+			"status":           "Received",
+			"receivedBy":       receivedBy,
+			"transferDateTime": now,
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "รับสินค้าสำเร็จรูปเข้าคลังเรียบร้อยแล้ว",
+		"transferId": transferID,
+		"status":     "Received",
+	})
+}
+

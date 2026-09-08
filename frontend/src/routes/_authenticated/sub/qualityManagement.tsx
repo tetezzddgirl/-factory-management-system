@@ -64,14 +64,14 @@ function RouteComponent() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. ดึงข้อมูล Order
-      const resOrder = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, { headers });
+      const resOrder = await fetch(`http://localhost:8080/api/production/orders/${orderID}`, { headers });
       if (!resOrder.ok) throw new Error("ดึงข้อมูลรายละเอียดงานผลิตไม่สำเร็จ");
       const orderData = await resOrder.json();
       setOrder(orderData);
       
       // 2. ดึงข้อมูล Finished Goods เพื่อคำนวณหลอด Progress
       try {
-        const resFg = await fetch(`http://localhost:8090/api/production/finished-goods`, { headers });
+        const resFg = await fetch(`http://localhost:8080/api/production/finished-goods`, { headers });
         if (resFg.ok) {
           const fgList = await resFg.json();
           // กรองเอาเฉพาะ FG ที่เป็นของ Order นี้

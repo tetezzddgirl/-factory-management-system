@@ -1,0 +1,28 @@
+# Node dependencies & caches
+node_modules/
+**/node_modules/
+.vite/
+**/.vite/
+.output/
+**/.output/
+dist/
+**/dist/
+.wrangler/
+**/.wrangler/
+
+# Go binaries & builds
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend/server.exe
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db

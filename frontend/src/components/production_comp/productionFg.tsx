@@ -67,8 +67,8 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resTransfers, resFg] = await Promise.all([
-        fetch(`http://localhost:8090/api/production/orders/${orderID}/transfers`, { headers }),
-        fetch(`http://localhost:8090/api/production/finished-goods`, { headers }), // อัปเดต Endpoint
+        fetch(`http://localhost:8080/api/production/orders/${orderID}/transfers`, { headers }),
+        fetch(`http://localhost:8080/api/production/finished-goods`, { headers }), // อัปเดต Endpoint
       ]);
 
       if (resFg.ok) {

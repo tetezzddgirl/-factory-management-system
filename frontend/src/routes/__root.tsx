@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { onAuthStateChange } from "@/lib/auth";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { muiTheme } from "@/theme/muiTheme";
+import { StoreProvider } from "@/services/store";
 
 function NotFoundComponent() {
   return (
@@ -136,7 +137,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={muiTheme}>
         <CssBaseline />
-        <Outlet />
+        <StoreProvider>
+          <Outlet />
+        </StoreProvider>
         <Toaster />
       </ThemeProvider>
     </QueryClientProvider>

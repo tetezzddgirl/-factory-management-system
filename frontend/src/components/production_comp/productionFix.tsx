@@ -49,7 +49,7 @@ export default function ProductionFix({ orderID, orderName }: ProductionFixProps
         "";
       const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`http://localhost:8090/api/quality/orders/${orderID}/inspections`, { headers });
+      const res = await fetch(`http://localhost:8080/api/quality/orders/${orderID}/inspections`, { headers });
       if (res.ok) {
         const data = await res.json();
         const rawList: InspectionRecord[] = Array.isArray(data) ? data : data.data || [];

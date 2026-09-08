@@ -51,7 +51,7 @@ export default function ProductionDetails({ orderID, orderName }: ProductionDeta
           localStorage.getItem("token") ||
           "";
 
-        const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}`, {
+        const res = await fetch(`http://localhost:8080/api/production/orders/${orderID}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

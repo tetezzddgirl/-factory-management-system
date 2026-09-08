@@ -49,7 +49,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
     if (!orderID) return;
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || "";
-      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}/events`, {
+      const res = await fetch(`http://localhost:8080/api/production/orders/${orderID}/events`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -82,7 +82,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
         recordedBy: newData.recordedBy,
       };
 
-      const res = await fetch(`http://localhost:8090/api/production/events`, {
+      const res = await fetch(`http://localhost:8080/api/production/events`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -14,11 +14,15 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedIssuesRouteImport } from './routes/_authenticated/issues'
 import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticated/machines'
+import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedPersonnelRouteImport } from './routes/_authenticated/personnel'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedWarehouseRouteImport } from './routes/_authenticated/warehouse'
 import { Route as AuthenticatedWipRouteImport } from './routes/_authenticated/wip'
 import { Route as AuthenticatedWorkOrdersRouteImport } from './routes/_authenticated/work-orders'
 import { Route as AuthenticatedSubProductionManagementRouteImport } from './routes/_authenticated/sub/productionManagement'
@@ -48,6 +52,12 @@ const AuthenticatedMachinesRoute = AuthenticatedMachinesRouteImport.update({
   path: '/machines',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMaintenanceRoute =
+  AuthenticatedMaintenanceRouteImport.update({
+    id: '/maintenance',
+    path: '/maintenance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
@@ -68,9 +78,24 @@ const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
   path: '/production',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
   id: '/quality',
   path: '/quality',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWarehouseRoute = AuthenticatedWarehouseRouteImport.update({
+  id: '/warehouse',
+  path: '/warehouse',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWipRoute = AuthenticatedWipRouteImport.update({
@@ -101,11 +126,15 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/issues': typeof AuthenticatedIssuesRoute
   '/machines': typeof AuthenticatedMachinesRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/warehouse': typeof AuthenticatedWarehouseRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
@@ -115,11 +144,15 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/issues': typeof AuthenticatedIssuesRoute
   '/machines': typeof AuthenticatedMachinesRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/warehouse': typeof AuthenticatedWarehouseRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -132,11 +165,15 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/issues': typeof AuthenticatedIssuesRoute
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
+  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/personnel': typeof AuthenticatedPersonnelRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/warehouse': typeof AuthenticatedWarehouseRoute
   '/_authenticated/wip': typeof AuthenticatedWipRoute
   '/_authenticated/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -150,11 +187,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/issues'
     | '/machines'
+    | '/maintenance'
     | '/materials'
     | '/personnel'
     | '/planning'
     | '/production'
+    | '/products'
     | '/quality'
+    | '/users'
+    | '/warehouse'
     | '/wip'
     | '/work-orders'
     | '/sub/productionManagement'
@@ -164,11 +205,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/issues'
     | '/machines'
+    | '/maintenance'
     | '/materials'
     | '/personnel'
     | '/planning'
     | '/production'
+    | '/products'
     | '/quality'
+    | '/users'
+    | '/warehouse'
     | '/wip'
     | '/work-orders'
     | '/'
@@ -180,11 +225,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/issues'
     | '/_authenticated/machines'
+    | '/_authenticated/maintenance'
     | '/_authenticated/materials'
     | '/_authenticated/personnel'
     | '/_authenticated/planning'
     | '/_authenticated/production'
+    | '/_authenticated/products'
     | '/_authenticated/quality'
+    | '/_authenticated/users'
+    | '/_authenticated/warehouse'
     | '/_authenticated/wip'
     | '/_authenticated/work-orders'
     | '/_authenticated/'
@@ -234,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMachinesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/maintenance': {
+      id: '/_authenticated/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/materials': {
       id: '/_authenticated/materials'
       path: '/materials'
@@ -262,11 +318,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quality': {
       id: '/_authenticated/quality'
       path: '/quality'
       fullPath: '/quality'
       preLoaderRoute: typeof AuthenticatedQualityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/warehouse': {
+      id: '/_authenticated/warehouse'
+      path: '/warehouse'
+      fullPath: '/warehouse'
+      preLoaderRoute: typeof AuthenticatedWarehouseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/wip': {
@@ -303,11 +380,15 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIssuesRoute: typeof AuthenticatedIssuesRoute
   AuthenticatedMachinesRoute: typeof AuthenticatedMachinesRoute
+  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPersonnelRoute: typeof AuthenticatedPersonnelRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedWarehouseRoute: typeof AuthenticatedWarehouseRoute
   AuthenticatedWipRoute: typeof AuthenticatedWipRoute
   AuthenticatedWorkOrdersRoute: typeof AuthenticatedWorkOrdersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -318,11 +399,15 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIssuesRoute: AuthenticatedIssuesRoute,
   AuthenticatedMachinesRoute: AuthenticatedMachinesRoute,
+  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPersonnelRoute: AuthenticatedPersonnelRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
+  AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedWarehouseRoute: AuthenticatedWarehouseRoute,
   AuthenticatedWipRoute: AuthenticatedWipRoute,
   AuthenticatedWorkOrdersRoute: AuthenticatedWorkOrdersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

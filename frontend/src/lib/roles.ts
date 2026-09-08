@@ -32,15 +32,15 @@ export const ROLE_MAP: Record<RoleKey, (typeof ROLES)[number]> = ROLES.reduce(
 
 /** Which nav items each role can see. */
 export const ROLE_NAV: Record<RoleKey, string[]> = {
-  planner:     ["/", "/planning", "/work-orders", "/materials", "/machines", "/personnel", "/issues"],
-  warehouse:   ["/", "/materials", "/wip", "/issues"],
+  planner:     ["/", "/planning", "/work-orders", "/products", "/materials", "/machines", "/personnel", "/issues"],
+  warehouse:   ["/", "/materials", "/wip", "/issues", "/warehouse", "/products"],
   operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines"],
-  supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/machines", "/quality", "/issues"],
-  qc:          ["/", "/quality", "/products", "/production"],
+  supervisor:  ["/", "/production", "/planning", "/work-orders", "/products", "/personnel", "/machines", "/quality", "/issues"],
+  qc:          ["/", "/quality", "/products", "/production", "/issues"],
   maintenance: ["/", "/maintenance", "/machines"],
   shipping:    ["/", "/warehouse", "/issues"],
   admin:       ["/", "/users", "/personnel", "/products", "/planning", "/work-orders", "/materials", "/wip", "/production", "/issues", "/quality", "/machines", "/maintenance", "/warehouse"],
-  executive:   ["/", "/planning", "/work-orders", "/production", "/quality", "/warehouse", "/personnel", "/issues"],
+  executive:   ["/", "/planning", "/work-orders", "/products", "/production", "/quality", "/warehouse", "/personnel", "/issues"],
 };
 
 export const RoleContext = createContext<{

@@ -41,7 +41,7 @@ export default function QualityQcPointRequirement({ inspectItems, onChange }: Qu
     const fetchRequirements = async () => {
       try {
         const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token") || "";
-        const res = await fetch(`http://localhost:8090/api/quality/requirements`, {
+        const res = await fetch(`http://localhost:8080/api/quality/requirements`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

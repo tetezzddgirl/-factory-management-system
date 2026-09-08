@@ -3,7 +3,7 @@
 
 import { getToken, logout } from "./auth";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8090";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();

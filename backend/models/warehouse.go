@@ -4,7 +4,7 @@ import "time"
 
 type RawMaterial struct {
 	RmID        string `json:"rmID" gorm:"primaryKey;column:rm_id"`
-	RawMaterial string `json:"rawMaterial" gorm:"not null"`
+	RawMaterial string `json:"rawMaterial"`
 	Amount      int    `json:"amount"`
 	Unit        string `json:"unit"`
 	Max         int    `json:"max"`

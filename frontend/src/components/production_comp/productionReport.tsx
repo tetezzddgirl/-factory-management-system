@@ -49,7 +49,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     if (!orderID) return;
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || "";
-      const res = await fetch(`http://localhost:8090/api/production/orders/${orderID}/reports`, {
+      const res = await fetch(`http://localhost:8080/api/production/orders/${orderID}/reports`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -141,8 +141,8 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
       };
 
       const url = reportId 
-        ? `http://localhost:8090/api/production/reports/${reportId}` 
-        : `http://localhost:8090/api/production/reports`;
+        ? `http://localhost:8080/api/production/reports/${reportId}` 
+        : `http://localhost:8080/api/production/reports`;
       const method = reportId ? "PATCH" : "POST";
 
       const res = await fetch(url, {

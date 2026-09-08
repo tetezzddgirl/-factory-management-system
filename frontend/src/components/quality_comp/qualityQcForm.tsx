@@ -176,7 +176,7 @@ export default function QualityQcForm({
         items: itemsPayload,
       };
 
-      const resInspection = await fetch(`http://localhost:8090/api/quality/inspections`, {
+      const resInspection = await fetch(`http://localhost:8080/api/quality/inspections`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

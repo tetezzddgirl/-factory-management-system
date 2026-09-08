@@ -7,6 +7,8 @@ import (
 	"factoryflow/database"
 	"factoryflow/handlers"
 	"factoryflow/middleware"
+	sf_database "factoryflow/sf_module/database"
+	sf_routes "factoryflow/sf_module/routes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -23,6 +25,8 @@ func main() {
 	if err := database.Migrate(db); err != nil {
 		log.Fatal(err)
 	}
+
+	sf_database.InitDB(db)
 
 	secret := []byte(cfg.JWTSecret)
 	authHandler := handlers.NewAuthHandler(db, secret)
@@ -44,9 +48,19 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{cfg.CORSOrigin},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		AllowOrigins: []string{
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+			"http://localhost:5174",
+			"http://127.0.0.1:5174",
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://localhost:8080",
+			"http://127.0.0.1:8080",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
 
@@ -148,8 +162,9 @@ func main() {
 		api.PATCH("/production/reports/:reportId", productionHandler.UpdateReport)
 
 		api.GET("/production/orders/:id/transfers", productionHandler.GetTransfersByOrderID)
+		api.GET("/production/transfers/pending-fg", productionHandler.ListPendingFGTransfers)
 		api.POST("/production/transfers", productionHandler.CreateTransfer)
-
+		api.PATCH("/production/transfers/:id/receive", productionHandler.ReceiveTransfer)
 		api.DELETE("/production/transfers/:id", productionHandler.DeleteTransfer)
 
 		api.POST("/production/finished-goods", productionHandler.CreateFinishedGood)
@@ -177,6 +192,8 @@ func main() {
 		api.PUT("/notifications/:id/read", notificationHandler.MarkNotificationRead)
 		api.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsRead)
 	}
+
+	sf_routes.SetupRoutes(api)
 
 	log.Println("listening on :" + cfg.ServerPort)
 	log.Fatal(r.Run(":" + cfg.ServerPort))

@@ -57,7 +57,7 @@ export default function ProductionFgForm({
 
       try {
         const token = localStorage.getItem("ff:token") || localStorage.getItem("token") || "";
-        const res = await fetch("http://localhost:8090/api/products", {
+        const res = await fetch("http://localhost:8080/api/products", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -144,7 +144,7 @@ export default function ProductionFgForm({
         order_id: orderID,
       };
 
-      const fgRes = await fetch("http://localhost:8090/api/production/finished-goods", {
+      const fgRes = await fetch("http://localhost:8080/api/production/finished-goods", {
         method: "POST",
         headers,
         body: JSON.stringify(fgPayload),
@@ -174,7 +174,7 @@ export default function ProductionFgForm({
           finishedGoodsId: finalFgID,
         };
 
-        const trfRes = await fetch("http://localhost:8090/api/production/transfers", {
+        const trfRes = await fetch("http://localhost:8080/api/production/transfers", {
           method: "POST",
           headers,
           body: JSON.stringify(transferPayload),
@@ -192,7 +192,7 @@ export default function ProductionFgForm({
 
       } catch (transferError: any) {
         if (finalFgID) {
-          await fetch(`http://localhost:8090/api/production/finished-goods/${finalFgID}`, {
+          await fetch(`http://localhost:8080/api/production/finished-goods/${finalFgID}`, {
             method: "DELETE",
             headers,
           }).catch((err) => console.error("Rollback FG ล้มเหลว:", err));

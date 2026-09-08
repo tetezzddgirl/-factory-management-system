@@ -57,9 +57,9 @@ export default function QualityQcDetail({
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resInsp, resItems, resCorr] = await Promise.all([
-        fetch(`http://localhost:8090/api/quality/inspections/${inspectionID}`, { headers }),
-        fetch(`http://localhost:8090/api/quality/inspections/${inspectionID}/items`, { headers }),
-        fetch(`http://localhost:8090/api/quality/corrections/inspection/${inspectionID}`, { headers }).catch(() => null)
+        fetch(`http://localhost:8080/api/quality/inspections/${inspectionID}`, { headers }),
+        fetch(`http://localhost:8080/api/quality/inspections/${inspectionID}/items`, { headers }),
+        fetch(`http://localhost:8080/api/quality/corrections/inspection/${inspectionID}`, { headers }).catch(() => null)
       ]);
 
       if (resInsp.ok) setInspection(await resInsp.json());

@@ -89,9 +89,9 @@ export default function ProductionFixForm({
       const headers = { Authorization: `Bearer ${token}` };
 
       const [resInsp, resItems, resCorr] = await Promise.all([
-        fetch(`http://localhost:8090/api/quality/inspections/${inspectionID}`, { headers }),
-        fetch(`http://localhost:8090/api/quality/inspections/${inspectionID}/items`, { headers }),
-        fetch(`http://localhost:8090/api/quality/corrections/inspection/${inspectionID}`, { headers }).catch(() => null)
+        fetch(`http://localhost:8080/api/quality/inspections/${inspectionID}`, { headers }),
+        fetch(`http://localhost:8080/api/quality/inspections/${inspectionID}/items`, { headers }),
+        fetch(`http://localhost:8080/api/quality/corrections/inspection/${inspectionID}`, { headers }).catch(() => null)
       ]);
 
       if (resInsp.ok) {
@@ -138,7 +138,7 @@ export default function ProductionFixForm({
         localStorage.getItem("token") ||
         "";
 
-      const res = await fetch(`http://localhost:8090/api/quality/corrections`, {
+      const res = await fetch(`http://localhost:8080/api/quality/corrections`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

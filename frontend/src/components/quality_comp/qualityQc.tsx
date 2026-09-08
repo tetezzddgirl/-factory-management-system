@@ -60,7 +60,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
       const headers = { Authorization: `Bearer ${token}` };
 
       try {
-        const resPoints = await fetch(`http://localhost:8090/api/quality/orders/${orderID}/points`, { headers });
+        const resPoints = await fetch(`http://localhost:8080/api/quality/orders/${orderID}/points`, { headers });
         if (resPoints.ok) {
           const data = await resPoints.json();
           const pointsData = Array.isArray(data) ? data : data.data || data.points || [];
@@ -71,7 +71,7 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
       }
 
       try {
-        const resInspections = await fetch(`http://localhost:8090/api/quality/orders/${orderID}/inspections`, { headers });
+        const resInspections = await fetch(`http://localhost:8080/api/quality/orders/${orderID}/inspections`, { headers });
         if (resInspections.ok) {
           const data = await resInspections.json();
           const inspectionList = Array.isArray(data) ? data : data.data || [];

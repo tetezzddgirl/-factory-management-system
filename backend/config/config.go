@@ -19,12 +19,12 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBUser:     getEnv("DB_USER", "factory"),
-		DBPassword: getEnv("DB_PASSWORD", "factory_dev_pw"),
+		DBUser:     getEnv("DB_USER", "factory_user"),
+		DBPassword: getEnv("DB_PASSWORD", "factory_pass"),
 		DBName:     getEnv("DB_NAME", "factory_db"),
 		DBPort:     getEnv("DB_PORT", "5432"),
 		JWTSecret:  getEnv("JWT_SECRET", "change-this-secret-in-production"),
-		ServerPort: getEnv("SERVER_PORT", "8090"),
+		ServerPort: getEnv("SERVER_PORT", "8080"),
 		CORSOrigin: getEnv("CORS_ORIGIN", "http://localhost:5173"),
 	}
 }

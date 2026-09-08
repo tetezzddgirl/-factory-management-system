@@ -54,7 +54,7 @@ export default function ProductionStatus({
       setLoadingHistory(true);
       try {
         const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
-        const res = await fetch(`http://localhost:8090/api/production/orders/${orderId}`, {
+        const res = await fetch(`http://localhost:8080/api/production/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

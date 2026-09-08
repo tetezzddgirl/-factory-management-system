@@ -57,7 +57,7 @@ export function onAuthStateChange(callback: (signedIn: boolean) => void) {
   };
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8090";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 async function authRequest(path: "/auth/login" | "/auth/signup", email: string, password: string) {
   const res = await fetch(`${API_URL}${path}`, {

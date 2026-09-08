@@ -51,7 +51,7 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
     if (!orderID) return;
     try {
       const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || "";
-      const res = await fetch(`http://localhost:8090/api/quality/orders/${orderID}/points`, {
+      const res = await fetch(`http://localhost:8080/api/quality/orders/${orderID}/points`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -81,7 +81,7 @@ export default function QualityQcPoint({ orderID, orderName }: QualityQcPointPro
         inspectItems: newData.inspectItems
       };
 
-      const res = await fetch(`http://localhost:8090/api/quality/points`, {
+      const res = await fetch(`http://localhost:8080/api/quality/points`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -73,8 +73,8 @@ function QualityPage() {
 
       // ยิง API ดึง Order และ FG พร้อมกัน
       const [resOrders, resFg] = await Promise.all([
-        fetch("http://localhost:8090/api/production/orders", { headers }),
-        fetch("http://localhost:8090/api/production/finished-goods", { headers })
+        fetch("http://localhost:8080/api/production/orders", { headers }),
+        fetch("http://localhost:8080/api/production/finished-goods", { headers })
       ]);
 
       if (!resOrders.ok) throw new Error("ดึงข้อมูลคำสั่งผลิตไม่สำเร็จ");
