@@ -15,10 +15,9 @@ import {
   CircularProgress 
 } from "@mui/material";
 import { toast } from "sonner";
-import { getSession } from "@/lib/auth";
 import {
-  issuesApi, workOrdersApi, personnelApi,
-  type ApiWorkOrder, type ApiPersonnel, type ApiIssue,
+  issuesApi, personnelApi,
+  type ApiPersonnel, type ApiIssue,
 } from "@/lib/api-client";
 
 interface IssuesFormProps {
@@ -29,12 +28,10 @@ interface IssuesFormProps {
 }
 
 export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFormProps) {
-  const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
   const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   
   const [formData, setFormData] = useState({
-    orderID: "",
-    reporterID: "",
+    reporterID: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
     problem: "",
     description: "",
   });
@@ -45,41 +42,16 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
   useEffect(() => {
     (async () => {
       try {
-        const [orders, people] = await Promise.all([
-          workOrdersApi.list(), personnelApi.list(),
-        ]);
-        setWorkOrders(orders ?? []);
+        const people = await personnelApi.list();
         setPersonnel(people ?? []);
-
-        // ตั้งค่าผู้แจ้งปัญหาอัตโนมัติจากเซสชันปัจจุบัน
-        const currentUserEmail = getSession()?.email ?? "";
-        const currentReporterRow = (people ?? []).find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
-        const defaultReporter = currentReporterRow ? `${currentReporterRow.id} — ${currentReporterRow.name}` : "";
-        
-        let initialOrder = "";
-        if (orderID && orderName) {
-          initialOrder = `${orderID} - ${orderName}`;
-        } else if (orderID) {
-          const found = (orders ?? []).find(o => o.orderID === orderID);
-          initialOrder = found ? `${found.orderID} - ${found.name}` : orderID;
-        } else if (orders && orders.length > 0) {
-          initialOrder = `${orders[0].orderID} - ${orders[0].name}`;
-        }
-
-        setFormData(prev => ({
-          ...prev,
-          orderID: initialOrder,
-          reporterID: defaultReporter,
-        }));
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "โหลดข้อมูลไม่สำเร็จ");
       } finally {
         setLoading(false);
       }
     })();
-  }, [orderID, orderName]);
+  }, []);
 
-  const orderOptions = workOrders.map((o) => `${o.orderID} - ${o.name}`);
   const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -88,6 +60,12 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
 
   const handleInitialSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.reporterID.trim() || !formData.problem.trim() || !formData.description.trim()) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+      return;
+    }
+
     setConfirmOpen(true);
   };
 
@@ -95,11 +73,10 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
     setIsSubmitting(true);
 
     try {
-      const selectedOrderID = formData.orderID.split(" - ")[0] || "-";
       const selectedReporterID = formData.reporterID.split(" — ")[0] || "-";
 
       const newIssue = await issuesApi.create({
-        orderID: selectedOrderID,
+        orderID: orderID || "-",
         reporter_id: selectedReporterID,
         issue: formData.problem,
         description_id: formData.description,
@@ -128,6 +105,8 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
     );
   }
 
+  const isFormInvalid = !formData.reporterID.trim() || !formData.problem.trim() || !formData.description.trim();
+
   return (
     <>
       <Box component="form" onSubmit={handleInitialSubmit}>
@@ -142,7 +121,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
               <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
                 ใบสั่งผลิต:{" "}
                 <Box component="span" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                  {orderName || "เลือกจากรายการ"}
+                  {orderName || "ไม่ระบุชื่อ"}
                 </Box>
               </Typography>
               <Typography sx={{ fontSize: "1rem", color: "text.secondary" }}>
@@ -158,20 +137,17 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
             <Grid container spacing={2}>
               <Grid size={{ xs: 12 }}>
                 <Autocomplete
-                  options={orderOptions}
-                  value={formData.orderID}
-                  onChange={(_, v) => handleChange("orderID", v || "")}
-                  renderInput={(params) => <TextField {...params} label="หมายเลขใบสั่งผลิต" required />}
-                  disabled={!!orderID} // ถ้าส่ง orderID มาแล้วให้ล็อกช่องนี้ไว้
-                />
-              </Grid>
-              
-              <Grid size={{ xs: 12 }}>
-                <Autocomplete
                   options={personnelOptions}
                   value={formData.reporterID}
                   onChange={(_, v) => handleChange("reporterID", v || "")}
-                  renderInput={(params) => <TextField {...params} label="เจ้าหน้าที่ผู้แจ้งปัญหา" placeholder="PSN-001 สมชาย ใจดี" required />}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      label="เจ้าหน้าที่ผู้แจ้งปัญหา" 
+                      placeholder="เลือกเจ้าหน้าที่ผู้แจ้งปัญหา" 
+                      required 
+                    />
+                  )}
                 />
               </Grid>
 
@@ -192,7 +168,8 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
                   multiline
                   minRows={3}
                   label="รายละเอียดปัญหา"
-                  placeholder="อธิบายสถานการณ์ที่พบเพิ่มเติม..."
+                  placeholder="อธิบายสถานการณ์ที่พบเพิ่มเติม (จำเป็นต้องกรอก)..."
+                  required
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
                 />
@@ -203,13 +180,13 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button 
             type="submit" 
             variant="contained" 
-            disabled={isSubmitting || !formData.orderID || !formData.problem}
+            disabled={isSubmitting || isFormInvalid}
             sx={{ width: 100 }}
           >
             แจ้งปัญหา
@@ -217,7 +194,6 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
         </DialogActions>
       </Box>
 
-      {/* Dialog ยืนยันการแจ้งปัญหา */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}
@@ -229,7 +205,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button
