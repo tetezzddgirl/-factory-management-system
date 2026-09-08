@@ -268,14 +268,6 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
 
           <Stack spacing={2.5}>
             <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <Autocomplete
-                  options={orderOptions}
-                  value={formData.orderID}
-                  onChange={(_, v) => handleChange("orderID", v || "")}
-                  renderInput={(params) => <TextField {...params} label="หมายเลขใบสั่งผลิต" required />}
-                />
-              </Grid>
               
               <Grid size={{ xs: 12 }}>
                 <Autocomplete
