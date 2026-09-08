@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
   Divider,
 } from "@mui/material";
 import { EventItem } from "./productionEven";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionEvenDetailProps {
   eventData: EventItem | null;
@@ -20,7 +21,32 @@ interface ProductionEvenDetailProps {
 }
 
 export default function ProductionEvenDetail({ eventData, orderID, orderName, onClose }: ProductionEvenDetailProps) {
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Failed to load personnel list:", e);
+      }
+    })();
+  }, []);
+
   if (!eventData) return null;
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   return (
     <Box>
@@ -57,7 +83,7 @@ export default function ProductionEvenDetail({ eventData, orderID, orderName, on
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้บันทึก</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-              {eventData.recordedBy || "-"}
+              {getPersonnelDisplay(eventData.recordedBy)}
             </Typography>
           </Grid>
 
