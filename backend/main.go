@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -24,9 +25,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	r := newRouter(cfg, db)
+
+	log.Println("listening on :" + cfg.ServerPort)
+	log.Fatal(r.Run(":" + cfg.ServerPort))
+}
+
+// newRouter ประกอบ handler ทั้งหมดและลงทะเบียน route ทุกเส้นของระบบ
+// แยกออกมาจาก main() เพื่อให้เขียนเทสต์ตรวจการลงทะเบียน route ได้โดยไม่ต้องต่อฐานข้อมูลจริง
+// (ดู router_test.go — gin จะ panic ตอนลงทะเบียนถ้ามี path ชนกัน)
+func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	secret := []byte(cfg.JWTSecret)
 	authHandler := handlers.NewAuthHandler(db, secret)
 	machineHandler := handlers.NewMachineHandler(db)
+	maintenanceHandler := handlers.NewMaintenanceHandler(db) // เครื่องจักร/ซ่อมบำรุง (พอร์ตจาก Machinery-maintenance)
 	productionLineHandler := handlers.NewProductionLineHandler(db)
 	planningHandler := handlers.NewPlanningHandler(db)
 	productHandler := handlers.NewProductHandler(db)
@@ -60,12 +72,39 @@ func main() {
 	api := r.Group("/api")
 	api.Use(middleware.Auth(secret))
 	{
+		// เครื่องจักรและอุปกรณ์ (Machines) — พอร์ตจากระบบ Machinery-maintenance
 		api.GET("/machines", machineHandler.ListMachines)
 		api.POST("/machines", machineHandler.CreateMachine)
+		api.GET("/machines/types", machineHandler.ListMachineTypes)
+		api.POST("/machines/types", machineHandler.CreateMachineType)
+		api.GET("/machines/statuses", machineHandler.ListMachineStatuses)
+		// ประวัติการทำงานของเครื่องจักร (แสดงในกล่องรายละเอียดเครื่องจักร)
+		api.GET("/machines/histories", maintenanceHandler.ListMachineJobs)
+		api.POST("/machines/histories", maintenanceHandler.CreateMachineJob)
+		api.DELETE("/machines/histories/:historyID", maintenanceHandler.DeleteMachineJob)
+		api.GET("/machines/:id", machineHandler.GetMachine)
+		api.PUT("/machines/:id", machineHandler.UpdateMachine)
+		api.DELETE("/machines/:id", machineHandler.DeleteMachine)
+
+		// ซ่อมบำรุง (Maintenance) — ใบแจ้งซ่อม CM/PM และประวัติการซ่อมบำรุง
+		api.GET("/maintenance/requests", maintenanceHandler.ListRepairRequests)
+		api.POST("/maintenance/requests", maintenanceHandler.CreateRepairRequest)
+		api.GET("/maintenance/requests/next-id", maintenanceHandler.PreviewNextRequestID)
+		api.GET("/maintenance/requests/:id", maintenanceHandler.GetRepairRequest)
+		api.PUT("/maintenance/requests/:id", maintenanceHandler.UpdateRepairRequest)
+		api.DELETE("/maintenance/requests/:id", maintenanceHandler.DeleteRepairRequest)
+		api.POST("/maintenance/requests/:id/complete", maintenanceHandler.CompleteRepairRequest)
+		api.GET("/maintenance/logs", maintenanceHandler.ListMaintenanceLogs)
+		api.GET("/maintenance/repair-types", maintenanceHandler.ListRepairTypes)
+		api.GET("/maintenance/repair-statuses", maintenanceHandler.ListRepairStatuses)
 
 		// สายการผลิต (Production Lines) — ใช้เป็นตัวเลือก dropdown ตอนสร้างแผนการผลิต/ใบสั่งผลิต
+		// และใช้จัดลำดับเครื่องจักรในสายการผลิตบนหน้า "เครื่องจักร"
 		api.GET("/production-lines", productionLineHandler.ListProductionLines)
 		api.POST("/production-lines", productionLineHandler.CreateProductionLine)
+		api.GET("/production-lines/:id", productionLineHandler.GetProductionLine)
+		api.PUT("/production-lines/:id", productionLineHandler.UpdateProductionLine)
+		api.DELETE("/production-lines/:id", productionLineHandler.DeleteProductionLine)
 
 		// ระบบวางแผนการผลิต (Production Planning)
 		api.GET("/plans", planningHandler.ListPlans)
@@ -206,6 +245,5 @@ func main() {
 		api.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsRead)
 	}
 
-	log.Println("listening on :" + cfg.ServerPort)
-	log.Fatal(r.Run(":" + cfg.ServerPort))
+	return r
 }

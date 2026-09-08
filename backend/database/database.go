@@ -53,7 +53,6 @@ func Migrate(db *gorm.DB) error {
 		&models.User{},
 
 		// ฝ่ายผลิต (Production)
-		&models.Machine{},
 		&models.ProductionLine{},
 		&models.Product{},
 		&models.FormulaItem{},
@@ -91,6 +90,17 @@ func Migrate(db *gorm.DB) error {
 		&models.Inspection{},
 		&models.InspectionItem{},
 		&models.CorrectionRecord{},
+
+		// เครื่องจักรและการซ่อมบำรุง (Machinery & Maintenance)
+		// ตารางแม่ต้องมาก่อนตารางลูก (Machinery อ้างอิง type/status, ใบแจ้งซ่อมอ้างอิง Machinery)
+		&models.TypeofMachinery{},
+		&models.MachineStatus{},
+		&models.RepairStatus{},
+		&models.TypeofRepair{},
+		&models.Machinery{},
+		&models.MachineRepairRequest{},
+		&models.MaintenanceLog{},
+		&models.MachineWorkHistory{},
 
 		// การแจ้งเตือน (์Notification)
 		&models.Notification{},

@@ -31,8 +31,8 @@ func main() {
 	// เรียก seed ของแต่ละ model ตามลำดับ - เรียงจากตารางที่ไม่มี foreign key ผูกใครก่อน
 	// ไปหาตารางที่อ้างอิงตารางอื่น (เช่น Issue อ้างอิง OrderID ของ ProductionOrder)
 	SeedUsers(db)
-	SeedMachines(db)
 	SeedProductionLines(db)
+	SeedMachines(db) // ต้องมาหลัง SeedProductionLines เพราะเครื่องจักรอ้างอิง production_line_id
 	SeedWarehouse(db) // ต้องมาก่อน SeedProducts/SeedFormulas เพราะสูตรการผลิตอ้างอิง rmID ที่ต้องมีอยู่แล้ว
 	SeedProducts(db)
 	SeedFormulas(db)
