@@ -91,7 +91,7 @@ function ProblemPage() {
     setSelected(iss);
     setOrderID(iss.orderID ?? "");
     setProblemText(iss.issue ?? "");
-    setDescriptionText(iss.description_id ?? "");
+    setDescriptionText(iss.description ?? "");
     setReporterID(
     iss.reporter_id
     ? getPersonnelLabel(iss.reporter_id) : currentReporterName);
@@ -127,7 +127,7 @@ function ProblemPage() {
       orderID,
       reporter_id: reporterID.split(" — ")[0],
       issue: v.problem,
-      description_id: v.description,
+      description: v.description,
       status: "รอแก้ไข",
     });
 
@@ -187,7 +187,7 @@ function getPersonnelLabel(id: string) {
                         <Chip size="small" label={iss.orderID} sx={{ fontSize: 11 }} />
                       </Stack>
                       <Typography sx={{ fontWeight: 700 }}>{iss.issue}</Typography>
-                      <Typography variant="body2" color="text.secondary" noWrap>{iss.description_id}</Typography>
+                      <Typography variant="body2" color="text.secondary" noWrap>{iss.description}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         แจ้งโดย {iss.reporter_id} • {new Date(iss.timestamp).toLocaleString("th-TH")}
                       </Typography>

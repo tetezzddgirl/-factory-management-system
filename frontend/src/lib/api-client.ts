@@ -273,7 +273,7 @@ export type ApiIssue = {
   issue_id: string;
   reporter_id: string;
   issue: string;
-  description_id: string;
+  description: string;
   solution_provider_id?: string;
   solutions?: string;
   status: string;
