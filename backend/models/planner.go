@@ -67,7 +67,7 @@ type Issue struct {
 	IssueID            string    `json:"issue_id" gorm:"primaryKey;column:issue_id"`
 	ReporterID         string    `json:"reporter_id"`
 	Issue              string    `json:"issue"`
-	Description        string    `json:"description_id"`
+	Description        string    `json:"description"`
 	SolutionProviderID string    `json:"solution_provider_id"`
 	Solutions          string    `json:"solutions"`
 	Status             string    `json:"status"`
