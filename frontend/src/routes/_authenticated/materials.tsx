@@ -547,7 +547,6 @@ onSubmit={async (v) => {
                       <Box key={order.orderID}>
                         <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{order.orderID} — {order.name}</Typography>
-                          <Chip size="small" label={`${order.amount.toLocaleString()} หน่วย`} />
                         </Stack>
                         <Stack spacing={0.5}>
                           {materials.map((m) => {

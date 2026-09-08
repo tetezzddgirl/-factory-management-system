@@ -659,8 +659,9 @@ type MovementItem = {
       {Object.entries(slipsByOrder).map(([orderID, items]) => (
         <Box key={orderID}>
           <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{orderID}</Typography>
-            <Chip size="small" label={`${items.length} รายการ`} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+              {orderID} — {workOrders.find((o) => o.orderID === orderID)?.name ?? orderID}
+            </Typography>
           </Stack>
           <Stack spacing={0.5}>
             {items.map((s) => {
