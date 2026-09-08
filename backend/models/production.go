@@ -18,7 +18,6 @@ type ProductionStatusHistory struct {
 	PreviousStatus  string    `gorm:"column:previousStatus" json:"previousStatus"`
 	NewStatus       string    `gorm:"column:newStatus" json:"newStatus"`
 	ChangedDateTime time.Time `gorm:"column:changedDateTime" json:"changedDateTime"`
-	Reason          string    `gorm:"column:reason" json:"reason"`
 	ChangedBy       string    `gorm:"column:changedBy" json:"changedBy"`
 
 	OrderID string `gorm:"column:order_id" json:"OrderID"`

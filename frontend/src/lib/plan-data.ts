@@ -16,15 +16,15 @@ export type WorkOrder = {
   line: string;
   startDate: string;
   dueDate: string;
-  priority: string;
+  // priority: string;
   status: "รอมอบหมาย" | "กำลังผลิต" | "เสร็จสิ้น" | "หยุดชั่วคราว";
   assignees?: string[];
 };
 
 export const initialWorkOrders: WorkOrder[] = [
-  { orderNo: "WO-20250702-001", planId: "PLAN-2025-07-01-001", product: "ขวด PET 500ml", qty: 12000, line: "สายการเป่าขวด L-01", startDate: "01 ก.ค. 2568", dueDate: "05 ก.ค. 2568", priority: "สูง", status: "รอมอบหมาย" },
-  { orderNo: "WO-20250703-001", planId: "PLAN-2025-07-02-001", product: "ขวด PET 1L", qty: 6000, line: "สายการบรรจุ L-02", startDate: "02 ก.ค. 2568", dueDate: "07 ก.ค. 2568", priority: "ปกติ", status: "รอมอบหมาย" },
-  { orderNo: "WO-20250701-001", planId: "PLAN-2025-07-03-001", product: "ฝาเกลียว", qty: 20000, line: "สายการฉีด L-03", startDate: "28 มิ.ย. 2568", dueDate: "03 ก.ค. 2568", priority: "ต่ำ", status: "เสร็จสิ้น", assignees: ["ธนกฤต ศรีสุข"] },
+  { orderNo: "WO-20250702-001", planId: "PLAN-2025-07-01-001", product: "ขวด PET 500ml", qty: 12000, line: "สายการเป่าขวด L-01", startDate: "01 ก.ค. 2568", dueDate: "05 ก.ค. 2568", status: "รอมอบหมาย" },
+  { orderNo: "WO-20250703-001", planId: "PLAN-2025-07-02-001", product: "ขวด PET 1L", qty: 6000, line: "สายการบรรจุ L-02", startDate: "02 ก.ค. 2568", dueDate: "07 ก.ค. 2568",  status: "รอมอบหมาย" },
+  { orderNo: "WO-20250701-001", planId: "PLAN-2025-07-03-001", product: "ฝาเกลียว", qty: 20000, line: "สายการฉีด L-03", startDate: "28 มิ.ย. 2568", dueDate: "03 ก.ค. 2568",  status: "เสร็จสิ้น", assignees: ["ธนกฤต ศรีสุข"] },
 ];
 
 /** mock resource requirement calc from BOM — always sufficient so the demo flow proceeds */

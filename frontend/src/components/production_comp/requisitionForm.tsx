@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import { toast } from "sonner";
 import { LOCATION_MASTER } from "@/components/wip-locations-table";
-import { getSession } from "@/lib/auth";
 import {
   wipApi, wipLocationsApi, requisitionsApi, workOrdersApi, personnelApi,
   type ApiWorkInProcess, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel, type ApiRequisitionSlip,
@@ -39,11 +38,11 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
     orderID: "",
     item: "",
     location: LOCATION_MASTER[0] || "",
-    amount: "0",
+    amount: "",
     unit: "ชิ้น",
     palletNumber: "",
     lotNumber: "",
-    handler: "",
+    handler: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
     agency: "ฝ่ายคลังสินค้าระหว่างผลิต",
   });
   const [loading, setLoading] = useState(true);
@@ -61,9 +60,6 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
         setWorkOrders(orders ?? []);
         setPersonnel(people ?? []);
 
-        const currentUserEmail = getSession()?.email ?? "";
-        const currentHandlerRow = (people ?? []).find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
-        const defaultHandler = currentHandlerRow ? `${currentHandlerRow.id} — ${currentHandlerRow.name}` : "";
         const defaultItem = wip && wip[0] ? `${wip[0].wipID} — ${wip[0].wip}` : "";
         
         let initialOrder = "";
@@ -79,7 +75,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
         setFormData(prev => ({
           ...prev,
           orderID: initialOrder,
-          handler: defaultHandler,
+          handler: "", // ล้างค่าว่างไว้ให้เลือกเอง
           item: defaultItem,
         }));
       } catch (e) {
@@ -168,6 +164,25 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
     const target = workInProcess.find((i) => i.wipID === code);
     const loc = findLoc(formData);
 
+    if (
+      !formData.orderID.trim() ||
+      !formData.item.trim() ||
+      !formData.amount.trim() ||
+      !formData.unit.trim() ||
+      !formData.palletNumber.trim() ||
+      !formData.lotNumber.trim() ||
+      !formData.handler.trim() ||
+      !formData.agency.trim()
+    ) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+      return;
+    }
+
+    if (qty <= 0) {
+      toast.error("กรุณาระบุจำนวนที่ต้องการเบิกมากกว่า 0");
+      return;
+    }
+
     if (target && qty > target.amount) {
       toast.error(`เบิกจ่ายไม่สำเร็จ: คงเหลือ ${target.wip} เพียง ${target.amount.toLocaleString()} ${target.unit}`);
       return;
@@ -190,7 +205,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
         orderID: formData.orderID.split(" - ")[0] || "-", 
         wipID: code, 
         amount: qty, 
-        handler: formData.handler,
+        handler: formData.handler.split(" — ")[0] || formData.handler, 
       });
       toast.success("สร้างใบเบิกจ่ายสำเร็จ");
       setConfirmOpen(false);
@@ -213,6 +228,17 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
       </Box>
     );
   }
+
+  const isFormInvalid =
+    !formData.orderID.trim() ||
+    !formData.item.trim() ||
+    !formData.amount.trim() ||
+    Number(formData.amount) <= 0 ||
+    !formData.unit.trim() ||
+    !formData.palletNumber.trim() ||
+    !formData.lotNumber.trim() ||
+    !formData.handler.trim() ||
+    !formData.agency.trim();
 
   return (
     <>
@@ -251,7 +277,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
                 />
               </Grid>
               
-              <Grid size={{ xs: 12}}>
+              <Grid size={{ xs: 12 }}>
                 <Autocomplete
                   options={itemOptions}
                   value={formData.item}
@@ -266,8 +292,24 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
                   label="จำนวนที่ต้องการเบิก"
                   type="number"
                   required
+                  placeholder="ระบุจำนวน"
                   value={formData.amount}
-                  onChange={(e) => handleChange("amount", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) > 0) {
+                      handleChange("amount", val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (["-", "+", "e", "E"].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  slotProps={{
+                    htmlInput: {
+                      min: 1,
+                    },
+                  }}
                   error={helperInfo?.isOver}
                   helperText={helperInfo?.text}
                 />
@@ -276,6 +318,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
               <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   fullWidth
+                  required
                   label="หน่วย"
                   value={formData.unit}
                   onChange={(e) => handleChange("unit", e.target.value)}
@@ -285,6 +328,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
               <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
+                  required
                   label="Pallet Number"
                   placeholder="PLT-005"
                   helperText="เลือก Location หรือกรอก Pallet ระบบจะดึงข้อมูลให้อัตโนมัติ"
@@ -296,6 +340,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
               <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
+                  required
                   label="Lot Number"
                   placeholder="LOT-005"
                   value={formData.lotNumber}
@@ -308,13 +353,21 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
                   options={personnelOptions}
                   value={formData.handler}
                   onChange={(_, v) => handleChange("handler", v || "")}
-                  renderInput={(params) => <TextField {...params} label="ชื่อผู้บันทึกรายการ" required />}
+                  renderInput={(params) => (
+                    <TextField 
+                      {...params} 
+                      label="ชื่อผู้บันทึกรายการ" 
+                      placeholder="เลือกผู้บันทึกรายการ"
+                      required 
+                    />
+                  )}
                 />
               </Grid>
 
               <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
+                  required
                   label="แผนกปลายทาง"
                   value={formData.agency}
                   onChange={(e) => handleChange("agency", e.target.value)}
@@ -326,13 +379,13 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={handleCancel} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button 
             type="submit" 
             variant="contained" 
-            disabled={isSubmitting || helperInfo?.isOver}
+            disabled={isSubmitting || helperInfo?.isOver || isFormInvalid}
             sx={{ width: 100 }}
           >
             ขอเบิก
@@ -340,7 +393,6 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
         </DialogActions>
       </Box>
 
-      {/* Dialog ยืนยันการเบิก */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}
@@ -352,7 +404,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={isSubmitting} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button

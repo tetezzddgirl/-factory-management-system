@@ -43,6 +43,8 @@ func main() {
 	productionHandler := handlers.NewProductionHandler(db)
 	qualityHandler := handlers.NewQualityHandler(db)
 
+	notificationHandler := handlers.NewNotificationHandler(db)
+
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.CORSOrigin},
@@ -198,6 +200,10 @@ func main() {
 		api.GET("/quality/inspections/:id/items", qualityHandler.GetInspectionItems)
 		api.GET("/quality/corrections/inspection/:inspectionId", qualityHandler.GetCorrectionByInspectionID)
 
+		// การแจ้งเตือน (Notifications)
+		api.GET("/notifications", notificationHandler.ListNotifications)
+		api.PUT("/notifications/:id/read", notificationHandler.MarkNotificationRead)
+		api.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsRead)
 	}
 
 	log.Println("listening on :" + cfg.ServerPort)

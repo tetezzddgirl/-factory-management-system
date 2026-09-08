@@ -28,11 +28,11 @@ type ProductionOrder struct {
 	Name         string    `json:"name"`
 	Status       string    `json:"status"`
 	Amount       int       `json:"amount"`
-	Machines     string    `json:"machines"`
 	StartDate    time.Time `json:"startDate"`
 	EndDate      time.Time `json:"endDate"`
 	PlanID       string    `json:"planID" gorm:"column:plan_id"`
 	RefFormulaID string    `json:"refFormulaID" gorm:"column:ref_formula_id"`
+	ProductionlineID *uint `json:"production_line_id" gorm:"column:production_line_id"`
 
 	Work                 []Work                `json:"work,omitempty" gorm:"foreignKey:OrderID"`
 	Resources            []Resources           `json:"resources,omitempty" gorm:"foreignKey:OrderID"`

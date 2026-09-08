@@ -13,7 +13,9 @@ import {
   Divider,
   Alert,
   InputAdornment,
+  Autocomplete,
 } from "@mui/material";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionFgFormProps {
   orderID: string;
@@ -34,6 +36,7 @@ export default function ProductionFgForm({
   onClose,
   onSave,
 }: ProductionFgFormProps) {
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,9 +48,21 @@ export default function ProductionFgForm({
     palletNumber: "",
     productName: orderName || "",
     quantity: "",
-    createdBy: "",
+    createdBy: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
     remark: "",
   });
+
+  // ดึงรายชื่อพนักงาน
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (err) {
+        console.error("Failed to load personnel:", err);
+      }
+    })();
+  }, []);
 
   // ค้นหาชื่อสินค้าและหน่วยอัตโนมัติ
   useEffect(() => {
@@ -84,16 +99,31 @@ export default function ProductionFgForm({
     fetchProductDetails();
   }, [orderName]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError(null);
   };
 
+  const handleAutocompleteChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (error) setError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.productName) {
-      setError("กรุณาระบุชื่อสินค้าสำเร็จรูป (FG Name)");
+    if (
+      !formData.palletNumber.trim() ||
+      !formData.productName.trim() ||
+      !formData.quantity ||
+      Number(formData.quantity) <= 0 ||
+      !formData.createdBy.trim()
+    ) {
+      setError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
     setError(null);
@@ -120,7 +150,6 @@ export default function ProductionFgForm({
       Authorization: `Bearer ${token}`,
     };
 
-    // ✅ 1. สร้าง ID ไว้ล่วงหน้า ป้องกันเป็น null
     const timestamp = Date.now();
     const generatedFgID = `FG-${timestamp}`; 
 
@@ -129,7 +158,6 @@ export default function ProductionFgForm({
       // 1. บันทึกตาราง Finished Goods (FG)
       // -----------------------------------------------------------
       const fgPayload = {
-        // ✅ ส่งทุกรูปแบบที่ Go Struct อาจจะร้องขอ
         finishedGoodsId: generatedFgID,
         FinishedGoodsID: generatedFgID,
         finished_goods_id: generatedFgID,
@@ -143,7 +171,6 @@ export default function ProductionFgForm({
         order_id: orderID,
       };
 
-      // ✅ อัปเดต Path ให้มี /production ตามที่ฝั่ง Go เขียนไว้
       const fgRes = await fetch("http://localhost:8090/api/production/finished-goods", {
         method: "POST",
         headers,
@@ -162,12 +189,10 @@ export default function ProductionFgForm({
         const transferPayload = {
           transferID: `TRF-FG-${timestamp}`,
           transferType: "FG",
-          createdBy: formData.createdBy,
+          createdBy: formData.createdBy.split(" — ")[0] || formData.createdBy,
           createDateTime: new Date().toISOString(),
           status: "Pending",
-          remark: formData.remark ? `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})` : `นำเข้าจากใบสั่งผลิต ${orderID}`,
-          
-          // ✅ ส่งค่า OrderID และ FinishedGoodsID ให้ครบทุกท่า
+          remark: `นำเข้าจากใบสั่งผลิต ${orderID} (${formData.remark})`,
           order_id: orderID,
           OrderID: orderID,
           orderID: orderID,
@@ -193,9 +218,8 @@ export default function ProductionFgForm({
         if (onClose) onClose();
 
       } catch (transferError: any) {
-        // Rollback: ถ้าบันทึก Transfer พลาด ให้ลบ FG ที่เพิ่งสร้างทิ้ง
         if (finalFgID) {
-          await fetch(`http://localhost:8090/api/production/finished-goods/${finalFgID}`, { // ✅ อัปเดต Path ลบข้อมูล
+          await fetch(`http://localhost:8090/api/production/finished-goods/${finalFgID}`, {
             method: "DELETE",
             headers,
           }).catch((err) => console.error("Rollback FG ล้มเหลว:", err));
@@ -275,7 +299,6 @@ export default function ProductionFgForm({
                 },
               }}
               sx={{ bgcolor: "#f9fafb" }}
-              helperText="* ดึงข้อมูลชื่อสินค้าอัตโนมัติตามชื่อคำสั่งผลิต"
             />
 
             <TextField
@@ -285,9 +308,22 @@ export default function ProductionFgForm({
               label="จำนวน"
               name="quantity"
               value={formData.quantity}
-              onChange={handleChange}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || Number(val) > 0) {
+                  handleChange(e);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (["-", "+", "e", "E"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               placeholder="ระบุจำนวน"
               slotProps={{
+                htmlInput: {
+                  min: 1,
+                },
                 input: {
                   endAdornment: displayUnit ? (
                     <InputAdornment position="end">{displayUnit}</InputAdornment>
@@ -296,14 +332,18 @@ export default function ProductionFgForm({
               }}
             />
 
-            <TextField
-              required
-              fullWidth
-              label="พนักงานรับผิดชอบ"
-              name="createdBy"
+            <Autocomplete
+              options={personnelOptions}
               value={formData.createdBy}
-              onChange={handleChange}
-              placeholder="ระบุชื่อพนักงาน"
+              onChange={(_, v) => handleAutocompleteChange("createdBy", v || "")}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="พนักงานรับผิดชอบ" 
+                  placeholder="เลือกรายชื่อพนักงาน" 
+                  required 
+                />
+              )}
             />
             
             <TextField
@@ -314,7 +354,7 @@ export default function ProductionFgForm({
               name="remark"
               value={formData.remark}
               onChange={handleChange}
-              placeholder="ระบุหมายเหตุ (ถ้ามี)"
+              placeholder="ระบุหมายเหตุ"
             />
           </Stack>
         </DialogContent>
@@ -335,7 +375,6 @@ export default function ProductionFgForm({
         </DialogActions>
       </Box>
 
-      {/* Dialog ยืนยันการบันทึก */}
       <Dialog
         open={confirmOpen}
         onClose={() => !isSubmitting && setConfirmOpen(false)}

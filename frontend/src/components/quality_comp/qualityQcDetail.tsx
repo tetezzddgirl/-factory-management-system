@@ -222,9 +222,6 @@ export default function QualityQcDetail({
                       ผู้แก้ไข: <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>{correction.correctedBy || "-"}</Box>
                     </Typography>
                     <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                      สถานะการแก้ไข: <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>{correction.status || "-"}</Box>
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
                       หมายเหตุการแก้ไข: <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>{correction.remark || "-"}</Box>
                     </Typography>
                   </Box>

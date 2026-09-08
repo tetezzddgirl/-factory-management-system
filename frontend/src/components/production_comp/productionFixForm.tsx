@@ -16,6 +16,7 @@ import {
 
 import ProductionFixFormDetails from "./productionFixFormDetails";
 import ProductionFixFormCorrection from "./productionFixFormCorrection";
+import { useRole } from "@/lib/roles";
 
 interface CustomTabPanelProps {
   children?: React.ReactNode;
@@ -57,6 +58,7 @@ export default function ProductionFixForm({
   const [correction, setCorrection] = useState<any>(null);
 
   const [isEditing, setIsEditing] = useState(false);
+  const { role } = useRole();
 
   const [formData, setFormData] = useState({
     action: "",
@@ -153,7 +155,6 @@ export default function ProductionFixForm({
 
       if (!res.ok) throw new Error("บันทึกข้อมูลการแก้ไขไม่สำเร็จ");
 
-      alert("บันทึกผลการแก้ไขเรียบร้อยแล้ว");
       setIsEditing(false);
       await fetchDetailData();
     } catch (error: any) {
@@ -165,6 +166,7 @@ export default function ProductionFixForm({
   };
 
   const isCompleted = inspection?.status === "Completed" || inspection?.status === "Pass";
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <>
@@ -177,10 +179,12 @@ export default function ProductionFixForm({
         <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="fix tabs">
             <Tab label="รายละเอียด" sx={{ fontWeight: tabValue === 0 ? 700 : 400 }} />
+            {canAccess && (
             <Tab
               label={(isCompleted && !isEditing) ? "ข้อมูลการแก้ไข" : "บันทึกผลการแก้ไข"}
               sx={{ fontWeight: tabValue === 1 ? 700 : 400 }}
             />
+            )}
           </Tabs>
         </Box>
 
@@ -244,7 +248,7 @@ export default function ProductionFixForm({
                 </Button>
               )}
               <Button
-                onClick={() => setConfirmOpen(true)} // 👈 เรียกให้เปิด Dialog ยืนยัน
+                onClick={() => setConfirmOpen(true)}
                 variant="contained"
                 disabled={saving || !formData.action || !formData.correctedBy}
                 startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}

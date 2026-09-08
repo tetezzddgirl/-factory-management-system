@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,6 +12,7 @@ import {
   Chip,
   Stack
 } from "@mui/material";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionFixFormDetailsProps {
   inspection: any;
@@ -19,6 +20,31 @@ interface ProductionFixFormDetailsProps {
 }
 
 export default function ProductionFixFormDetails({ inspection, items }: ProductionFixFormDetailsProps) {
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Failed to load personnel list:", e);
+      }
+    })();
+  }, []);
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
+
   const renderStatusChip = (status: string) => {
     if (status === "Pending" || status === "PendingCorrection") {
       return <Chip label="รอแก้ไข" size="small" sx={{ bgcolor: "#F59E0B", color: "#fff", fontWeight: 600 }} />;
@@ -55,7 +81,7 @@ export default function ProductionFixFormDetails({ inspection, items }: Producti
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               ผู้ตรวจ:{" "}
               <Box component="span" sx={{ color: "#1e293b", fontWeight: 500 }}>
-                {inspection.inspectedBy}
+                {getPersonnelDisplay(inspection.inspectedBy)}
               </Box>
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", display: "flex", alignItems: "center", gap: 1 }}>

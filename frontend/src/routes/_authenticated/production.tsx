@@ -49,7 +49,7 @@ interface ProductionOrder {
 function ProductionPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
-  const [fgTotals, setFgTotals] = useState<Record<string, number>>({}); // เก็บผลรวม FG ของแต่ละ OrderID
+  const [fgTotals, setFgTotals] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +67,6 @@ function ProductionPage() {
 
       const headers = { Authorization: `Bearer ${token}` };
 
-      // ยิง API ดึง Order และ FG พร้อมกัน
       const [resOrders, resFg] = await Promise.all([
         fetch("http://localhost:8090/api/production/orders", { headers }),
         fetch("http://localhost:8090/api/production/finished-goods", { headers })
@@ -77,7 +76,6 @@ function ProductionPage() {
       const dataOrders = await resOrders.json();
       setOrders(dataOrders || []);
 
-      // จัดการข้อมูล FG เพื่อรวม quantity ตาม OrderID
       if (resFg.ok) {
         const dataFg = await resFg.json();
         const totals: Record<string, number> = {};
@@ -142,13 +140,12 @@ function ProductionPage() {
       ) : (
         <Grid container spacing={2}>
           {orders.map((order, i) => {
-            // ดึงผลรวมยอด FG ของ Order นี้ ถ้าไม่มีให้เป็น 0
             const done = fgTotals[order.orderID] || 0;
             const target = order.amount || 1;
             const pct = Math.min(100, Math.round((done / target) * 100));
 
             return (
-              <Grid key={order.orderID} size={{ xs: 12, md: 6 }}>
+              <Grid key={order.orderID} size={{ xs: 12, sm: 6, md: 4 }}>
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -189,8 +186,8 @@ function ProductionPage() {
                             mb: 2,
                           }}
                         >
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 700 }} noWrap>
                               {order.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">

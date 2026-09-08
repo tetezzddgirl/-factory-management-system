@@ -25,14 +25,21 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const raw = await res.text();
+  try {
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    // 🔍 ชั่วคราว: log raw response ที่ parse ไม่ผ่าน เพื่อหา byte ที่เกินมา
+    console.error(`[apiFetch] JSON parse failed for ${path}. Raw response:`, JSON.stringify(raw));
+    throw e;
+  }
 }
 
 // ---- ชนิดข้อมูลที่ตรงกับ backend (Go structs ใน models/) ----
 
 export type ApiMachine = { id: string; name: string; status: string; hours: number };
 
-export type ApiProductionLine = { id: string; name: string; status: string };
+export type ApiProductionLine = { id: number; name: string };
 
 export type ApiProductionPlan = {
   planID: string;
@@ -44,6 +51,9 @@ export type ApiProductionPlan = {
   endDate?: string | null;
   productID?: string;
   formulaID?: string;
+  done: number;
+  target: number;
+  progress: number;
 };
 
 export type ApiRawMaterial = {
@@ -57,15 +67,8 @@ export type ApiRawMaterial = {
 
 // ---- สินค้า/ผลิตภัณฑ์ + สูตรการผลิต (Product & Formula/FOR master data) ----
 
-export type ApiProduct = { productID: string; name: string; unit: string };
-export type ApiFormulaItem = {
-  id: number;
-  formulaID: string;
-  productID: string;
-  rmID: string;
-  qtyPerUnit: number;
-  unit: string;
-};
+export type ApiProduct = { product_id: string; product_name: string; unit: string };
+export type ApiFormulaItem = { id: number; formulaID: string; productID: string; rmID: string; qtyPerUnit: number; unit: string };
 
 export const productsApi = {
   list: () => apiFetch<ApiProduct[]>("/api/products"),
@@ -139,7 +142,7 @@ export function formulaOptions(formulas: ApiFormulaItem[], products: ApiProduct[
   const seen = new Map<string, string>();
   for (const f of formulas) {
     if (seen.has(f.formulaID)) continue;
-    const productName = products.find((p) => p.productID === f.productID)?.name ?? f.productID;
+    const productName = products.find((p) => p.product_id === f.productID)?.product_name ?? f.productID;
     seen.set(f.formulaID, `${f.formulaID}${FOR_LABEL_SEP}${productName}`);
   }
   return Array.from(seen.values());
@@ -158,9 +161,7 @@ export function formulaOptionFor(
 ): string {
   if (!formulaID) return "";
   const match = formulas.find((f) => f.formulaID === formulaID);
-  const productName = match
-    ? (products.find((p) => p.productID === match.productID)?.name ?? match.productID)
-    : undefined;
+  const productName = match ? products.find((p) => p.product_id === match.productID)?.product_name ?? match.productID : undefined;
   return productName ? `${formulaID}${FOR_LABEL_SEP}${productName}` : formulaID;
 }
 
@@ -173,12 +174,18 @@ export const machinesApi = {
 };
 
 export const productionLinesApi = {
-  list: () => apiFetch<ApiProductionLine[]>("/api/production-lines"),
-  create: (l: ApiProductionLine) =>
-    apiFetch<ApiProductionLine>("/api/production-lines", {
-      method: "POST",
-      body: JSON.stringify(l),
-    }),
+  list: async () => {
+    const raw = await apiFetch<any[]>("/api/production-lines");
+    return raw.map((r) => ({
+      id: r.production_line_id,
+      name: r.productionline_name,
+    })) as ApiProductionLine[];
+  },
+  create: (l: { name: string }) =>
+  apiFetch<ApiProductionLine>("/api/production-lines", {
+    method: "POST",
+    body: JSON.stringify({ productionline_name: l.name }),
+  }),
 };
 
 export const plansApi = {
@@ -555,10 +562,10 @@ export type ApiWorkOrder = {
   name: string;
   status: string;
   amount: number;
-  machines: string;
   startDate: string;
   endDate: string;
   planID: string;
+  production_line_id?: number;
 };
 
 export type ApiWork = {
@@ -577,10 +584,10 @@ export const workOrdersApi = {
   getNextID: () => apiFetch<{ orderID: string }>("/api/work-orders/next-id"),
   create: (o: Omit<ApiWorkOrder, "orderID" | "timestamp"> & { orderID?: string }) =>
     apiFetch<ApiWorkOrder>("/api/work-orders", { method: "POST", body: JSON.stringify(o) }),
-  updateStatus: (orderID: string, status: string, machines?: string) =>
+  updateStatus: (orderID: string, status: string) =>
     apiFetch<{ ok: boolean }>(`/api/work-orders/${orderID}`, {
       method: "PUT",
-      body: JSON.stringify({ status, machines }),
+      body: JSON.stringify({ status }),
     }),
 };
 
@@ -600,4 +607,26 @@ export const workApi = {
       method: "PUT",
       body: JSON.stringify(w),
     }),
+};
+
+// ---- การแจ้งเตือน (Notifications) ----
+
+export type ApiNotification = {
+  notificationID: string;
+  recipientRole: string;
+  title: string;
+  description: string;
+  type: "info" | "warning" | "success" | "error";
+  refID: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export const notificationsApi = {
+  list: (role: string) =>
+    apiFetch<ApiNotification[]>(`/api/notifications?role=${encodeURIComponent(role)}`),
+  markRead: (notificationID: string) =>
+    apiFetch<{ ok: boolean }>(`/api/notifications/${encodeURIComponent(notificationID)}/read`, { method: "PUT" }),
+  markAllRead: (role: string) =>
+    apiFetch<{ ok: boolean }>(`/api/notifications/read-all?role=${encodeURIComponent(role)}`, { method: "PUT" }),
 };

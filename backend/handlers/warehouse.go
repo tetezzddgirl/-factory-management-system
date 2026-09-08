@@ -25,7 +25,7 @@ func NewWarehouseHandler(db *gorm.DB) *WarehouseHandler {
 func (h *WarehouseHandler) ListRawMaterials(c *gin.Context) {
 	out := []models.RawMaterial{}
 	if err := h.db.Order("rm_id").Find(&out).Error; err != nil {
-	// if err := h.db.Preload("Locations").Order("rm_id").Find(&out).Error; err != nil {
+		// if err := h.db.Preload("Locations").Order("rm_id").Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -71,6 +71,10 @@ func (h *WarehouseHandler) CreateMaterial(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if rm.Amount < 0 || rm.Min < 0 || rm.Max < 0{
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if err := h.db.Save(&rm).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -86,6 +90,10 @@ func (h *WarehouseHandler) UpdateStock(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if body.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}
 	if err := h.db.Model(&models.RawMaterial{}).Where("rm_id = ?", rmID).
@@ -118,6 +126,10 @@ func (h *WarehouseHandler) CreateLocation(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+		return
+	}
+	if body.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}
 
@@ -170,6 +182,10 @@ func (h *WarehouseHandler) UpdateLocation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if body.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if err := h.db.Model(&models.RawMaterialLocation{}).Where("rm_location_id = ?", id).
 		Updates(map[string]any{"amount": body.Amount, "location": body.Location}).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -178,19 +194,6 @@ func (h *WarehouseHandler) UpdateLocation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// ListRecords คืนประวัติรายการเคลื่อนไหวของวัตถุดิบ เรียงล่าสุดก่อน — ใช้กับ "รายการเคลื่อนไหวล่าสุด"
-// func (h *WarehouseHandler) ListRecords(c *gin.Context) {
-// 	out := []models.RawMaterialRecord{}
-// 	q := h.db.Order("timestamp DESC")
-// 	if rmID := c.Query("rmID"); rmID != "" {
-// 		q = q.Where("rm_id = ?", rmID)
-// 	}
-// 	if err := q.Limit(50).Find(&out).Error; err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, out)
-// }
 func (h *WarehouseHandler) ListRecords(c *gin.Context) {
 	out := []models.RawMaterialRecord{}
 	q := h.db.
@@ -215,6 +218,10 @@ func (h *WarehouseHandler) CreateRecord(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
+	if rec.Amount < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
+		return
+	}
 	if rec.RmRecordID == "" {
 		rec.RmRecordID = fmt.Sprintf("RMR-%s", time.Now().Format("20060102150405"))
 	}
@@ -223,7 +230,7 @@ func (h *WarehouseHandler) CreateRecord(c *gin.Context) {
 
 	if err := h.db.
 		Where("rm_location_id = ?", rec.RmLocationID).First(&location).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{ "error": "raw material location not found", })
+		c.JSON(http.StatusBadRequest, gin.H{"error": "raw material location not found"})
 		return
 	}
 	rec.RmID = location.RmID

@@ -1,6 +1,8 @@
-import React from "react";
-import { Box, Typography, Paper, Stack, Divider, Button, TextField } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, Typography, Paper, Stack, Divider, Button, TextField, Autocomplete } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
+import { useRole } from "@/lib/roles";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionFixFormCorrectionProps {
   correction: any;
@@ -19,7 +21,23 @@ export default function ProductionFixFormCorrection({
   formData,
   handleFormChange
 }: ProductionFixFormCorrectionProps) {
+  const { role } = useRole();
+  const canAccess = role === "operator" || role === "admin";
 
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (e) {
+        console.error("Failed to load personnel:", e);
+      }
+    })();
+  }, []);
+
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
   const isCompleted = inspectionStatus === "Completed" || inspectionStatus === "Pass";
 
   if (isCompleted && !isEditing) {
@@ -29,15 +47,17 @@ export default function ProductionFixFormCorrection({
           <Typography sx={{ fontWeight: 700, color: "#1e293b", fontSize: "1.1rem" }}>
             รายละเอียดผลการแก้ไข
           </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<EditIcon />}
-            onClick={() => setIsEditing(true)}
-            sx={{ textTransform: "none", borderRadius: 1.5 }}
-          >
-            แก้ไขข้อมูล
-          </Button>
+          {canAccess && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<EditIcon />}
+              onClick={() => setIsEditing(true)}
+              sx={{ textTransform: "none", borderRadius: 1.5 }}
+            >
+              แก้ไขข้อมูล
+            </Button>
+          )}
         </Box>
 
         <Stack spacing={2.5}>
@@ -116,21 +136,29 @@ export default function ProductionFixFormCorrection({
           placeholder="ระบุสิ่งที่ได้ดำเนินการแก้ไขไปแล้ว..."
         />
 
-        <TextField
-          label="ผู้บันทึกการแก้ไข (Corrected By)"
-          required
-          fullWidth
+        <Autocomplete
+          options={personnelOptions}
           value={formData.correctedBy}
-          onChange={(e) => handleFormChange("correctedBy", e.target.value)}
+          onChange={(_, v) => handleFormChange("correctedBy", v || "")}
+          renderInput={(params) => (
+            <TextField 
+              {...params} 
+              label="ผู้บันทึกการแก้ไข (Corrected By)" 
+              placeholder="เลือกผู้บันทึกรายการ" 
+              required 
+            />
+          )}
         />
 
         <TextField
-          label="หมายเหตุเพิ่มเติม (ถ้ามี)"
+          label="หมายเหตุ"
+          required
           multiline
           rows={2}
           fullWidth
           value={formData.remark}
           onChange={(e) => handleFormChange("remark", e.target.value)}
+          placeholder="ระบุหมายเหตุ (จำเป็นต้องกรอก)..."
         />
       </Stack>
     </Paper>

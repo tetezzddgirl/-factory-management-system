@@ -17,14 +17,17 @@ import {
   CircularProgress,
   DialogContent,
   DialogActions,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
+import { toast } from "sonner";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface StatusHistory {
   historyId: string;
   previousStatus: string;
   newStatus: string;
   changedDateTime: string;
-  reason: string;
   changedBy: string;
 }
 
@@ -32,7 +35,7 @@ interface ProductionStatusProps {
   orderId: string;
   orderName: string;
   initialStatus?: string;
-  onSave: (newStatus: string) => void;
+  onSave: (newStatus: string, changedBy: string) => void;
   onCancel: () => void;
 }
 
@@ -44,36 +47,65 @@ export default function ProductionStatus({
   onCancel,
 }: ProductionStatusProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
+  const [changedBy, setChangedBy] = useState<string>("");
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      if (!orderId) return;
-      setLoadingHistory(true);
+    const fetchPersonnel = async () => {
       try {
-        const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
-        const res = await fetch(`http://localhost:8090/api/production/orders/${orderId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
         });
-
-        if (res.ok) {
-          const data = await res.json();
-          const histories = data.statusHistory || [];
-          setHistory(histories.reverse());
-        }
+        setPersonnelMap(map);
       } catch (err) {
-        console.error("Failed to fetch history:", err);
-      } finally {
-        setLoadingHistory(false);
+        console.error("Failed to load personnel:", err);
       }
     };
+    fetchPersonnel();
+  }, []);
 
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "-";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
+
+  const fetchHistory = async () => {
+    if (!orderId) return;
+    setLoadingHistory(true);
+    try {
+      const token = localStorage.getItem("ff:token") || localStorage.getItem("auth_token") || localStorage.getItem("token");
+      const res = await fetch(`http://localhost:8090/api/production/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const histories = data.statusHistory || [];
+        setHistory(histories.reverse());
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
     fetchHistory();
   }, [orderId]);
 
-  // Map สถานะภาษาไทย ไปเป็น สี
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+
   const getStatusDisplay = (status: string, isActive: boolean = true) => {
     const label = status || "รอมอบหมาย";
 
@@ -95,15 +127,28 @@ export default function ProductionStatus({
     }
   };
 
-  // เปลี่ยน Value ที่จะบันทึกลงฐานข้อมูลให้เป็นภาษาไทยตรงๆ
   const availableStatuses = ["กำลังผลิต", "หยุดชั่วคราว", "เสร็จสิ้น", "ยกเลิก"];
+
+  const handleValidateAndOpenConfirm = () => {
+    if (!changedBy.trim()) {
+      toast.error("กรุณาเลือกผู้บันทึก");
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setConfirmOpen(false);
+    const formattedChangedBy = changedBy.split(" — ")[0] || changedBy;
+    onSave(selectedStatus, formattedChangedBy);
+  };
 
   return (
     <Box sx={{ width: "100%", p: 0 }}>
       {/* ส่วนหัว */}
       <Box sx={{ p: 3, pb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: "#1b2559" }}>
-          แก้ไขสถานะการผลิต
+          เปลี่ยนสถานะการผลิต
         </Typography>
         <Typography variant="body2" sx={{ color: "#475467", mt: 0.5 }}>
           {orderName} • {orderId}
@@ -114,7 +159,7 @@ export default function ProductionStatus({
 
       <Box sx={{ p: 3 }}>
         {/* กลุ่มปุ่มเลือกสถานะ */}
-        <Stack direction="row" spacing={2} sx={{ mb: 4, justifyContent: "center" }}>
+        <Stack direction="row" spacing={2} sx={{ mb: 3, justifyContent: "center" }}>
           {availableStatuses.map((statusKey) => {
             const isSelected = selectedStatus === statusKey;
             const display = getStatusDisplay(statusKey, isSelected);
@@ -134,9 +179,7 @@ export default function ProductionStatus({
                   bgcolor: display.bgcolor,
                   color: display.color,
                   border: display.border,
-                  "&:hover": {
-                    bgcolor: isSelected ? display.bgcolor : "#e2e8f0",
-                  },
+                  "&:hover": { bgcolor: isSelected ? display.bgcolor : "#e2e8f0" },
                 }}
               >
                 {display.label}
@@ -145,42 +188,41 @@ export default function ProductionStatus({
           })}
         </Stack>
 
-        <TableContainer
-          component={Paper}
-          sx={{
-            borderRadius: 1.5,
-            border: "1px solid #e0e6ed",
-            boxShadow: "none",
-            maxHeight: 300,
-            overflowY: "auto",
-          }}
-        >
+        {/* ช่องเลือกผู้บันทึก */}
+        <Box sx={{ mb: 3 }}>
+          <Autocomplete
+            options={personnelOptions}
+            value={changedBy}
+            onChange={(_, v) => setChangedBy(v || "")}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="ผู้บันทึกการเปลี่ยนสถานะ"
+                placeholder="เลือกผู้บันทึก"
+                required
+                size="small"
+              />
+            )}
+          />
+        </Box>
+
+        <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed", boxShadow: "none", maxHeight: 300, overflowY: "auto" }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
-                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>
-                  ประวัติการเปลี่ยนสถานะ
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>
-                  ผู้ดำเนินการ
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>
-                  วันเวลา
-                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>ประวัติการเปลี่ยนสถานะ</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>ผู้ดำเนินการ</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: "#475467", bgcolor: "#fafafa" }}>วันเวลา</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loadingHistory ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
-                    <CircularProgress size={24} />
-                  </TableCell>
+                  <TableCell colSpan={3} align="center" sx={{ py: 3 }}><CircularProgress size={24} /></TableCell>
                 </TableRow>
               ) : history.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={{ color: "#94a3b8", py: 3 }}>
-                    ไม่มีประวัติการเปลี่ยนสถานะ
-                  </TableCell>
+                  <TableCell colSpan={3} align="center" sx={{ color: "#94a3b8", py: 3 }}>ไม่มีประวัติการเปลี่ยนสถานะ</TableCell>
                 </TableRow>
               ) : (
                 history.map((row) => (
@@ -189,20 +231,13 @@ export default function ProductionStatus({
                       <Chip
                         label={getStatusDisplay(row.newStatus, true).label}
                         size="small"
-                        sx={{
-                          bgcolor: getStatusDisplay(row.newStatus, true).bgcolor,
-                          color: "#fff",
-                          fontWeight: "bold",
-                          minWidth: 100,
-                        }}
+                        sx={{ bgcolor: getStatusDisplay(row.newStatus, true).bgcolor, color: "#fff", fontWeight: "bold", minWidth: 100 }}
                       />
                     </TableCell>
                     <TableCell align="center" sx={{ color: "#334155" }}>
-                      {row.changedBy}
+                      {getPersonnelDisplay(row.changedBy)}
                     </TableCell>
-                    <TableCell align="center" sx={{ color: "#334155" }}>
-                      {new Date(row.changedDateTime).toLocaleString("th-TH")}
-                    </TableCell>
+                    <TableCell align="center" sx={{ color: "#334155" }}>{new Date(row.changedDateTime).toLocaleString("th-TH")}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -214,46 +249,27 @@ export default function ProductionStatus({
       <Divider />
 
       <Box sx={{ p: 2, display: "flex", justifyContent: "flex-end", gap: 1, bgcolor: "#fafafa" }}>
-        <Button onClick={onCancel} sx={{ width: 100, color: "#4a90e2"}}>
-          ยกเลิก
-        </Button>
+        <Button onClick={onCancel} sx={{ width: 100, color: "#4a90e2" }}>ยกเลิก</Button>
         <Button
           variant="contained"
           disableElevation
-          onClick={() => setConfirmOpen(true)}
-          disabled={selectedStatus === initialStatus}
+          onClick={handleValidateAndOpenConfirm}
+          disabled={selectedStatus === initialStatus || !changedBy.trim()}
           sx={{ width: 100 }}
         >
           บันทึก
         </Button>
       </Box>
 
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
-      >
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}>
         <DialogContent>
           <Typography color="text.secondary">
             คุณต้องการเปลี่ยนสถานะเป็น "{getStatusDisplay(selectedStatus, true).label}" ใช่หรือไม่?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => setConfirmOpen(false)} 
-            color="inherit" 
-            sx={{ width: 100, color: "#4a90e2" }}
-          >
-            ยกเลิก
-          </Button>
-          <Button
-            onClick={() => {
-              setConfirmOpen(false);
-              onSave(selectedStatus);
-            }}
-            variant="contained"
-            sx={{ width: 100, bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
-          >
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" sx={{ width: 100, color: "#4a90e2" }}>ยกเลิก</Button>
+          <Button onClick={handleConfirmSubmit} variant="contained" sx={{ width: 100, bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}>
             ยืนยัน
           </Button>
         </DialogActions>

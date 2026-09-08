@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,8 +11,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider
+  Divider,
+  Autocomplete,
 } from "@mui/material";
+import { toast } from "sonner";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface EventData {
   eventType: string;
@@ -40,24 +43,55 @@ const eventTypes = [
 ];
 
 export default function ProductionEvenForm({ orderID, orderName, onSave, onCancel, loading }: ProductionEvenFormProps) {
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [formData, setFormData] = useState<EventData>({
     eventType: "",
     startTime: "",
     endTime: "",
     description: "", 
     impact: "",
-    recordedBy: "นายสมมติ ทดสอบ (Mock)", 
+    recordedBy: "", // เริ่มต้นเป็นค่าว่าง ไม่ดึงจาก Session ใดๆ
   });
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (e) {
+        console.error("Failed to load personnel:", e);
+      }
+    })();
+  }, []);
+
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePersonnelChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, recordedBy: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (
+      !formData.eventType ||
+      !formData.startTime ||
+      // เอา !formData.endTime ออกตรงนี้
+      !formData.description.trim() ||
+      !formData.impact.trim() ||
+      !formData.recordedBy.trim()
+    ) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+      return;
+    }
+
     setConfirmOpen(true);
   };
 
@@ -68,7 +102,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
       endTime: "",
       description: "",
       impact: "",
-      recordedBy: "นายสมมติ ทดสอบ (Mock)",
+      recordedBy: "",
     });
   };
 
@@ -83,9 +117,16 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
     resetForm();
   };
 
+  const isFormInvalid =
+    !formData.eventType ||
+    !formData.startTime ||
+    !formData.description.trim() ||
+    !formData.impact.trim() ||
+    !formData.recordedBy.trim();
+
   return (
     <>
-      <Box component="form" onSubmit={handleSubmit}>
+      <Box component="form" onSubmit={handleSubmit} autoComplete="off">
         <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
           บันทึกเหตุการณ์ใหม่
         </DialogTitle>
@@ -126,7 +167,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               ))}
             </TextField>
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 required
                 fullWidth
@@ -140,7 +181,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               <TextField
                 fullWidth
                 type="datetime-local"
-                label="เวลาที่สิ้นสุด (ถ้ามี)"
+                label="เวลาที่สิ้นสุด"
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
@@ -157,10 +198,11 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="อธิบายสิ่งที่เกิดขึ้น..."
+              placeholder="อธิบายสิ่งที่เกิดขึ้น (จำเป็นต้องกรอก)..."
             />
 
             <TextField
+              required
               fullWidth
               multiline
               rows={2}
@@ -168,30 +210,35 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
               name="impact"
               value={formData.impact}
               onChange={handleChange}
-              placeholder="เช่น เสียเวลาผลิต 2 ชั่วโมง, สินค้าเสียหาย 10 ชิ้น"
+              placeholder="เช่น เสียเวลาผลิต 2 ชั่วโมง, สินค้าเสียหาย 10 ชิ้น (จำเป็นต้องกรอก)..."
             />
 
-            <TextField
-              fullWidth
-              disabled
-              label="ผู้บันทึก"
-              name="recordedBy"
-              value={formData.recordedBy}
-              slotProps={{ input: { readOnly: true } }}
-              helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ"
+            <Autocomplete
+              options={personnelOptions}
+              value={formData.recordedBy || null}
+              onChange={(_, v) => handlePersonnelChange(v || "")}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="ผู้บันทึก" 
+                  placeholder="เลือกผู้บันทึกรายการ" 
+                  required 
+                  autoComplete="off"
+                />
+              )}
             />
           </Stack>
         </DialogContent>
 
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancel} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={handleCancel} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button 
             type="submit" 
             variant="contained" 
-            disabled={loading}
+            disabled={loading || isFormInvalid}
             sx={{ width: 100 }}
           >
             บันทึก
@@ -210,14 +257,14 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2" }}>
             ยกเลิก
           </Button>
           <Button
             onClick={handleConfirm}
             variant="contained"
             disabled={loading}
-            sx={{ width: 100,bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
+            sx={{ width: 100, bgcolor: "#4a90e2", "&:hover": { bgcolor: "#357abd" } }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
           </Button>

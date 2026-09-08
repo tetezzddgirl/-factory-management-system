@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import ProductionWipForm from "./productionWipForm";
 import ProductionWipDetails from "./productionWipDetails";
+import { useRole } from "@/lib/roles";
 
 interface TransferRecord {
   transferID: string;
@@ -68,6 +69,7 @@ export default function ProductionWip({ orderID, orderName }: ProductionWipProps
   const [openDialog, setOpenDialog] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRecord | null>(null);
+  const { role } = useRole();
 
   const fetchWipData = useCallback(async () => {
     if (!orderID) {
@@ -150,9 +152,11 @@ export default function ProductionWip({ orderID, orderName }: ProductionWipProps
     }
     return <Chip label={status} size="small" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
   };
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
+      {canAccess && (
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           variant="contained"
@@ -166,6 +170,7 @@ export default function ProductionWip({ orderID, orderName }: ProductionWipProps
           + เพิ่ม WIP
         </Button>
       </Box>
+      )}
 
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
         <Table sx={{ minWidth: 700 }}>

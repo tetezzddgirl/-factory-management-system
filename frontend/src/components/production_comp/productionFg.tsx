@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import ProductionFgForm from "./productionFgForm";
 import ProductionFgDetails, { TransferRecord as FgTransferRecord } from "./productionFgDetails";
+import { useRole } from "@/lib/roles";
 
 interface TransferRecord {
   transferID: string;
@@ -52,6 +53,7 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
   const [openDialog, setOpenDialog] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRecord | null>(null);
+  const { role } = useRole();
 
   const fetchFgData = useCallback(async () => {
     if (!orderID) {
@@ -118,9 +120,11 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
     }
     return <Chip label={status} size="small" sx={{ bgcolor: "#A4ABB6", color: "#fff", fontWeight: 600, minWidth: 80 }} />;
   };
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
+      {canAccess && (
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           variant="contained"
@@ -134,6 +138,7 @@ export default function ProductionFg({ orderID, orderName }: ProductionFgProps) 
           + เพิ่มสินค้าสำเร็จรูป
         </Button>
       </Box>
+      )}
 
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
         <Table sx={{ minWidth: 700 }}>

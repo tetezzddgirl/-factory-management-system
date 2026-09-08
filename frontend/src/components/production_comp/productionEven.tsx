@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import ProductionEvenForm, { EventData } from "./productionEvenForm";
 import ProductionEvenDetail from "./productionEvenDetail";
+import { useRole } from "@/lib/roles";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 export interface EventItem {
   id?: number;
@@ -32,11 +34,36 @@ interface ProductionEvenProps {
 
 export default function ProductionEven({ orderID, orderName }: ProductionEvenProps) {
   const [eventList, setEventList] = useState<EventItem[]>([]);
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const { role } = useRole();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+          }
+        });
+        setPersonnelMap(map);
+      } catch (e) {
+        console.error("Failed to load personnel list:", e);
+      }
+    })();
+  }, []);
+
+  const getPersonnelDisplay = (idOrName?: string) => {
+    if (!idOrName) return "ยังไม่ระบุ";
+    const cleanId = idOrName.split(" — ")[0].trim();
+    return personnelMap[cleanId] || idOrName;
+  };
 
   const handleOpenDetail = (event: EventItem) => {
     setSelectedEvent(event);
@@ -102,9 +129,11 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
       setLoading(false);
     }
   };
+  const canAccess = role === "operator" || role === "admin";
 
   return (
     <Box sx={{ width: "100%", mt: 0 }}>
+      {canAccess && (
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           variant="contained"
@@ -118,6 +147,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
           + เพิ่มเหตุการณ์
         </Button>
       </Box>
+      )}
 
       <TableContainer component={Paper} sx={{ borderRadius: 1.5, border: "1px solid #e0e6ed" }}>
         <Table sx={{ minWidth: 700 }}>
@@ -160,7 +190,7 @@ export default function ProductionEven({ orderID, orderName }: ProductionEvenPro
                     {row.endDateTime ? new Date(row.endDateTime).toLocaleString('th-TH') : "ยังไม่ระบุ"}
                   </TableCell>
                   
-                  <TableCell align="center">{row.recordedBy || "ยังไม่ระบุ"}</TableCell>
+                  <TableCell align="center">{getPersonnelDisplay(row.recordedBy)}</TableCell>
                   
                   <TableCell align="center">
                     <Button variant="outlined" size="small" onClick={() => handleOpenDetail(row)}>

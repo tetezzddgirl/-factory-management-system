@@ -14,7 +14,7 @@ import { SelectPlanDialog } from "@/components/select-plan-dialog";
 import type { PlanRow } from "@/components/plan-detail-dialog";
 import { type WorkOrder } from "@/lib/plan-data";
 import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, computeRequiredMaterials, formulaIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
-import { fromApiPlan, toISO, toDateInputValue, formatThaiDate, encodeLine, decodeLine } from "@/lib/plan-utils";
+import { fromApiPlan, toISO, toDateInputValue, formatThaiDate, lineNameFromID } from "@/lib/plan-utils";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
 
@@ -36,8 +36,8 @@ const statusColor: Record<string, "success" | "info" | "default"> = {
   "เสร็จสิ้น": "success", "กำลังผลิต": "info", "รอเริ่ม": "default", "รอมอบหมาย": "default",
 };
 
-function toWorkOrder(o: ApiWorkOrder, assignees: string[]): WorkOrder {
-  const { line, priority } = decodeLine(o.machines);
+function toWorkOrder(o: ApiWorkOrder, assignees: string[], productionLines: ApiProductionLine[]): WorkOrder {
+  const line = lineNameFromID(o.production_line_id, productionLines);
   return {
     orderNo: o.orderID,
     planId: o.planID,
@@ -47,7 +47,6 @@ function toWorkOrder(o: ApiWorkOrder, assignees: string[]): WorkOrder {
     // เก็บเป็น ISO ดิบไว้ก่อน (ใช้ต่อ API ได้ทันที) ค่อยแปลงเป็นข้อความไทยตอน render เท่านั้น
     startDate: o.startDate ?? "",
     dueDate: o.endDate ?? "",
-    priority,
     status: (o.status as WorkOrder["status"]) || "รอมอบหมาย",
     assignees: assignees.length ? assignees : undefined,
   };
@@ -78,10 +77,10 @@ function WorkOrdersPage() {
   /** ตรวจสอบทรัพยากรของใบสั่งผลิต — ถ้าสินค้านี้มีสูตรการผลิต (Formula) ในระบบ คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่สั่งผลิต
    *  เทียบกับยอดคงเหลือจริงในคลัง ถ้ายังไม่มีสูตร fallback เป็นตัวเลขประมาณการ (เดิม) เพื่อให้ demo flow ทำงานต่อได้ */
   function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
-    const matchedProduct = products.find((p) => p.name === product);
+    const matchedProduct = products.find((p) => p.product_name === product);
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * 1.25));
     const materials = matchedProduct
-      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.productID, target).map((m) => ({
+      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
           name: m.name, required: m.required, available: m.available, unit: m.unit,
         }))
       : [
@@ -104,7 +103,7 @@ function WorkOrdersPage() {
 
   /** ขั้นตอนการผลิตของสินค้าตัวหนึ่ง (ไว้โชว์ตอนมอบหมายงาน) — หา bomID จากสูตรของสินค้านั้นก่อน แล้วดึงขั้นตอนที่ผูกกับ bomID นั้น */
   function stepsForProduct(product: string) {
-    const productID = products.find((p) => p.name === product)?.productID;
+    const productID = products.find((p) => p.product_name === product)?.product_id;
     if (!productID) return undefined;
     const formulaID = formulaIDFor(formulas, productID);
     if (!formulaID) return undefined;
@@ -124,7 +123,7 @@ function WorkOrdersPage() {
         list.push(w.work);
         workByOrder.set(w.orderID, list);
       });
-      setOrders((rawOrders ?? []).map((o) => toWorkOrder(o, workByOrder.get(o.orderID) ?? [])));
+      setOrders((rawOrders ?? []).map((o) => toWorkOrder(o, workByOrder.get(o.orderID) ?? [], lines ?? [])));
       setProducts(prods ?? []);
       setFormulas(forms ?? []);
       setFormulaSteps(steps ?? []);
@@ -156,15 +155,15 @@ function WorkOrdersPage() {
         name: r.product,
         status: "รอมอบหมาย",
         amount: r.qty,
-        machines: encodeLine(r.line, r.priority),
         startDate: toISO(r.startDate),
         endDate: toISO(r.due),
         planID: orderPlan?.planID ?? "-",
+        production_line_id: r.productionLineID,
       });
       setOrderPlan(null);
       toast.success(`บันทึกใบสั่งผลิต ${created.orderID} แล้ว — ตรวจสอบทรัพยากรต่อ`);
       await loadOrders();
-      openCheck(toWorkOrder(created, []));
+      openCheck(toWorkOrder(created, [], productionLines));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "บันทึกใบสั่งผลิตไม่สำเร็จ");
     }
@@ -206,7 +205,7 @@ async function confirmAssignment(rs: AssignWorkResult[]) {
   const workNames = rs.map((r) => r.work).filter(Boolean);
   if (!active) return;
   try {
-    await workOrdersApi.updateStatus(active.orderNo, "กำลังผลิต", encodeLine(active.line, active.priority));
+    await workOrdersApi.updateStatus(active.orderNo, "กำลังผลิต");
 
     const currentWorkIds = new Set(rs.map((r) => r.workID));
 
@@ -327,7 +326,6 @@ async function confirmAssignment(rs: AssignWorkResult[]) {
                       <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, mb: 1.5 }}>
                         <Chip size="small" variant="outlined" label={`${o.qty.toLocaleString()} ชิ้น`} />
                         <Chip size="small" variant="outlined" icon={<Factory sx={{ fontSize: 16 }} />} label={o.line} />
-                        <Chip size="small" variant="outlined" color={o.priority === "สูง" ? "error" : "default"} label={`ความสำคัญ: ${o.priority}`} />
                       </Stack>
                       {o.assignees?.length ? (
                         <>

@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"time"
+	"strings"
+	"fmt"
 
 	"factoryflow/models"
 
@@ -91,7 +93,6 @@ func (h *ProductionHandler) UpdateOrderStatus(c *gin.Context) {
 	orderID := c.Param("id")
 	var payload struct {
 		Status    string `json:"status" binding:"required"`
-		Reason    string `json:"reason"`
 		ChangedBy string `json:"changedBy"`
 	}
 
@@ -106,16 +107,26 @@ func (h *ProductionHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	// ตัดเอาเฉพาะ ID พนักงาน
+	cleanChangedBy := strings.TrimSpace(payload.ChangedBy)
+	if strings.Contains(cleanChangedBy, " — ") {
+		cleanChangedBy = strings.TrimSpace(strings.Split(cleanChangedBy, " — ")[0])
+	} else if strings.Contains(cleanChangedBy, " - ") {
+		cleanChangedBy = strings.TrimSpace(strings.Split(cleanChangedBy, " - ")[0])
+	}
+
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+		uniqueHistoryID := fmt.Sprintf("HIST-%s-%d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%100000)
+
 		history := models.ProductionStatusHistory{
-			HistoryID:       "HIST-" + time.Now().Format("20060102150405"),
+			HistoryID:       uniqueHistoryID,
 			OrderID:         order.OrderID,
 			PreviousStatus:  order.Status,
 			NewStatus:       payload.Status,
 			ChangedDateTime: time.Now(),
-			Reason:          payload.Reason,
-			ChangedBy:       payload.ChangedBy,
+			ChangedBy:       cleanChangedBy, // เอา Reason ออกไปแล้ว
 		}
+
 		if err := tx.Create(&history).Error; err != nil {
 			return err
 		}
@@ -137,9 +148,11 @@ func (h *ProductionHandler) GetStatusHistoryByOrderID(c *gin.Context) {
 	orderID := c.Param("id")
 	var history []models.ProductionStatusHistory
 
+	// หมายเหตุ: เช็คชื่อ field ใน DB ว่าเป็น changed_date_time หรือ "changedDateTime"
+	// แนะนำใช้ snake_case มาตรฐาน PostgreSQL: changed_date_time DESC
 	if err := h.db.WithContext(c.Request.Context()).
-		Where(`"order_id" = ?`, orderID).
-		Order(`"changedDateTime" DESC`).
+		Where("order_id = ?", orderID).
+		Order("changed_date_time DESC").
 		Find(&history).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -160,12 +173,24 @@ func (h *ProductionHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	if event.EventID == "" {
-		event.EventID = "EVT-" + time.Now().Format("20060102150405")
-	}
+	// กำหนด Timezone ประเทศไทย (UTC+7)
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	// บังคับสร้าง ID ในรูปแบบ EVT-YYYYMMDDHHMMSS ตามเวลาไทย
+	event.EventID = fmt.Sprintf("EVT-%s", now.Format("20060102150405"))
+
 	if event.StartDateTime.IsZero() {
-		event.StartDateTime = time.Now()
+		event.StartDateTime = now
 	}
+
+	cleanRecordedBy := strings.TrimSpace(event.RecordedBy)
+	if strings.Contains(cleanRecordedBy, " — ") {
+		cleanRecordedBy = strings.TrimSpace(strings.Split(cleanRecordedBy, " — ")[0])
+	} else if strings.Contains(cleanRecordedBy, " - ") {
+		cleanRecordedBy = strings.TrimSpace(strings.Split(cleanRecordedBy, " - ")[0])
+	}
+	event.RecordedBy = cleanRecordedBy
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&event).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -203,9 +228,10 @@ func (h *ProductionHandler) CreateReport(c *gin.Context) {
 		return
 	}
 
-	if report.ReportID == "" {
-		report.ReportID = "REP-" + time.Now().Format("20060102150405")
-	}
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	report.ReportID = fmt.Sprintf("REP-%s", now.Format("20060102150405"))
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&report).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -268,12 +294,28 @@ func (h *ProductionHandler) CreateTransfer(c *gin.Context) {
 		return
 	}
 
+	// กำหนด Timezone ประเทศไทย (UTC+7)
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
+
+	// สร้าง TransferID ในรูปแบบ TRF-YYYYMMDDHHMMSS ตามเวลาไทย
 	if transfer.TransferID == "" {
-		transfer.TransferID = "TRF-" + time.Now().Format("20060102150405")
+		transfer.TransferID = fmt.Sprintf("TRF-%s", now.Format("20060102150405"))
 	}
+
+	// กำหนดเวลาที่บันทึกตามเวลาไทย
 	if transfer.CreateDateTime.IsZero() {
-		transfer.CreateDateTime = time.Now()
+		transfer.CreateDateTime = now
 	}
+
+	// ตัดเอาเฉพาะรหัสพนักงาน (ป้องกันติดชื่อเต็ม เช่น "PSN-001 — สมชาย")
+	cleanCreatedBy := strings.TrimSpace(transfer.CreatedBy)
+	if strings.Contains(cleanCreatedBy, " — ") {
+		cleanCreatedBy = strings.TrimSpace(strings.Split(cleanCreatedBy, " — ")[0])
+	} else if strings.Contains(cleanCreatedBy, " - ") {
+		cleanCreatedBy = strings.TrimSpace(strings.Split(cleanCreatedBy, " - ")[0])
+	}
+	transfer.CreatedBy = cleanCreatedBy
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&transfer).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -325,10 +367,10 @@ func (h *ProductionHandler) CreateFinishedGood(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json: " + err.Error()})
 		return
 	}
+	loc := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(loc)
 
-	if fg.FinishedGoodsID == "" {
-		fg.FinishedGoodsID = "FG-" + time.Now().Format("20060102150405")
-	}
+	fg.FinishedGoodsID = fmt.Sprintf("FG-%s", now.Format("20060102150405"))
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&fg).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

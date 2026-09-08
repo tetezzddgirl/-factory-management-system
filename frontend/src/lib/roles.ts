@@ -34,8 +34,8 @@ export const ROLE_MAP: Record<RoleKey, (typeof ROLES)[number]> = ROLES.reduce(
 export const ROLE_NAV: Record<RoleKey, string[]> = {
   planner:     ["/", "/planning", "/work-orders", "/materials", "/machines", "/personnel", "/tasks", "/issues"],
   warehouse:   ["/", "/materials", "/wip", "/issues"],
-  operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines"],
-  supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/tasks", "/machines", "/quality", "/issues"],
+  operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines", "/issues"],
+  supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/machines", "/quality", "/issues"],
   qc:          ["/", "/quality", "/products", "/production"],
   maintenance: ["/", "/maintenance", "/machines"],
   shipping:    ["/", "/warehouse", "/issues"],

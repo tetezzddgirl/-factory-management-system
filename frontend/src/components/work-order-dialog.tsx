@@ -6,7 +6,7 @@ import {
 } from "@mui/material";
 import { Assignment, Factory, EventNote } from "@mui/icons-material";
 import type { ApiProductionLine } from "@/lib/api-client";
-import { workOrdersApi } from "@/lib/api-client";
+import { workOrdersApi, productionLinesApi } from "@/lib/api-client";
 
 export type WorkOrderData = { planID?: string; name: string; amount: number; dueDate: string };
 
@@ -15,14 +15,13 @@ export type WorkOrderResult = {
   product: string;
   qty: number;
   line: string;
+  productionLineID?: number;
   startDate: string;
   due: string;
-  priority: string;
   note: string;
 };
 
 const FALLBACK_LINES = ["สายการเป่าขวด L-01", "สายการบรรจุ L-02", "สายการฉีด L-03", "สายการประกอบ L-04"];
-const PRIORITIES = ["สูง", "ปกติ", "ต่ำ"];
 
 interface Props {
   open: boolean;
@@ -44,9 +43,10 @@ function getToday() {
 export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit }: Props) {
   const LINES = productionLines && productionLines.length > 0 ? productionLines.map((l) => l.name) : FALLBACK_LINES;
   const [v, setV] = useState<WorkOrderResult>({
-    orderNo: "", product: "", qty: 0, line: LINES[0],
-    startDate: "", due: "", priority: "ปกติ", note: "",
-  });
+  orderNo: "", product: "", qty: 0, line: LINES[0],
+  productionLineID: productionLines?.[0]?.id,
+  startDate: "", due: "", note: "",
+});
 
   useEffect(() => {
     if (!open || !data) return;
@@ -58,7 +58,6 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
       line: LINES[0],
       startDate: today,
       due: today,
-      priority: "ปกติ",
       note: "",
     });
 
@@ -102,7 +101,11 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
                 onChange={(e) => set("qty", Number(e.target.value) || 0)}
               />
               <TextField
-                fullWidth select label="สายการผลิต" value={v.line} onChange={(e) => set("line", e.target.value)}
+                fullWidth select label="สายการผลิต" value={v.line} 
+                onChange={(e) => {
+                  const picked = productionLines?.find((l) => l.name === e.target.value);
+                  setV((s) => ({ ...s, line: e.target.value, productionLineID: picked?.id }));  // ← ไม่ต้อง ?? ""
+                }}
                 slotProps={{ input: { startAdornment: <Factory sx={{ fontSize: 18, mr: 1, color: "primary.main" }} /> } }}
               >
                 {LINES.map((l) => <MenuItem key={l} value={l}>{l}</MenuItem>)}
@@ -122,9 +125,6 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
                 helperText={dateError ? "ต้องไม่มาก่อนวันที่เริ่มผลิต" : undefined}
               />
             </Stack>
-            <TextField select label="ลำดับความสำคัญ" value={v.priority} onChange={(e) => set("priority", e.target.value)}>
-              {PRIORITIES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-            </TextField>
             <TextField
               label="หมายเหตุ" multiline minRows={2} value={v.note} onChange={(e) => set("note", e.target.value)}
               slotProps={{ input: { startAdornment: <EventNote sx={{ fontSize: 18, mr: 1, mt: 1, color: "primary.main", alignSelf: "flex-start" }} /> } }}
@@ -138,7 +138,6 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
             <Chip size="small" color="primary" variant="outlined" label={v.orderNo} />
             <Chip size="small" variant="outlined" label={`${v.qty.toLocaleString()} ชิ้น`} />
             <Chip size="small" variant="outlined" label={v.line} />
-            <Chip size="small" color={v.priority === "สูง" ? "error" : v.priority === "ปกติ" ? "default" : "info"} label={v.priority} />
           </Stack>
         </Box>
       </DialogContent>

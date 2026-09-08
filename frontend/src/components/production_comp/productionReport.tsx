@@ -8,14 +8,17 @@ import {
   TextField, 
   Typography, 
   DialogContent,
-  DialogActions,
+  DialogActions, 
   Divider, 
   Dialog,
   MenuItem,
   CircularProgress,
-  Grid
+  Grid,
+  Autocomplete
 } from "@mui/material";
 import { toast } from "sonner";
+import { useRole } from "@/lib/roles";
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
 
 interface ProductionReportProps {
   orderID?: string;
@@ -23,11 +26,14 @@ interface ProductionReportProps {
 }
 
 export default function ProductionReport({ orderID, orderName }: ProductionReportProps) {
+  const { role } = useRole();
+  const canAccess = role === "operator" || role === "admin";
+
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // เพิ่ม State สำหรับเก็บ ID ของ Report ที่เคยบันทึกไว้
   const [reportId, setReportId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -39,8 +45,21 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     palletQuantity: "",
     productionResult: "Pass",
     remark: "",
-    recordedBy: "นายสมมติ ทดสอบ (Mock)",
+    recordedBy: "", // เริ่มต้นเป็นค่าว่าง ไม่เติมอัตโนมัติ
   });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const people = await personnelApi.list();
+        setPersonnel(people ?? []);
+      } catch (e) {
+        console.error("Failed to load personnel:", e);
+      }
+    })();
+  }, []);
+
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
 
   const fetchReport = useCallback(async () => {
     if (!orderID) return;
@@ -52,9 +71,9 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) {
-          const report = data[0]; // ดึงรายงานล่าสุด
+          const report = data[0];
           
-          setReportId(report.reportId); // <-- เก็บ reportId ไว้ใช้ตอนแก้ไข
+          setReportId(report.reportId);
           
           const formatDateTime = (isoString: string) => isoString ? new Date(isoString).toISOString().slice(0, 16) : "";
 
@@ -67,7 +86,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
             palletQuantity: report.palletQuantity?.toString() || "",
             productionResult: report.productionResult || "Pass",
             remark: report.remark || "",
-            recordedBy: report.recordedBy || "นายสมมติ ทดสอบ (Mock)",
+            recordedBy: report.recordedBy || "",
           });
           setIsSaved(true);
         }
@@ -81,8 +100,35 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     fetchReport();
   }, [fetchReport]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleNumberKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (["-", "+", "e", "E"].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleValidateAndOpenConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (
+      !formData.actualStartDateTime ||
+      !formData.actualEndDateTime ||
+      formData.actualQuantity === "" ||
+      formData.goodQuantity === "" ||
+      formData.scrapQuantity === "" ||
+      formData.palletQuantity === "" ||
+      !formData.productionResult ||
+      !formData.remark.trim() ||
+      !formData.recordedBy.trim()
+    ) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+      return;
+    }
+
+    setConfirmOpen(true);
   };
 
   const handleSave = async () => {
@@ -97,8 +143,8 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
       
       const payload = {
         orderId: orderID,
-        actualStartDateTime: formData.actualStartDateTime ? new Date(formData.actualStartDateTime).toISOString() : new Date().toISOString(),
-        actualEndDateTime: formData.actualEndDateTime ? new Date(formData.actualEndDateTime).toISOString() : new Date().toISOString(),
+        actualStartDateTime: new Date(formData.actualStartDateTime).toISOString(),
+        actualEndDateTime: new Date(formData.actualEndDateTime).toISOString(),
         actualQuantity: parseInt(formData.actualQuantity) || 0,
         goodQuantity: parseInt(formData.goodQuantity) || 0,
         scrapQuantity: parseInt(formData.scrapQuantity) || 0,
@@ -108,7 +154,6 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
         recordedBy: formData.recordedBy,
       };
 
-      // เช็คว่ามี reportId ไหม ถ้ามีคือการแก้ (PATCH) ถ้าไม่มีคือสร้างใหม่ (POST)
       const url = reportId 
         ? `http://localhost:8090/api/production/reports/${reportId}` 
         : `http://localhost:8090/api/production/reports`;
@@ -136,7 +181,7 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
   };
 
   const handleEdit = () => {
-    setIsSaved(false); // เปิดฟอร์มให้แก้ แต่ reportId ยังถูกเก็บไว้อยู่ พอเซฟมันเลยยิง PATCH
+    setIsSaved(false);
   };
 
   return (
@@ -188,96 +233,219 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
                       <strong>ยอดของเสีย (Reject):</strong> {formData.scrapQuantity || "0"} ชิ้น<br />
                       <strong>ผลการผลิต:</strong> {formData.productionResult || "-"}<br />
                       <strong>หมายเหตุ:</strong> {formData.remark || "-"}<br />
-                      <strong>ผู้บันทึก:</strong> {formData.recordedBy}
+                      <strong>ผู้บันทึก:</strong> {formData.recordedBy || "-"}
                     </Typography>
                   </Grid>
                 </Grid>
                 
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5 }}>
-                  <Button variant="outlined" size="small" onClick={handleEdit} sx={{ borderRadius: 2, textTransform: "none" }}>
-                    แก้ไขข้อมูล
-                  </Button>
-                </Box>
+                {canAccess && (
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5 }}>
+                    <Button variant="outlined" size="small" onClick={handleEdit} sx={{ borderRadius: 2, textTransform: "none" }}>
+                      แก้ไขข้อมูล
+                    </Button>
+                  </Box>
+                )}
               </Box>
             ) : (
               <>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="datetime-local" label="เวลาเริ่มผลิตจริง" name="actualStartDateTime" value={formData.actualStartDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="datetime-local" label="เวลาผลิตเสร็จจริง" name="actualEndDateTime" value={formData.actualEndDateTime} onChange={handleChange} slotProps={{ inputLabel: { shrink: true } }} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดผลิตรวม" name="actualQuantity" value={formData.actualQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดของดี" name="goodQuantity" value={formData.goodQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <TextField fullWidth size="small" type="number" label="ยอดของเสีย" name="scrapQuantity" value={formData.scrapQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField fullWidth size="small" type="number" label="จำนวนพาเลท" name="palletQuantity" value={formData.palletQuantity} onChange={handleChange} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField select fullWidth size="small" label="ผลการผลิต" name="productionResult" value={formData.productionResult} onChange={handleChange}>
-                      <MenuItem value="Pass">Pass (ผ่าน)</MenuItem>
-                      <MenuItem value="Fail">Fail (ไม่ผ่าน)</MenuItem>
-                      <MenuItem value="Partial">Partial (ผ่านบางส่วน)</MenuItem>
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField fullWidth multiline rows={3} size="small" label="หมายเหตุ / สาเหตุของเสีย" name="remark" value={formData.remark} onChange={handleChange} placeholder="ระบุหมายเหตุเพิ่มเติม..." />
-                  </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField fullWidth disabled size="small" label="ผู้บันทึก" name="recordedBy" value={formData.recordedBy} slotProps={{ input: { readOnly: true } }} helperText="* ข้อมูลผู้บันทึกจะถูกดึงจากระบบอัตโนมัติ" />
-                  </Grid>
-                </Grid>
+                {canAccess ? (
+                  <Box component="form" onSubmit={handleValidateAndOpenConfirm}>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="datetime-local" 
+                          label="เวลาเริ่มผลิตจริง" 
+                          name="actualStartDateTime" 
+                          value={formData.actualStartDateTime} 
+                          onChange={handleChange} 
+                          slotProps={{ inputLabel: { shrink: true } }} 
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="datetime-local" 
+                          label="เวลาผลิตเสร็จจริง" 
+                          name="actualEndDateTime" 
+                          value={formData.actualEndDateTime} 
+                          onChange={handleChange} 
+                          slotProps={{ inputLabel: { shrink: true } }} 
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="number" 
+                          label="ยอดผลิตรวม" 
+                          name="actualQuantity" 
+                          value={formData.actualQuantity} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || Number(val) >= 0) handleChange(e);
+                          }}
+                          onKeyDown={handleNumberKeyDown}
+                          slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="number" 
+                          label="ยอดของดี" 
+                          name="goodQuantity" 
+                          value={formData.goodQuantity} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || Number(val) >= 0) handleChange(e);
+                          }}
+                          onKeyDown={handleNumberKeyDown}
+                          slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="number" 
+                          label="ยอดของเสีย" 
+                          name="scrapQuantity" 
+                          value={formData.scrapQuantity} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || Number(val) >= 0) handleChange(e);
+                          }}
+                          onKeyDown={handleNumberKeyDown}
+                          slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          type="number" 
+                          label="จำนวนพาเลท" 
+                          name="palletQuantity" 
+                          value={formData.palletQuantity} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || Number(val) >= 0) handleChange(e);
+                          }}
+                          onKeyDown={handleNumberKeyDown}
+                          slotProps={{ htmlInput: { min: 0 } }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField 
+                          select 
+                          fullWidth 
+                          required 
+                          size="small" 
+                          label="ผลการผลิต" 
+                          name="productionResult" 
+                          value={formData.productionResult} 
+                          onChange={handleChange}
+                        >
+                          <MenuItem value="Pass">Pass (ผ่าน)</MenuItem>
+                          <MenuItem value="Fail">Fail (ไม่ผ่าน)</MenuItem>
+                          <MenuItem value="Partial">Partial (ผ่านบางส่วน)</MenuItem>
+                        </TextField>
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField 
+                          fullWidth 
+                          required 
+                          multiline 
+                          rows={3} 
+                          size="small" 
+                          label="หมายเหตุ / สาเหตุของเสีย" 
+                          name="remark" 
+                          value={formData.remark} 
+                          onChange={handleChange} 
+                          placeholder="ระบุหมายเหตุเพิ่มเติม (จำเป็นต้องกรอก)..." 
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <Autocomplete
+                          options={personnelOptions}
+                          value={formData.recordedBy}
+                          onChange={(_, v) => setFormData((prev) => ({ ...prev, recordedBy: v || "" }))}
+                          renderInput={(params) => (
+                            <TextField 
+                              {...params} 
+                              size="small"
+                              label="ผู้บันทึก" 
+                              placeholder="เลือกผู้บันทึกรายการ" 
+                              required 
+                            />
+                          )}
+                        />
+                      </Grid>
+                    </Grid>
 
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    onClick={() => setConfirmOpen(true)}
-                    sx={{
-                      bgcolor: "#4a90e2", color: "#fff", fontWeight: 600,
-                      px: 3.5, py: 0.8, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
-                    }}
-                  >
-                    บันทึกผล
-                  </Button>
-                </Box>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disableElevation
+                        sx={{
+                          bgcolor: "#4a90e2", color: "#fff", fontWeight: 600,
+                          px: 3.5, py: 0.8, fontSize: "0.875rem", textTransform: "none", "&:hover": { bgcolor: "#357abd" },
+                        }}
+                      >
+                        บันทึกผล
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: "center", py: 4 }}>
+                    <Typography sx={{ color: "text.secondary" }}>
+                      ยังไม่มีการบันทึกรายงานผลการผลิต
+                    </Typography>
+                  </Box>
+                )}
               </>
             )}
           </Stack>
         </CardContent>
       </Card>
 
-      <Dialog
-        open={confirmOpen}
-        onClose={() => !loading && setConfirmOpen(false)}
-        sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
-      >
-        <DialogContent>
-          <Typography color="text.secondary">
-            คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
-            ยกเลิก
-          </Button>
-          <Button
-            onClick={() => { setConfirmOpen(false); handleSave(); }}
-            variant="contained"
-            disabled={loading}
-            sx={{ width: 100 }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {canAccess && (
+        <Dialog
+          open={confirmOpen}
+          onClose={() => !loading && setConfirmOpen(false)}
+          sx={{ "& .MuiDialog-paper": { borderRadius: 2, p: 1 } }}
+        >
+          <DialogContent>
+            <Typography color="text.secondary">
+              คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={loading} sx={{ width: 100, color: "#4a90e2"}}>
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={() => { setConfirmOpen(false); handleSave(); }}
+              variant="contained"
+              disabled={loading}
+              sx={{ width: 100 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "ยืนยัน"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 }
