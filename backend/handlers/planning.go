@@ -20,6 +20,99 @@ func NewPlanningHandler(db *gorm.DB) *PlanningHandler {
 	return &PlanningHandler{db: db}
 }
 
+
+type planAggregate struct {
+	Done     int
+	Target   int
+	Statuses []string
+}
+
+// planAggregates ดึงข้อมูลรวมของทุกแผนในครั้งเดียว (กัน N+1 query) ไว้คำนวณทั้ง progress และ derived status
+func planAggregates(db *gorm.DB) (map[string]planAggregate, error) {
+	type progressRow struct {
+		PlanID string
+		Done   int
+		Target int
+	}
+	var progressRows []progressRow
+	if err := db.Table("production_orders po").
+		Select("po.plan_id AS plan_id, COALESCE(SUM(fg.quantity),0) AS done, COALESCE(SUM(po.amount),0) AS target").
+		Joins("LEFT JOIN finished_goods fg ON fg.order_id = po.order_id").
+		Where("po.status != ?", "ยกเลิก").
+		Group("po.plan_id").
+		Scan(&progressRows).Error; err != nil {
+		return nil, err
+	}
+
+	type statusRow struct {
+		PlanID string
+		Status string
+	}
+	var statusRows []statusRow
+	if err := db.Model(&models.ProductionOrder{}).
+		Select("plan_id, status").
+		Find(&statusRows).Error; err != nil {
+		return nil, err
+	}
+
+	out := map[string]planAggregate{}
+	for _, r := range progressRows {
+		agg := out[r.PlanID]
+		agg.Done, agg.Target = r.Done, r.Target
+		out[r.PlanID] = agg
+	}
+	for _, r := range statusRows {
+		agg := out[r.PlanID]
+		agg.Statuses = append(agg.Statuses, r.Status)
+		out[r.PlanID] = agg
+	}
+	return out, nil
+}
+
+// derivePlanStatus คำนวณสถานะของแผนจากสถานะของใบสั่งผลิตทั้งหมดในแผนนั้น (ดู comment กฎด้านบน)
+func derivePlanStatus(statuses []string) string {
+	if len(statuses) == 0 {
+		return "รอเริ่ม"
+	}
+
+	allCancelled := true
+	for _, s := range statuses {
+		if s != "ยกเลิก" {
+			allCancelled = false
+			break
+		}
+	}
+	if allCancelled {
+		return "ยกเลิก"
+	}
+
+	allDone, hasRunning, hasPaused := true, false, false
+	for _, s := range statuses {
+		if s == "ยกเลิก" {
+			continue // ไม่นับใบที่ยกเลิก แต่ไม่ทำให้ทั้งแผนเป็น "ยกเลิก" ถ้ายังมีใบอื่นทำงานอยู่
+		}
+		if s != "เสร็จสิ้น" {
+			allDone = false
+		}
+		if s == "กำลังผลิต" {
+			hasRunning = true
+		}
+		if s == "หยุดชั่วคราว" {
+			hasPaused = true
+		}
+	}
+	switch {
+	case allDone:
+		return "เสร็จสิ้น"
+	case hasRunning:
+		return "กำลังผลิต"
+	case hasPaused:
+		return "หยุดชั่วคราว"
+	default:
+		return "รอเริ่ม"
+	}
+}
+
 // planOut คือรูปร่าง JSON ที่ frontend คาดหวัง (เหมือนเดิมทุก field) แม้ว่า ProductionPlan
 // จะไม่เก็บ productID/bomID ตรงๆ อีกต่อไปแล้วก็ตาม — ค่า productID/formulaID มาจากการ join กับ RefBOM
 type planOut struct {
@@ -34,22 +127,59 @@ type planOut struct {
 	ProductID string    `json:"productID"`
 	FormulaID     string    `json:"formulaID"`
 	RefFormulaID  string    `json:"refFormulaID"`
+	Done         int       `json:"done"`
+	Target       int       `json:"target"` 
+	Progress     float64   `json:"progress"`
 }
 
-func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula) planOut {
+func planProgressMap(db *gorm.DB) (map[string]struct{ Done, Target int }, error) {
+	type row struct {
+		PlanID string
+		Done   int
+		Target int
+	}
+	var rows []row
+	err := db.Table("production_orders po").
+		Select("po.plan_id AS plan_id, COALESCE(SUM(fg.quantity),0) AS done, COALESCE(SUM(po.amount),0) AS target").
+		Joins("LEFT JOIN finished_goods fg ON fg.order_id = po.order_id").
+		Where("po.status != ?", "ยกเลิก").
+		Group("po.plan_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]struct{ Done, Target int }, len(rows))
+	for _, r := range rows {
+		out[r.PlanID] = struct{ Done, Target int }{r.Done, r.Target}
+	}
+	return out, nil
+}
+
+func toPlanOut(p models.ProductionPlan, refFormulas map[string]models.RefFormula, aggregates map[string]planAggregate) planOut {
 	rb := refFormulas[p.RefFormulaID]
+	agg := aggregates[p.PlanID]
+	pct := 0.0
+	if agg.Target > 0 {
+		pct = float64(agg.Done) / float64(agg.Target) * 100
+		if pct > 100 {
+			pct = 100
+		}
+	}
 	return planOut{
-		Timestamp: p.Timestamp,
-		PlanID:    p.PlanID,
-		Name:      p.Name,
-		Status:    p.Status,
-		Amount:    p.Amount,
-		Priority:  p.Priority,
-		StartDate: p.StartDate,
-		EndDate:   p.EndDate,
-		ProductID: rb.ProductID,
-		FormulaID:     rb.FormulaID,
-		RefFormulaID:  p.RefFormulaID,
+		Timestamp:    p.Timestamp,
+		PlanID:       p.PlanID,
+		Name:         p.Name,
+		Status:       derivePlanStatus(agg.Statuses),
+		Amount:       p.Amount,
+		Priority:     p.Priority,
+		StartDate:    p.StartDate,
+		EndDate:      p.EndDate,
+		ProductID:    rb.ProductID,
+		FormulaID:    rb.FormulaID,
+		RefFormulaID: p.RefFormulaID,
+		Done:         agg.Done,
+		Target:       agg.Target,
+		Progress:     pct,
 	}
 }
 
@@ -82,9 +212,15 @@ func (h *PlanningHandler) ListPlans(c *gin.Context) {
 		return
 	}
 
+	aggregates, err := planAggregates(h.db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	out := make([]planOut, 0, len(plans))
 	for _, p := range plans {
-		out = append(out, toPlanOut(p, refFormulas))
+		out = append(out, toPlanOut(p, refFormulas, aggregates))
 	}
 	c.JSON(http.StatusOK, out)
 }
@@ -124,6 +260,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
 
 	now := time.Now()
 	planID, err := nextSeqID(h.db, &models.ProductionPlan{}, "plan_id", "PLAN", now.Format("2006-01-02"), 3)
@@ -162,7 +299,7 @@ func (h *PlanningHandler) CreatePlan(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, toPlanOut(p, refFormulas))
+	c.JSON(http.StatusOK, toPlanOut(p, refFormulas, map[string]planAggregate{}))
 }
 
 // UpdatePlanProgress อัปเดตลำดับความสำคัญ (priority) และสถานะของแผนการผลิตตาม planID (path param: /api/plans/:id)

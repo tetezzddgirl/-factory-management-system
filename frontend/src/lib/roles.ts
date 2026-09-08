@@ -21,7 +21,7 @@ export const ROLES: { key: RoleKey; label: string; short: string; color: string 
   // { key: "qc",          label: "เจ้าหน้าที่ฝ่ายควบคุมคุณภาพ",     short: "QC",          color: "#F59E0B" },
   // { key: "maintenance", label: "เจ้าหน้าที่ฝ่ายซ่อมบำรุง",         short: "Maintenance", color: "#EF4444" },
   // { key: "shipping",    label: "เจ้าหน้าที่ฝ่ายจัดส่งสินค้า",       short: "Shipping",    color: "#8B5CF6" },
-  // { key: "admin",       label: "ผู้ดูแลระบบ",                        short: "Admin",       color: "#334155" },
+  { key: "admin",       label: "ผู้ดูแลระบบ",                        short: "Admin",       color: "#334155" },
   // { key: "executive",   label: "ผู้บริหาร",                          short: "Executive",   color: "#0F172A" },
 ];
 
@@ -32,15 +32,15 @@ export const ROLE_MAP: Record<RoleKey, (typeof ROLES)[number]> = ROLES.reduce(
 
 /** Which nav items each role can see. */
 export const ROLE_NAV: Record<RoleKey, string[]> = {
-  planner:     ["/", "/planning", "/work-orders", "/materials", "/machines", "/personnel", "/issues"],
+  planner:     ["/", "/planning", "/work-orders", "/materials", "/machines", "/personnel", "/tasks", "/issues"],
   warehouse:   ["/", "/materials", "/wip", "/issues"],
-  operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines"],
+  operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines", "/issues"],
   supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/machines", "/quality", "/issues"],
   qc:          ["/", "/quality", "/products", "/production"],
   maintenance: ["/", "/maintenance", "/machines"],
   shipping:    ["/", "/warehouse", "/issues"],
-  admin:       ["/", "/users", "/personnel", "/products", "/planning", "/work-orders", "/materials", "/wip", "/production", "/issues", "/quality", "/machines", "/maintenance", "/warehouse"],
-  executive:   ["/", "/planning", "/work-orders", "/production", "/quality", "/warehouse", "/personnel", "/issues"],
+  admin:       ["/", "/users", "/personnel", "/tasks", "/products", "/planning", "/work-orders", "/materials", "/wip", "/production", "/issues", "/quality", "/machines", "/maintenance", "/warehouse"],
+  executive:   ["/", "/planning", "/work-orders", "/production", "/quality", "/warehouse", "/personnel", "/tasks", "/issues"],
 };
 
 export const RoleContext = createContext<{

@@ -62,7 +62,7 @@ function PlanningPage() {
 
   /** ขั้นตอนการผลิตของสินค้าตัวหนึ่ง (ไว้โชว์ตอนมอบหมายงาน) — หา bomID จากสูตรของสินค้านั้นก่อน แล้วดึงขั้นตอนที่ผูกกับ bomID นั้น */
   function stepsForProduct(product: string) {
-    const productID = products.find((p) => p.name === product)?.productID;
+    const productID = products.find((p) => p.product_name === product)?.product_id;
     if (!productID) return undefined;
     const formulaID = formulaIDFor(formulas, productID);
     if (!formulaID) return undefined;
@@ -93,12 +93,12 @@ function PlanningPage() {
 
   function buildCheck(product: string, target: number, due: string): ResourceCheckData {
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * (1.15 + Math.random() * 0.25)));
-    const matchedProduct = products.find((p) => p.name === product);
+    const matchedProduct = products.find((p) => p.product_name === product);
 
     // ถ้าสินค้านี้มีสูตรการผลิต (Formula) อยู่ในระบบ -> คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่ผลิต
     // เทียบกับยอดคงเหลือจริงในคลัง (ไม่ใช่ตัวเลขสุ่มอีกต่อไป)
     const materials = matchedProduct
-      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.productID, target).map((m) => ({
+      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
           name: m.name, required: m.required, available: m.available, unit: m.unit,
         }))
       : [
@@ -173,7 +173,7 @@ function PlanningPage() {
   function autoFillPlan(values: Record<string, string>, changed: string): Partial<Record<string, string>> | void {
     if (changed !== "productID" && changed !== "amount") return;
     const productID = values.productID.split(" — ")[0];
-    const product = products.find((p) => p.productID === productID);
+    const product = products.find((p) => p.product_id === productID);
     if (!product) return;
 
     const amount = Number(values.amount) || 0;
@@ -193,7 +193,7 @@ function PlanningPage() {
     toast.error("จำนวนที่ผลิตต้องไม่ติดลบ");
     return false;
   }
-  const productID = products.find((p) => p.name === r.product)?.productID;
+  const productID = products.find((p) => p.product_name === r.product)?.product_id;
   const ok = await savePlan(r.product, formulaIDFromOption(r.formula), r.target, r.due, r.priority, productID, r.start);
   if (ok) setTemplateOpen(false);
   return ok;
@@ -301,6 +301,7 @@ function PlanningPage() {
       description="สร้างและติดตามแผนการผลิตของโรงงาน"
       icon={<CalendarMonth />}
       actions={
+        role === "planner" ? (
         <>
           <Button variant="contained" startIcon={<Add />} endIcon={<ArrowDropDown />} onClick={(e) => setMenuEl(e.currentTarget)}>
             สร้างแผน
@@ -324,7 +325,7 @@ function PlanningPage() {
               trigger={<Button ref={newPlanRef}>เปิด</Button>}
               fields={[
                 { name: "planID", label: "หมายเลขแผนการผลิต", readOnly: true, required: false, helperText: "ระบบกำหนดให้อัตโนมัติ", },
-                { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.productID} — ${p.name}`), defaultValue: products[0] ? `${products[0].productID} — ${products[0].name}` : "" },
+                { name: "productID", label: "สินค้า", type: "select", options: products.map((p) => `${p.product_id} — ${p.product_name}`), defaultValue: products[0] ? `${products[0].product_id} — ${products[0].product_name}` : "" },
                 { name: "formula", label: "สูตรการผลิต", type: "select", options: formulaOptions(formulas, products), helperText: "เติมอัตโนมัติตามสินค้าที่เลือก — แสดงทั้งรหัสสูตรและชื่อสูตร เลือกสูตรอื่นเองได้ถ้าต้องการ" },
                 { name: "amount", label: "จำนวนที่ผลิต", type: "number", defaultValue: "1000", error: isNegative("amount") },
                 { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
@@ -345,6 +346,7 @@ function PlanningPage() {
             />
           </Box>
         </>
+        ) : undefined
       }
     >
       <PlanDetailDialog
@@ -399,7 +401,7 @@ function PlanningPage() {
       {!loading && !error && (
       <Grid container spacing={2}>
         {plans.map((p, i) => {
-          // const pct = Math.round((p.done / p.target) * 100);
+          const pct = p.amount > 0 ? Math.round((p.done ?? 0) / p.amount * 100) : 0;
           return (
             <Grid key={p.planID} size={{ xs: 12, md: 6 }}>
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} whileHover={{ y: -4 }}>
@@ -418,9 +420,11 @@ function PlanningPage() {
                       <Typography variant="body2" color="text.secondary">ความคืบหน้า</Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {/* {p.done.toLocaleString()} / {p.amount.toLocaleString()} <Box component="span" sx={{ color: "primary.main" }}>({pct}%)</Box> */}
+                        {(p.done ?? 0).toLocaleString()} / {p.amount.toLocaleString()}{" "}
+                        <Box component="span" sx={{ color: "primary.main" }}>({pct}%)</Box>
                       </Typography>
                     </Stack>
-                    {/* <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} /> */}
+                    <LinearProgress variant="determinate" value={pct} sx={{ mb: 2 }} />
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary" }}>
                       <TrendingUp sx={{ fontSize: 16 }} />
                       <Typography variant="caption">กำหนดเสร็จ: {p.dueDate}</Typography>

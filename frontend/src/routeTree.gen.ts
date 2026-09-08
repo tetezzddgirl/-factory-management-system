@@ -19,6 +19,7 @@ import { Route as AuthenticatedPersonnelRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedWipRouteImport } from './routes/_authenticated/wip'
 import { Route as AuthenticatedWorkOrdersRouteImport } from './routes/_authenticated/work-orders'
 import { Route as AuthenticatedSubProductionManagementRouteImport } from './routes/_authenticated/sub/productionManagement'
@@ -73,6 +74,11 @@ const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
   path: '/quality',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWipRoute = AuthenticatedWipRouteImport.update({
   id: '/wip',
   path: '/wip',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
+  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/wip': typeof AuthenticatedWipRoute
   '/_authenticated/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/planning'
     | '/production'
     | '/quality'
+    | '/tasks'
     | '/wip'
     | '/work-orders'
     | '/sub/productionManagement'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/planning'
     | '/production'
     | '/quality'
+    | '/tasks'
     | '/wip'
     | '/work-orders'
     | '/'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/planning'
     | '/_authenticated/production'
     | '/_authenticated/quality'
+    | '/_authenticated/tasks'
     | '/_authenticated/wip'
     | '/_authenticated/work-orders'
     | '/_authenticated/'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQualityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wip': {
       id: '/_authenticated/wip'
       path: '/wip'
@@ -308,6 +327,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedWipRoute: typeof AuthenticatedWipRoute
   AuthenticatedWorkOrdersRoute: typeof AuthenticatedWorkOrdersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -323,6 +343,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
+  AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedWipRoute: AuthenticatedWipRoute,
   AuthenticatedWorkOrdersRoute: AuthenticatedWorkOrdersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

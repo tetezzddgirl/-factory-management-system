@@ -11,12 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// WipHandler รวม dependency ของ endpoint ฝั่งสินค้าระหว่างผลิต (Work In Process)
 type WipHandler struct {
 	db *gorm.DB
 }
 
-// NewWipHandler สร้าง WipHandler ตัวใหม่
 func NewWipHandler(db *gorm.DB) *WipHandler {
 	return &WipHandler{db: db}
 }
@@ -32,9 +30,6 @@ func (h *WipHandler) GetWorkInProcess(c *gin.Context) {
 	c.JSON(http.StatusOK, w)
 }
 
-// ---- ยอดคงเหลือ WIP ----
-
-// ListWorkInProcess คืนยอดคงเหลือสินค้าระหว่างผลิตทั้งหมด
 func (h *WipHandler) ListWorkInProcess(c *gin.Context) {
 	out := []models.WorkInProcess{}
 	if err := h.db.Order("wip_id").Find(&out).Error; err != nil {
@@ -44,7 +39,6 @@ func (h *WipHandler) ListWorkInProcess(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// CreateWorkInProcess เพิ่ม/อัปเดตสินค้าระหว่างผลิต (รับเข้าใหม่)
 func (h *WipHandler) CreateWorkInProcess(c *gin.Context) {
 	var w models.WorkInProcess
 	if err := c.ShouldBindJSON(&w); err != nil {
@@ -62,7 +56,6 @@ func (h *WipHandler) CreateWorkInProcess(c *gin.Context) {
 	c.JSON(http.StatusOK, w)
 }
 
-// UpdateWorkInProcessAmount ปรับยอดคงเหลือของ WIP ตาม wipID (path param: /api/wip/:wipID)
 func (h *WipHandler) UpdateWorkInProcessAmount(c *gin.Context) {
 	wipID := c.Param("wipID")
 	var body struct {
@@ -84,9 +77,6 @@ func (h *WipHandler) UpdateWorkInProcessAmount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// ---- ตำแหน่งจัดเก็บ WIP ----
-
-// ListWipLocations คืนตำแหน่งจัดเก็บ WIP ทั้งหมด (กรองด้วย wipID ได้)
 func (h *WipHandler) ListWipLocations(c *gin.Context) {
 	out := []models.WIPLocation{}
 	q := h.db.Order("wip_location_id")
@@ -120,11 +110,6 @@ func (h *WipHandler) PreviewNextLocationCodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"palletNumber": palletNumber, "lotNumber": lotNumber})
 }
 
-// CreateWipLocation สร้างตำแหน่งจัดเก็บ WIP ใหม่
-// ถ้าระบุ PalletNumber มาด้วย ระบบจะเช็คก่อนว่า pallet นี้เคยถูกใช้เก็บของที่ตำแหน่งอื่นมาก่อนหรือไม่
-// (เช็คจาก DB ตรงๆ ไม่พึ่งข้อมูลจาก frontend) ถ้าเคย -> ใช้ LotNumber เดิมของ pallet นั้น ไม่ generate ใหม่ซ้อน
-// ถ้าไม่เคย (หรือไม่ได้ระบุ PalletNumber) และ LotNumber ว่าง -> generate ให้อัตโนมัติ
-// ถ้าแนบ orderID มาด้วย จะฝังหมายเลขใบสั่งผลิตนั้นไว้ในรหัส lot ใหม่ที่ generate (เช่น "LOT-WO-1039-01")
 func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 	var body struct {
 		models.WIPLocation
@@ -144,7 +129,6 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 		loc.WipLocationID = fmt.Sprintf("WLO-%d", time.Now().UnixNano())
 	}
 
-	// เช็คก่อนว่า pallet นี้เคยถูกใช้งานที่ตำแหน่งอื่นมาก่อนหรือไม่ ถ้าเคย ดึง LotNumber เดิมมาใช้
 	if loc.LotNumber == "" && loc.PalletNumber != "" {
 		var existing models.WIPLocation
 		if err := h.db.Where("pallet_number = ?", loc.PalletNumber).First(&existing).Error; err == nil {
@@ -152,7 +136,6 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 		}
 	}
 
-	// ยังไม่มี LotNumber (pallet ใหม่จริงๆ ไม่เคยมีในระบบ) -> generate ใหม่
 	if loc.LotNumber == "" {
 		lotMiddle := body.OrderID
 		if lotMiddle == "" || lotMiddle == "-" {
@@ -181,7 +164,6 @@ func (h *WipHandler) CreateWipLocation(c *gin.Context) {
 	c.JSON(http.StatusOK, loc)
 }
 
-// UpdateWipLocation อัปเดตตำแหน่งจัดเก็บหรือจำนวนคงเหลือตาม wipLocationID (path param: /api/wip-locations/:id)
 func (h *WipHandler) UpdateWipLocation(c *gin.Context) {
 	fmt.Println("🔥 HIT UpdateWipLocation! ID:", c.Param("id"))
 	id := c.Param("id")
@@ -214,9 +196,6 @@ func (h *WipHandler) UpdateWipLocation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// ---- ประวัติรายการเคลื่อนไหว WIP ----
-
-// ListWipRecords คืนประวัติรายการเคลื่อนไหวของ WIP เรียงล่าสุดก่อน (กรองด้วย wipID ได้)
 func (h *WipHandler) ListWipRecords(c *gin.Context) {
 	out := []models.WorkInProcessRecord{}
 	q := h.db.
@@ -234,7 +213,6 @@ func (h *WipHandler) ListWipRecords(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// CreateWipRecord บันทึกรายการเคลื่อนไหว WIP ใหม่ (รับเข้า/โอนย้าย/เบิกจ่าย/คืน)
 func (h *WipHandler) CreateWipRecord(c *gin.Context) {
 	var rec models.WorkInProcessRecord
 	if err := c.ShouldBindJSON(&rec); err != nil {
@@ -266,26 +244,45 @@ func (h *WipHandler) CreateWipRecord(c *gin.Context) {
 	c.JSON(http.StatusOK, rec)
 }
 
-// ---- ใบเบิกจ่าย (Requisition Slips) ----
-
-// ListRequisitionSlips คืนใบเบิกจ่ายทั้งหมด เรียงล่าสุดก่อน
 func (h *WipHandler) ListRequisitionSlips(c *gin.Context) {
 	out := []models.RequisitionSlip{}
-	if err := h.db.Order("timestamp DESC").Find(&out).Error; err != nil {
+	if err := h.db.
+		Select("requisition_slips.*, wip_locations.wip_id AS wip_id").
+		Joins("JOIN wip_locations ON wip_locations.wip_location_id = requisition_slips.wip_location_id").
+		Order("requisition_slips.timestamp DESC").
+		Find(&out).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, out)
 }
 
-// CreateRequisitionSlip สร้างใบเบิกจ่ายใหม่ (สถานะเริ่มต้น "รออนุมัติ")
 func (h *WipHandler) CreateRequisitionSlip(c *gin.Context) {
 	var slip models.RequisitionSlip
 	if err := c.ShouldBindJSON(&slip); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 		return
 	}
-	if slip.Amount < 0 { 
+
+	// รองรับฟอร์มที่ส่งมาแค่ wipID (ไม่ได้ระบุตำแหน่งจัดเก็บเจาะจง)
+	// ให้หาตำแหน่งที่มีของ WIP นั้นเก็บอยู่มาใช้แทนโดยอัตโนมัติ
+	if slip.WipLocationID == "" && slip.WipID != "" {
+		var loc models.WIPLocation
+		if err := h.db.Where("wip_id = ?", slip.WipID).First(&loc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบตำแหน่งจัดเก็บของสินค้านี้"})
+			return
+		}
+		slip.WipLocationID = loc.WipLocationID
+	}
+
+	var location models.WIPLocation
+	if err := h.db.Where("wip_location_id = ?", slip.WipLocationID).First(&location).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wip location not found"})
+		return
+	}
+	slip.WipID = location.WipID
+
+	if slip.Amount < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "จำนวนต้องไม่ติดลบ"})
 		return
 	}

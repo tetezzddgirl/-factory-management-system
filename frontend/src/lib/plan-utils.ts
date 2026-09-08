@@ -42,5 +42,7 @@ export function fromApiPlan(p: ApiProductionPlan): PlanRow {
     dueDate: p.endDate ? formatThaiDate(p.endDate) : "-",
     startDate: p.startDate ? formatThaiDate(p.startDate) : undefined,
     status: p.status,
+    done: p.done,
+    progress: p.progress,
   };
 }

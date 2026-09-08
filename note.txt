@@ -18,6 +18,7 @@ go run main.go
 ==== docker ====
 
 docker compose up -d --build
+docker compose up -d --build
 
 
 
@@ -29,6 +30,9 @@ npm install
 
 npm run dev
 
+
 git add .
-git commit -m "Update source code"
+git commit -m "Update project"
 git push
+
+git branch

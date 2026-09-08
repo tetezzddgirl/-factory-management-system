@@ -90,8 +90,8 @@ function MaterialsPage() {
   const materialsPerOrder = workOrders
     .filter((o) => o.status !== "เสร็จสิ้น" && o.status !== "ยกเลิก")
     .map((o) => {
-      const product = products.find((p) => p.name === o.name);
-      const materials = product ? computeRequiredMaterials(formulas, rawMaterial, product.productID, o.amount) : [];
+      const product = products.find((p) => p.product_name === o.name);
+      const materials = product ? computeRequiredMaterials(formulas, rawMaterial, product.product_id, o.amount) : [];
       return { order: o, materials };
     })
     .filter((x) => x.materials.length > 0);
@@ -547,7 +547,6 @@ onSubmit={async (v) => {
                       <Box key={order.orderID}>
                         <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{order.orderID} — {order.name}</Typography>
-                          <Chip size="small" label={`${order.amount.toLocaleString()} หน่วย`} />
                         </Stack>
                         <Stack spacing={0.5}>
                           {materials.map((m) => {
