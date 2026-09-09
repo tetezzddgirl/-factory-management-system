@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedIssuesRouteImport } from './routes/_authenticated/issues'
 import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticated/machines'
+import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedPersonnelRouteImport } from './routes/_authenticated/personnel'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
@@ -49,6 +50,12 @@ const AuthenticatedMachinesRoute = AuthenticatedMachinesRouteImport.update({
   path: '/machines',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMaintenanceRoute =
+  AuthenticatedMaintenanceRouteImport.update({
+    id: '/maintenance',
+    path: '/maintenance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/issues': typeof AuthenticatedIssuesRoute
   '/machines': typeof AuthenticatedMachinesRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/issues': typeof AuthenticatedIssuesRoute
   '/machines': typeof AuthenticatedMachinesRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/issues': typeof AuthenticatedIssuesRoute
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
+  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/personnel': typeof AuthenticatedPersonnelRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/issues'
     | '/machines'
+    | '/maintenance'
     | '/materials'
     | '/personnel'
     | '/planning'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/issues'
     | '/machines'
+    | '/maintenance'
     | '/materials'
     | '/personnel'
     | '/planning'
@@ -191,6 +203,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/issues'
     | '/_authenticated/machines'
+    | '/_authenticated/maintenance'
     | '/_authenticated/materials'
     | '/_authenticated/personnel'
     | '/_authenticated/planning'
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/machines'
       fullPath: '/machines'
       preLoaderRoute: typeof AuthenticatedMachinesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/maintenance': {
+      id: '/_authenticated/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/materials': {
@@ -322,6 +342,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIssuesRoute: typeof AuthenticatedIssuesRoute
   AuthenticatedMachinesRoute: typeof AuthenticatedMachinesRoute
+  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPersonnelRoute: typeof AuthenticatedPersonnelRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
@@ -338,6 +359,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIssuesRoute: AuthenticatedIssuesRoute,
   AuthenticatedMachinesRoute: AuthenticatedMachinesRoute,
+  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPersonnelRoute: AuthenticatedPersonnelRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,

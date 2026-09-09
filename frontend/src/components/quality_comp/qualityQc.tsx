@@ -21,7 +21,11 @@ import { Add as AddIcon } from "@mui/icons-material";
 import QualityQcForm, { QcPointExtended } from "./qualityQcForm";
 import QualityQcDetail from "./qualityQcDetail";
 import { useRole } from "@/lib/roles";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeFullName } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 
 export interface InspectionRecord {
   inspectionID: string;
@@ -63,11 +67,19 @@ export default function QualityQc({ orderID, orderName }: QualityQcProps) {
 
       // ดึงรายชื่อพนักงานมาเก็บไว้แปลงค่า
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
         const map: Record<string, string> = {};
         (people ?? []).forEach((e: ApiEmployee) => {
           if (e.employeeId) {
             map[e.employeeId] = `${e.employeeId} — ${employeeFullName(e)}`;
+=======
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+>>>>>>> origin/diw-test2
           }
         });
         setPersonnelMap(map);

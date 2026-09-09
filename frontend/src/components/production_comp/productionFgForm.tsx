@@ -15,7 +15,11 @@ import {
   InputAdornment,
   Autocomplete,
 } from "@mui/material";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 
 interface ProductionFgFormProps {
   orderID: string;
@@ -36,7 +40,11 @@ export default function ProductionFgForm({
   onClose,
   onSave,
 }: ProductionFgFormProps) {
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +64,11 @@ export default function ProductionFgForm({
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
+=======
+        const people = await personnelApi.list();
+>>>>>>> origin/diw-test2
         setPersonnel(people ?? []);
       } catch (err) {
         console.error("Failed to load personnel:", err);
@@ -99,7 +111,11 @@ export default function ProductionFgForm({
     fetchProductDetails();
   }, [orderName]);
 
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+>>>>>>> origin/diw-test2
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

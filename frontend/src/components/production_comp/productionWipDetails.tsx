@@ -11,7 +11,11 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeFullName } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 
 export interface TransferRecord {
   transferType: string;
@@ -47,11 +51,19 @@ export default function ProductionWipDetails({
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
         const map: Record<string, string> = {};
         (people ?? []).forEach((e: ApiEmployee) => {
           if (e.employeeId) {
             map[e.employeeId] = `${e.employeeId} — ${employeeFullName(e)}`;
+=======
+        const people = await personnelApi.list();
+        const map: Record<string, string> = {};
+        (people ?? []).forEach((p: ApiPersonnel) => {
+          if (p.id) {
+            map[p.id] = `${p.id} — ${p.name}`;
+>>>>>>> origin/diw-test2
           }
         });
         setPersonnelMap(map);

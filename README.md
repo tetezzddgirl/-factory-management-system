@@ -55,4 +55,7 @@ factoryflow-final/frontend/src/routes/_authenticated/route.tsx
 → แก้ไม่ให้ระบบ Auto-login บัญชีทดลอง และบังคับให้คนที่ยังไม่ Login ไปหน้า /auth
 
 
+<<<<<<< HEAD
 ==================================================
+=======
+>>>>>>> origin/diw-test2

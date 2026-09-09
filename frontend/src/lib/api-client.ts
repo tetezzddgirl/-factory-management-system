@@ -37,7 +37,67 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
 
 // ---- ชนิดข้อมูลที่ตรงกับ backend (Go structs ใน models/) ----
 
-export type ApiMachine = { id: string; name: string; status: string; hours: number };
+/** เครื่องจักรหนึ่งเครื่อง — ตรงกับ handlers.MachineResponse ฝั่ง backend */
+export type ApiMachine = {
+  id: string;
+  name: string;
+  /** รหัสสถานะ: running | idle | maintenance | down */
+  status: string;
+  /** ชื่อสถานะภาษาไทย (ทำงาน / ว่าง / บำรุงรักษา / เสีย) */
+  statusName: string;
+  hours: number;
+  typeID: number | null;
+  type: string;
+  description: string;
+  staff: string;
+  ownerRole: string;
+  currentJob: string;
+  productionLineID: number | null;
+  productionLine: string;
+  lineOrder: number;
+  /** สถานะงานซ่อมล่าสุดของเครื่อง: pending | in_progress | done */
+  repairStatus: string;
+};
+
+export type ApiMachineType = { type_id: number; type_name: string };
+export type ApiMachineStatus = { status_id: string; status_name: string };
+
+/** ประวัติการทำงานของเครื่องจักรหนึ่งรายการ */
+export type ApiMachineJob = {
+  id: string;
+  machineID: string;
+  jobCode: string;
+  finishedAt: string;
+  owner: string;
+  detail: string;
+};
+
+/** ใบงานซ่อมบำรุงหนึ่งใบ — ตรงกับ handlers.MaintenanceOrderResponse */
+export type ApiMaintenanceOrder = {
+  id: string;
+  code: string;
+  machineID: string;
+  machineName: string;
+  technician: string;
+  date: string;
+  finishedAt: string;
+  /** CM = ซ่อมเมื่อเสีย, PM = บำรุงรักษาตามแผน */
+  type: string;
+  /** pending | in_progress | done */
+  status: string;
+  statusName: string;
+  detail: string;
+};
+
+export type ApiMaintenanceLog = {
+  logID: string;
+  requestID: string;
+  machineID: string;
+  description: string;
+  staff: string;
+  repairDate: string;
+  totalCost: number;
+};
 
 export type ApiProductionLine = { id: number; name: string };
 
@@ -167,25 +227,123 @@ export function formulaOptionFor(
 
 // ---- ตัวช่วยเรียก endpoint แต่ละกลุ่ม (ตรงกับ backend/handlers) ----
 
+/** ข้อมูลที่ส่งไปตอนสร้างเครื่องจักรใหม่ */
+export type NewMachine = {
+  id: string;
+  name: string;
+  status: string;
+  hours: number;
+  typeID: number | null;
+  description: string;
+  staff: string;
+  ownerRole: string;
+  currentJob: string;
+};
+
+/** ฟิลด์ที่แก้ไขได้ของเครื่องจักร — ส่งเฉพาะฟิลด์ที่ต้องการเปลี่ยน
+ *  currentJob = "" หมายถึงเลิกมอบหมายงาน, productionLineID = 0 หมายถึงเอาออกจากสายการผลิต */
+export type MachinePatch = Partial<Omit<NewMachine, "id">> & {
+  productionLineID?: number;
+  lineOrder?: number;
+};
+
 export const machinesApi = {
   list: () => apiFetch<ApiMachine[]>("/api/machines"),
-  create: (m: ApiMachine) =>
-    apiFetch<{ ok: boolean }>("/api/machines", { method: "POST", body: JSON.stringify(m) }),
+  get: (id: string) => apiFetch<ApiMachine>(`/api/machines/${encodeURIComponent(id)}`),
+  create: (m: NewMachine) =>
+    apiFetch<ApiMachine>("/api/machines", { method: "POST", body: JSON.stringify(m) }),
+  update: (id: string, patch: MachinePatch) =>
+    apiFetch<ApiMachine>(`/api/machines/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+  remove: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/api/machines/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  // ข้อมูลตั้งต้น
+  types: () => apiFetch<ApiMachineType[]>("/api/machines/types"),
+  createType: (name: string) =>
+    apiFetch<ApiMachineType>("/api/machines/types", {
+      method: "POST",
+      body: JSON.stringify({ type_name: name }),
+    }),
+  statuses: () => apiFetch<ApiMachineStatus[]>("/api/machines/statuses"),
+
+  // ประวัติการทำงานของเครื่องจักร
+  jobs: (machineID?: string) =>
+    apiFetch<ApiMachineJob[]>(
+      machineID ? `/api/machines/histories?machineID=${encodeURIComponent(machineID)}` : "/api/machines/histories",
+    ),
+  createJob: (j: { machineID: string; finishedAt: string; owner: string; detail: string }) =>
+    apiFetch<ApiMachineJob>("/api/machines/histories", { method: "POST", body: JSON.stringify(j) }),
+  removeJob: (historyID: string) =>
+    apiFetch<{ ok: boolean }>(`/api/machines/histories/${encodeURIComponent(historyID)}`, {
+      method: "DELETE",
+    }),
 };
+
+/** ข้อมูลที่ส่งไปตอนแจ้งซ่อม/บันทึกงานบำรุงรักษาใหม่ (รหัสใบงานสร้างให้ฝั่ง backend) */
+export type NewMaintenanceOrder = {
+  machineID: string;
+  technician: string;
+  date: string;
+  type: string;
+  detail: string;
+};
+
+export type MaintenanceOrderPatch = Partial<NewMaintenanceOrder> & { status?: string };
+
+export const maintenanceApi = {
+  list: () => apiFetch<ApiMaintenanceOrder[]>("/api/maintenance/requests"),
+  getNextCode: () => apiFetch<{ code: string }>("/api/maintenance/requests/next-id"),
+  create: (o: NewMaintenanceOrder) =>
+    apiFetch<ApiMaintenanceOrder>("/api/maintenance/requests", { method: "POST", body: JSON.stringify(o) }),
+  update: (id: string, patch: MaintenanceOrderPatch) =>
+    apiFetch<ApiMaintenanceOrder>(`/api/maintenance/requests/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+  remove: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/api/maintenance/requests/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  /** ปิดงานซ่อม — backend จะสร้างประวัติการซ่อมบำรุงและคืนสถานะเครื่องจักรให้เอง */
+  complete: (id: string, body: { staff: string; description: string; totalCost: number }) =>
+    apiFetch<{ order: ApiMaintenanceOrder; logID: string }>(
+      `/api/maintenance/requests/${encodeURIComponent(id)}/complete`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  logs: (machineID?: string) =>
+    apiFetch<ApiMaintenanceLog[]>(
+      machineID ? `/api/maintenance/logs?machineID=${encodeURIComponent(machineID)}` : "/api/maintenance/logs",
+    ),
+};
+
+function toProductionLine(r: { production_line_id: number; productionline_name: string }): ApiProductionLine {
+  return { id: r.production_line_id, name: r.productionline_name };
+}
 
 export const productionLinesApi = {
   list: async () => {
-    const raw = await apiFetch<any[]>("/api/production-lines");
-    return raw.map((r) => ({
-      id: r.production_line_id,
-      name: r.productionline_name,
-    })) as ApiProductionLine[];
+    const raw = await apiFetch<{ production_line_id: number; productionline_name: string }[]>(
+      "/api/production-lines",
+    );
+    return raw.map(toProductionLine);
   },
-  create: (l: { name: string }) =>
-  apiFetch<ApiProductionLine>("/api/production-lines", {
-    method: "POST",
-    body: JSON.stringify({ productionline_name: l.name }),
-  }),
+  create: async (l: { name: string }) =>
+    toProductionLine(
+      await apiFetch<{ production_line_id: number; productionline_name: string }>("/api/production-lines", {
+        method: "POST",
+        body: JSON.stringify({ productionline_name: l.name }),
+      }),
+    ),
+  rename: async (id: number, name: string) =>
+    toProductionLine(
+      await apiFetch<{ production_line_id: number; productionline_name: string }>(
+        `/api/production-lines/${id}`,
+        { method: "PUT", body: JSON.stringify({ productionline_name: name }) },
+      ),
+    ),
+  remove: (id: number) =>
+    apiFetch<{ ok: boolean }>(`/api/production-lines/${id}`, { method: "DELETE" }),
 };
 
 export const plansApi = {

@@ -17,9 +17,9 @@ export const ROLES: { key: RoleKey; label: string; short: string; color: string 
   { key: "operator",    label: "เจ้าหน้าที่ฝ่ายผลิต",             short: "Operator",    color: "#10B981" },
   { key: "supervisor",  label: "หัวหน้างานฝ่ายผลิต",              short: "Supervisor",  color: "#059669" },
   { key: "qc",          label: "เจ้าหน้าที่ฝ่ายควบคุมคุณภาพ",     short: "QC",          color: "#F59E0B" },
+  { key: "maintenance", label: "เจ้าหน้าที่บำรุงรักษา",             short: "Maintenance", color: "#EF4444" },
   // { key: "supervisor",  label: "หัวหน้างานฝ่ายผลิต",              short: "Supervisor",  color: "#059669" },
   // { key: "qc",          label: "เจ้าหน้าที่ฝ่ายควบคุมคุณภาพ",     short: "QC",          color: "#F59E0B" },
-  // { key: "maintenance", label: "เจ้าหน้าที่ฝ่ายซ่อมบำรุง",         short: "Maintenance", color: "#EF4444" },
   // { key: "shipping",    label: "เจ้าหน้าที่ฝ่ายจัดส่งสินค้า",       short: "Shipping",    color: "#8B5CF6" },
   { key: "admin",       label: "ผู้ดูแลระบบ",                        short: "Admin",       color: "#334155" },
   // { key: "executive",   label: "ผู้บริหาร",                          short: "Executive",   color: "#0F172A" },
@@ -37,7 +37,9 @@ export const ROLE_NAV: Record<RoleKey, string[]> = {
   operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines", "/issues"],
   supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/machines", "/quality", "/issues"],
   qc:          ["/", "/quality", "/products", "/production"],
-  maintenance: ["/", "/maintenance", "/machines"],
+  // เจ้าหน้าที่บำรุงรักษา — เข้าถึงเฉพาะเครื่องจักรและงานซ่อมบำรุง
+  // (เมนู "บุคลากร" ทุก Role เห็นได้อยู่แล้ว ดูหมายเหตุใน components/app-sidebar.tsx)
+  maintenance: ["/", "/machines", "/maintenance"],
   shipping:    ["/", "/warehouse", "/issues"],
   admin:       ["/", "/users", "/personnel", "/tasks", "/products", "/planning", "/work-orders", "/materials", "/wip", "/production", "/issues", "/quality", "/machines", "/maintenance", "/warehouse"],
   executive:   ["/", "/planning", "/work-orders", "/production", "/quality", "/warehouse", "/personnel", "/tasks", "/issues"],

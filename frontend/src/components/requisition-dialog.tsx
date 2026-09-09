@@ -6,8 +6,13 @@ import { AddItemDialog } from "@/components/add-item-dialog";
 import { LOCATION_MASTER } from "@/components/wip-locations-table";
 import { getSession } from "@/lib/auth";
 import {
+<<<<<<< HEAD
   wipApi, wipLocationsApi, requisitionsApi, workOrdersApi, employeesApi, employeeFullName, employeeOptions,
   type ApiWorkInProcess, type ApiWipLocation, type ApiWorkOrder, type ApiEmployee, type ApiRequisitionSlip,
+=======
+  wipApi, wipLocationsApi, requisitionsApi, workOrdersApi, personnelApi,
+  type ApiWorkInProcess, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel, type ApiRequisitionSlip,
+>>>>>>> origin/diw-test2
 } from "@/lib/api-client";
 
 interface RequisitionDialogProps {
@@ -20,13 +25,21 @@ export function RequisitionDialog({ defaultOrderID, trigger, onCreated }: Requis
   const [workInProcess, setWorkInProcess] = useState<ApiWorkInProcess[]>([]);
   const [wipLocations, setWipLocations] = useState<ApiWipLocation[]>([]);
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
 
   useEffect(() => {
     (async () => {
       try {
         const [wip, locs, orders, people] = await Promise.all([
+<<<<<<< HEAD
           wipApi.list(), wipLocationsApi.list(), workOrdersApi.list(), employeesApi.list(),
+=======
+          wipApi.list(), wipLocationsApi.list(), workOrdersApi.list(), personnelApi.list(),
+>>>>>>> origin/diw-test2
         ]);
         setWorkInProcess(wip ?? []);
         setWipLocations(locs ?? []);
@@ -39,10 +52,17 @@ export function RequisitionDialog({ defaultOrderID, trigger, onCreated }: Requis
   }, []);
 
   const orderOptions = workOrders.length ? workOrders.map((o) => `${o.orderID} - ${o.name}`) : ["-"];
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
   const currentUserEmail = getSession()?.email ?? "";
   const currentHandlerRow = personnel.find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
   const currentHandler = currentHandlerRow ? `${currentHandlerRow.employeeId} — ${employeeFullName(currentHandlerRow)}` : "";
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+  const currentUserEmail = getSession()?.email ?? "";
+  const currentHandlerRow = personnel.find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
+  const currentHandler = currentHandlerRow ? `${currentHandlerRow.id} — ${currentHandlerRow.name}` : "";
+>>>>>>> origin/diw-test2
   const firstWip = workInProcess[0];
   const defaultOrderOption = defaultOrderID
     ? orderOptions.find((o) => o.startsWith(`${defaultOrderID} -`)) ?? orderOptions[0]

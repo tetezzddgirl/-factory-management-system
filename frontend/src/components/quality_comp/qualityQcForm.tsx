@@ -20,7 +20,11 @@ import {
   Autocomplete,
 } from "@mui/material";
 import { toast } from "sonner";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 import QualityQcFormItem, { ItemData } from "./qualityQcFormItem";
 
 export interface InspectItemDetail {
@@ -56,7 +60,11 @@ export default function QualityQcForm({
   initialPointID,
   onSuccess,
 }: QualityQcFormProps) {
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -73,7 +81,11 @@ export default function QualityQcForm({
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
+=======
+        const people = await personnelApi.list();
+>>>>>>> origin/diw-test2
         setPersonnel(people ?? []);
       } catch (e) {
         console.error("Failed to load personnel:", e);
@@ -81,7 +93,11 @@ export default function QualityQcForm({
     })();
   }, []);
 
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+>>>>>>> origin/diw-test2
 
   const selectedPointDetails = points.find(
     (p) => p.inspectionPointID === formData.inspectionPointID

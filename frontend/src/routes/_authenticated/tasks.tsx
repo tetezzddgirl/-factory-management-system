@@ -47,11 +47,15 @@ import {
   machinesApi,
   workOrdersApi,
   workApi,
+  productionLinesApi,
+  plansApi,
   type ApiTaskAssignment,
   type ApiEmployee,
   type ApiMachine,
   type ApiWorkOrder,
   type ApiWork,
+  type ApiProductionLine,
+  type ApiProductionPlan,
 } from "@/lib/api-client";
 import {
   listAllTaskAssignments,
@@ -106,6 +110,8 @@ function TasksPage() {
   const [machines, setMachines] = useState<ApiMachine[]>([]);
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
   const [works, setWorks] = useState<ApiWork[]>([]);
+  const [lines, setLines] = useState<ApiProductionLine[]>([]);
+  const [plans, setPlans] = useState<ApiProductionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,13 +132,15 @@ function TasksPage() {
     setLoading(true);
     setError(null);
     try {
-      const [emps, taskList, asgs, mach, wos, wks] = await Promise.all([
+      const [emps, taskList, asgs, mach, wos, wks, lns, pls] = await Promise.all([
         employeesApi.list(),
         listTasksWithWork(),
         listAllTaskAssignments(),
         machinesApi.list().catch(() => [] as ApiMachine[]),
         workOrdersApi.list().catch(() => [] as ApiWorkOrder[]),
         workApi.list().catch(() => [] as ApiWork[]),
+        productionLinesApi.list().catch(() => [] as ApiProductionLine[]),
+        plansApi.list().catch(() => [] as ApiProductionPlan[]),
       ]);
       setEmployees(emps ?? []);
       setTasks(taskList ?? []);
@@ -140,6 +148,8 @@ function TasksPage() {
       setMachines(mach ?? []);
       setWorkOrders(wos ?? []);
       setWorks(wks ?? []);
+      setLines(lns ?? []);
+      setPlans(pls ?? []);
     } catch (e) {
       setError(apiErrorMessage(e, "โหลดข้อมูลงาน/เครื่องจักรจาก backend ไม่สำเร็จ"));
     } finally {
@@ -169,6 +179,19 @@ function TasksPage() {
     for (const o of workOrders) m.set(o.orderID, o);
     return m;
   }, [workOrders]);
+  // สายการผลิตและความสำคัญของใบสั่งผลิต — เดิมอ่านจากคอลัมน์ `machines` ("L-01::สูง")
+  // ที่ backend เลิกใช้ไปแล้ว จึงเปลี่ยนมาอ่านจากแหล่งจริง: production_line_id ของใบสั่งผลิต
+  // และ priority ของแผนการผลิตที่ใบสั่งนั้นอ้างอิงอยู่
+  const lineNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const l of lines) m.set(l.id, l.name);
+    return m;
+  }, [lines]);
+  const planPriorityById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of plans) m.set(p.planID, p.priority);
+    return m;
+  }, [plans]);
 
   /** resolve a task's optional origin. Degrades gracefully when the Work / WO
    *  can no longer be found (deleted upstream). */
@@ -689,9 +712,11 @@ function TasksPage() {
                                       </Typography>
                                       <Typography variant="caption" sx={{ display: "block" }}>
                                         {(() => {
-                                          const { line, priority } = decodeLinePriority(
-                                            origin.wo.machines,
-                                          );
+                                          const line =
+                                            origin.wo.production_line_id !== undefined
+                                              ? lineNameById.get(origin.wo.production_line_id)
+                                              : undefined;
+                                          const priority = planPriorityById.get(origin.wo.planID);
                                           return `สายการผลิต: ${line || "—"} · ความสำคัญ: ${priority || "—"} · สถานะ WO: ${origin.wo.status}`;
                                         })()}
                                       </Typography>

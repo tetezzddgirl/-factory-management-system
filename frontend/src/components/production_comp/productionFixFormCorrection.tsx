@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Stack, Divider, Button, TextField, Autocomplete } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
 import { useRole } from "@/lib/roles";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 
 interface ProductionFixFormCorrectionProps {
   correction: any;
@@ -24,12 +28,20 @@ export default function ProductionFixFormCorrection({
   const { role } = useRole();
   const canAccess = role === "operator" || role === "admin";
 
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
 
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
+=======
+        const people = await personnelApi.list();
+>>>>>>> origin/diw-test2
         setPersonnel(people ?? []);
       } catch (e) {
         console.error("Failed to load personnel:", e);
@@ -37,7 +49,11 @@ export default function ProductionFixFormCorrection({
     })();
   }, []);
 
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+>>>>>>> origin/diw-test2
   const isCompleted = inspectionStatus === "Completed" || inspectionStatus === "Pass";
 
   if (isCompleted && !isEditing) {

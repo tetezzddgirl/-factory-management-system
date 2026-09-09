@@ -17,8 +17,13 @@ import {
 import { toast } from "sonner";
 import { LOCATION_MASTER } from "@/components/wip-locations-table";
 import {
+<<<<<<< HEAD
   wipApi, wipLocationsApi, requisitionsApi, workOrdersApi, employeesApi, employeeOptions,
   type ApiWorkInProcess, type ApiWipLocation, type ApiWorkOrder, type ApiEmployee, type ApiRequisitionSlip,
+=======
+  wipApi, wipLocationsApi, requisitionsApi, workOrdersApi, personnelApi,
+  type ApiWorkInProcess, type ApiWipLocation, type ApiWorkOrder, type ApiPersonnel, type ApiRequisitionSlip,
+>>>>>>> origin/diw-test2
 } from "@/lib/api-client";
 
 interface RequisitionFormProps {
@@ -32,7 +37,11 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
   const [workInProcess, setWorkInProcess] = useState<ApiWorkInProcess[]>([]);
   const [wipLocations, setWipLocations] = useState<ApiWipLocation[]>([]);
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
   
   const [formData, setFormData] = useState({
     orderID: "",
@@ -53,7 +62,11 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
     (async () => {
       try {
         const [wip, locs, orders, people] = await Promise.all([
+<<<<<<< HEAD
           wipApi.list(), wipLocationsApi.list(), workOrdersApi.list(), employeesApi.list(),
+=======
+          wipApi.list(), wipLocationsApi.list(), workOrdersApi.list(), personnelApi.list(),
+>>>>>>> origin/diw-test2
         ]);
         setWorkInProcess(wip ?? []);
         setWipLocations(locs ?? []);
@@ -87,7 +100,11 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
   }, [orderID, orderName]);
 
   const orderOptions = workOrders.map((o) => `${o.orderID} - ${o.name}`);
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+>>>>>>> origin/diw-test2
   const itemOptions = workInProcess.map((i) => `${i.wipID} — ${i.wip}`);
 
   function findLoc(values: typeof formData) {
@@ -268,6 +285,17 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
 
           <Stack spacing={2.5}>
             <Grid container spacing={2}>
+<<<<<<< HEAD
+=======
+              <Grid size={{ xs: 12 }}>
+                <Autocomplete
+                  options={orderOptions}
+                  value={formData.orderID}
+                  onChange={(_, v) => handleChange("orderID", v || "")}
+                  renderInput={(params) => <TextField {...params} label="หมายเลขใบสั่งผลิต" required />}
+                />
+              </Grid>
+>>>>>>> origin/diw-test2
               
               <Grid size={{ xs: 12 }}>
                 <Autocomplete

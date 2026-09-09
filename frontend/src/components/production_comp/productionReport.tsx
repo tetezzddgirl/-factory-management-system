@@ -18,7 +18,11 @@ import {
 } from "@mui/material";
 import { toast } from "sonner";
 import { useRole } from "@/lib/roles";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
+=======
+import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
+>>>>>>> origin/diw-test2
 
 interface ProductionReportProps {
   orderID?: string;
@@ -29,7 +33,11 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
   const { role } = useRole();
   const canAccess = role === "operator" || role === "admin";
 
+<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
+=======
+  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
+>>>>>>> origin/diw-test2
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,7 +59,11 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         const people = await employeesApi.list();
+=======
+        const people = await personnelApi.list();
+>>>>>>> origin/diw-test2
         setPersonnel(people ?? []);
       } catch (e) {
         console.error("Failed to load personnel:", e);
@@ -59,7 +71,11 @@ export default function ProductionReport({ orderID, orderName }: ProductionRepor
     })();
   }, []);
 
+<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
+=======
+  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
+>>>>>>> origin/diw-test2
 
   const fetchReport = useCallback(async () => {
     if (!orderID) return;

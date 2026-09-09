@@ -15,4 +15,7 @@ func SeedProductionLines(db *gorm.DB) {
 		{ProductionlineID: 3, ProductionlineName: "สายการฉีด L-03"},
 		{ProductionlineID: 4, ProductionlineName: "สายการประกอบ L-04"},
 	})
+	// seeder ใส่ production_line_id ตรงๆ ไม่ผ่าน nextval() — ต้องเลื่อน sequence ตาม
+	// ไม่งั้นการเพิ่มสายการผลิตใหม่ผ่านหน้า "เครื่องจักร" จะชนกับแถวที่ seed ไว้
+	resyncSequence(db, "production_lines", "production_line_id")
 }

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from "react";
+=======
+import React from "react";
+>>>>>>> origin/diw-test2
 import {
   Box,
   Button,
@@ -11,7 +15,10 @@ import {
   Divider,
 } from "@mui/material";
 import { EventItem } from "./productionEven";
+<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeFullName } from "@/lib/api-client";
+=======
+>>>>>>> origin/diw-test2
 
 interface ProductionEvenDetailProps {
   eventData: EventItem | null;
@@ -21,6 +28,7 @@ interface ProductionEvenDetailProps {
 }
 
 export default function ProductionEvenDetail({ eventData, orderID, orderName, onClose }: ProductionEvenDetailProps) {
+<<<<<<< HEAD
   const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -48,6 +56,10 @@ export default function ProductionEvenDetail({ eventData, orderID, orderName, on
     return personnelMap[cleanId] || idOrName;
   };
 
+=======
+  if (!eventData) return null;
+
+>>>>>>> origin/diw-test2
   return (
     <Box>
       <DialogTitle sx={{ fontWeight: 700, color: "#1b2559" }}>
@@ -83,7 +95,11 @@ export default function ProductionEvenDetail({ eventData, orderID, orderName, on
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="body2" color="text.secondary">ผู้บันทึก</Typography>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#1e293b" }}>
+<<<<<<< HEAD
               {getPersonnelDisplay(eventData.recordedBy)}
+=======
+              {eventData.recordedBy || "-"}
+>>>>>>> origin/diw-test2
             </Typography>
           </Grid>
 
