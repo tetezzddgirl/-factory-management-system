@@ -13,7 +13,7 @@ import { WorkOrderDialog, type WorkOrderResult } from "@/components/work-order-d
 import { PlanSavedDialog } from "@/components/plan-saved-dialog";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
-import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, computeRequiredMaterials, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
+import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, machinesApi, employeesApi, computeRequiredMaterials, buildResourceCheck, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue } from "@/lib/plan-utils";
 
 export const Route = createFileRoute("/_authenticated/planning")({
@@ -32,6 +32,8 @@ function PlanningPage() {
   const [formulaSteps, setFormulaSteps] = useState<ApiFormulaStep[]>([]);
   const [rawMaterial, setRawMaterial] = useState<ApiRawMaterial[]>([]);
   const [productionLines, setProductionLines] = useState<ApiProductionLine[]>([]);
+  const [machines, setMachines] = useState<ApiMachine[]>([]);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,13 +41,15 @@ function PlanningPage() {
     setLoading(true);
     setError(null);
     try {
-      const [data, prods, forms, steps, materials, lines] = await Promise.all([
+      const [data, prods, forms, steps, materials, lines, machineList, employeeList] = await Promise.all([
         plansApi.list(),
         productsApi.list(),
         formulasApi.list(),
         formulaStepsApi.list(),
         materialsApi.list(),
         productionLinesApi.list(),
+        machinesApi.list(),
+        employeesApi.list(),
       ]);
       setPlans((data ?? []).map(fromApiPlan));
       setProducts(prods ?? []);
@@ -53,6 +57,8 @@ function PlanningPage() {
       setFormulaSteps(steps ?? []);
       setRawMaterial(materials ?? []);
       setProductionLines(lines ?? []);
+      setMachines(machineList ?? []);
+      setEmployees(employeeList ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "โหลดแผนการผลิตไม่สำเร็จ");
     } finally {
@@ -82,8 +88,9 @@ function PlanningPage() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
   const newPlanRef = useRef<HTMLButtonElement>(null);
-  const [pending, setPending] = useState<{ product: string; target: number; due: string; orderID: string } | null>(null);
+  const [pending, setPending] = useState<{ product: string; target: number; due: string; orderID: string; productionLineID?: number } | null>(null);
   const [checkData, setCheckData] = useState<ResourceCheckData | null>(null);
+  const [rechecking, setRechecking] = useState(false);
   // งานที่เคยมอบหมาย/บันทึกไว้แล้วของใบสั่งผลิตที่กำลังจะมอบหมาย — ดึงมาก่อนเปิด AssignWorkDialog เพื่อเติมฟอร์มให้อัตโนมัติ
   // และกันไม่ให้กด "มอบหมายงาน" ซ้ำแล้วสร้างงานซ้ำ (duplicate) ใน backend
   const [existingTasks, setExistingTasks] = useState<AssignWorkResult[]>([]);
@@ -95,34 +102,36 @@ function PlanningPage() {
     return Boolean(values.start && values.due && values.due < values.start);
   }
 
-  function buildCheck(product: string, target: number, due: string): ResourceCheckData {
-    const surplus = (base: number) => Math.max(base + 1, Math.round(base * (1.15 + Math.random() * 0.25)));
+  /** ตรวจสอบทรัพยากรจริงจาก database ของ backend: วัตถุดิบจากสูตร x คลังจริง, เครื่องจักรจาก
+   *  เครื่องจักรที่อยู่ในสายการผลิตที่เลือกไว้ตอนออกใบสั่งผลิตจริงๆ, บุคลากรจากพนักงานฝ่ายผลิตที่เข้าเวรจริง */
+  function buildCheck(product: string, target: number, due: string, productionLineID?: number): ResourceCheckData {
     const matchedProduct = products.find((p) => p.product_name === product);
+    return buildResourceCheck(formulas, rawMaterial, machines, employees, product, matchedProduct, target, due, productionLineID);
+  }
 
-    // ถ้าสินค้านี้มีสูตรการผลิต (Formula) อยู่ในระบบ -> คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่ผลิต
-    // เทียบกับยอดคงเหลือจริงในคลัง (ไม่ใช่ตัวเลขสุ่มอีกต่อไป)
-    const materials = matchedProduct
-      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
-          name: m.name, required: m.required, available: m.available, unit: m.unit,
-        }))
-      : [
-          { name: "เม็ดพลาสติก PET", required: target * 2, available: surplus(target * 2), unit: "กรัม" },
-          { name: "สีผสม", required: Math.round(target * 0.05), available: surplus(Math.round(target * 0.05)), unit: "กรัม" },
-          { name: "ฉลาก", required: target, available: surplus(target), unit: "ชิ้น" },
-        ];
-
-    return {
-      product, target, dueDate:due,
-      materials,
-      machines: [
-        { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
-        { name: "สายการบรรจุ L-02", required: 1, available: 1, unit: "สาย" },
-      ],
-      personnel: [
-        { name: "Operator", required: 3, available: 4, unit: "คน" },
-        { name: "QC Inspector", required: 1, available: 2, unit: "คน" },
-      ],
-    };
+  /** ดึงข้อมูลวัตถุดิบ/เครื่องจักร/บุคลากรจริงจาก backend มาใหม่ แล้วตรวจซ้ำ — ใช้ตอนกด "ตรวจใหม่"
+   *  ในไดอะล็อกตรวจสอบทรัพยากรระหว่างที่ยังไม่พร้อม จะกดตรวจกี่รอบก็ได้จนกว่าจะพร้อม พอพร้อมแล้วรอบนั้นจะถูกยึดไว้ใช้ต่อ (ไม่ตรวจซ้ำอัตโนมัติอีก) */
+  async function recheckResources() {
+    if (!pending) return;
+    setRechecking(true);
+    try {
+      const [materials, lines, machineList, employeeList] = await Promise.all([
+        materialsApi.list(), productionLinesApi.list(), machinesApi.list(), employeesApi.list(),
+      ]);
+      setRawMaterial(materials ?? []);
+      setProductionLines(lines ?? []);
+      setMachines(machineList ?? []);
+      setEmployees(employeeList ?? []);
+      const matchedProduct = products.find((p) => p.product_name === pending.product);
+      setCheckData(buildResourceCheck(
+        formulas, materials ?? [], machineList ?? [], employeeList ?? [],
+        pending.product, matchedProduct, pending.target, pending.due, pending.productionLineID,
+      ));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ตรวจสอบทรัพยากรใหม่ไม่สำเร็จ");
+    } finally {
+      setRechecking(false);
+    }
   }
 
   /** สร้างแผนจริงที่ backend — name/amount/status/priority/productID/bomID/line/startDate/endDate persist ลง DB ทั้งหมดแล้ว */
@@ -232,8 +241,8 @@ function PlanningPage() {
       });
       setOrderPlan(null);
       setOrder(r);
-      setPending({ product: r.product, target: r.qty, due: r.due, orderID: created.orderID });
-      setCheckData(buildCheck(r.product, r.qty, r.due));
+      setPending({ product: r.product, target: r.qty, due: r.due, orderID: created.orderID, productionLineID: r.productionLineID });
+      setCheckData(buildCheck(r.product, r.qty, r.due, r.productionLineID));
       setCheckOpen(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "บันทึกใบสั่งผลิตไม่สำเร็จ");
@@ -389,6 +398,8 @@ function PlanningPage() {
         data={checkData}
         onClose={() => setCheckOpen(false)}
         onConfirm={confirmPlan}
+        onRecheck={recheckResources}
+        rechecking={rechecking}
       />
       <AssignWorkDialog
         open={assignOpen}

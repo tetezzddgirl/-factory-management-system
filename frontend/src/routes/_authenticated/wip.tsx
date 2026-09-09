@@ -587,7 +587,7 @@ type MovementItem = {
                   { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "ถ้ากรอก Pallet ที่มีอยู่แล้ว ระบบจะดึง Location/Lot/รายการให้อัตโนมัติ" },
                   { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005", required: false },
                   { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
-                  { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
+                  { name: "agency", label: "แผนกที่เกี่ยวข้อง", defaultValue: "ฝ่ายผลิต" },
                 ]}
                 onAutoFill={autoFillRecord}
                 onSubmit={handleRecordTransaction}

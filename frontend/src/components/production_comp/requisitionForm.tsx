@@ -360,7 +360,7 @@ export function RequisitionForm({ orderID, orderName, onCreated, onCancel }: Req
                 <TextField
                   fullWidth
                   required
-                  label="แผนกปลายทาง"
+                  label="แผนกที่เกี่ยวข้อง"
                   value={formData.agency}
                   onChange={(e) => handleChange("agency", e.target.value)}
                 />

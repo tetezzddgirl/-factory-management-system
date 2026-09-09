@@ -383,7 +383,7 @@ onSubmit={async (v) => {
               { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมัติ" }, // หากกรอกหมายเลข Pallet ที่มีในฐานข้อมูล ระบบจะดึงข้อมูล Location/Lot/วัตถุดิบให้โดยอัตโนมั
               { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
               { name: "handler", label: "ผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler, },
-              { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายผลิต" },
+              { name: "agency", label: "แผนกที่เกี่ยวข้อง", defaultValue: "ฝ่ายผลิต" },
             ]}
             onAutoFill={autoFillRecord}
             onSubmit={async (v) => {

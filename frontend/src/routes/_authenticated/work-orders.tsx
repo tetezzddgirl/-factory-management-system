@@ -13,7 +13,7 @@ import { AssignWorkDialog, type AssignWorkResult } from "@/components/assign-wor
 import { SelectPlanDialog } from "@/components/select-plan-dialog";
 import type { PlanRow } from "@/components/plan-detail-dialog";
 import { type WorkOrder } from "@/lib/plan-data";
-import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, computeRequiredMaterials, formulaIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine } from "@/lib/api-client";
+import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, machinesApi, employeesApi, buildResourceCheck, formulaIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue, formatThaiDate, lineNameFromID } from "@/lib/plan-utils";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
@@ -44,6 +44,7 @@ function toWorkOrder(o: ApiWorkOrder, assignees: string[], productionLines: ApiP
     product: o.name,
     qty: o.amount,
     line,
+    productionLineID: o.production_line_id,
     // เก็บเป็น ISO ดิบไว้ก่อน (ใช้ต่อ API ได้ทันที) ค่อยแปลงเป็นข้อความไทยตอน render เท่านั้น
     startDate: o.startDate ?? "",
     dueDate: o.endDate ?? "",
@@ -60,6 +61,8 @@ function WorkOrdersPage() {
   const [formulaSteps, setFormulaSteps] = useState<ApiFormulaStep[]>([]);
   const [rawMaterial, setRawMaterial] = useState<ApiRawMaterial[]>([]);
   const [productionLines, setProductionLines] = useState<ApiProductionLine[]>([]);
+  const [machines, setMachines] = useState<ApiMachine[]>([]);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectOpen, setSelectOpen] = useState(false);
@@ -67,6 +70,7 @@ function WorkOrdersPage() {
   const [active, setActive] = useState<WorkOrder | null>(null);
   const [checkData, setCheckData] = useState<ResourceCheckData | null>(null);
   const [checkOpen, setCheckOpen] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   // งานที่เคยมอบหมาย/บันทึกไว้แล้วของใบสั่งผลิตที่กำลังจะมอบหมาย — เติมฟอร์มให้อัตโนมัติ + กันมอบหมายซ้ำสร้างงานซ้ำ
   const [existingTasks, setExistingTasks] = useState<AssignWorkResult[]>([]);
@@ -74,31 +78,36 @@ function WorkOrdersPage() {
   const { role } = useRole();
   const canAssign = role === "planner" || role === "supervisor" || role === "admin";
 
-  /** ตรวจสอบทรัพยากรของใบสั่งผลิต — ถ้าสินค้านี้มีสูตรการผลิต (Formula) ในระบบ คำนวณยอดวัตถุดิบที่ต้องใช้จริงจากสูตร x จำนวนที่สั่งผลิต
-   *  เทียบกับยอดคงเหลือจริงในคลัง ถ้ายังไม่มีสูตร fallback เป็นตัวเลขประมาณการ (เดิม) เพื่อให้ demo flow ทำงานต่อได้ */
-  function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
+  /** ตรวจสอบทรัพยากรจริงจาก database ของ backend: วัตถุดิบจากสูตร x คลังจริง, เครื่องจักรจาก
+   *  เครื่องจักรที่อยู่ในสายการผลิต (production_line_id) ของใบสั่งผลิตนี้จริงๆ, บุคลากรจากพนักงานฝ่ายผลิตที่เข้าเวรจริง */
+  function buildCheck(product: string, target: number, dueDate: string, productionLineID?: number): ResourceCheckData {
     const matchedProduct = products.find((p) => p.product_name === product);
-    const surplus = (base: number) => Math.max(base + 1, Math.round(base * 1.25));
-    const materials = matchedProduct
-      ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
-          name: m.name, required: m.required, available: m.available, unit: m.unit,
-        }))
-      : [
-          { name: "เม็ดพลาสติก PET", required: target * 2, available: surplus(target * 2), unit: "กรัม" },
-          { name: "สีผสม", required: Math.round(target * 0.05), available: surplus(Math.round(target * 0.05)), unit: "กรัม" },
-          { name: "ฉลาก", required: target, available: surplus(target), unit: "ชิ้น" },
-        ];
-    return {
-      product, target, dueDate, materials,
-      machines: [
-        { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
-        { name: "สายการบรรจุ L-02", required: 1, available: 1, unit: "สาย" },
-      ],
-      personnel: [
-        { name: "Operator", required: 3, available: 6, unit: "คน" },
-        { name: "QC Inspector", required: 1, available: 2, unit: "คน" },
-      ],
-    };
+    return buildResourceCheck(formulas, rawMaterial, machines, employees, product, matchedProduct, target, dueDate, productionLineID);
+  }
+
+  /** ดึงข้อมูลวัตถุดิบ/เครื่องจักร/บุคลากรจริงจาก backend มาใหม่ แล้วตรวจซ้ำ — ใช้ตอนกด "ตรวจใหม่"
+   *  ในไดอะล็อกตรวจสอบทรัพยากรระหว่างที่ยังไม่พร้อม กดตรวจกี่รอบก็ได้จนกว่าจะพร้อม พอพร้อมแล้วรอบนั้นจะถูกยึดไว้ใช้ต่อ */
+  async function recheckResources() {
+    if (!active) return;
+    setRechecking(true);
+    try {
+      const [materials, lines, machineList, employeeList] = await Promise.all([
+        materialsApi.list(), productionLinesApi.list(), machinesApi.list(), employeesApi.list(),
+      ]);
+      setRawMaterial(materials ?? []);
+      setProductionLines(lines ?? []);
+      setMachines(machineList ?? []);
+      setEmployees(employeeList ?? []);
+      const matchedProduct = products.find((p) => p.product_name === active.product);
+      setCheckData(buildResourceCheck(
+        formulas, materials ?? [], machineList ?? [], employeeList ?? [],
+        active.product, matchedProduct, active.qty, formatThaiDate(active.dueDate), active.productionLineID,
+      ));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ตรวจสอบทรัพยากรใหม่ไม่สำเร็จ");
+    } finally {
+      setRechecking(false);
+    }
   }
 
   /** ขั้นตอนการผลิตของสินค้าตัวหนึ่ง (ไว้โชว์ตอนมอบหมายงาน) — หา bomID จากสูตรของสินค้านั้นก่อน แล้วดึงขั้นตอนที่ผูกกับ bomID นั้น */
@@ -114,8 +123,8 @@ function WorkOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const [rawOrders, work, prods, forms, steps, materials, rawPlans, lines] = await Promise.all([
-        workOrdersApi.list(), workApi.list(), productsApi.list(), formulasApi.list(), formulaStepsApi.list(), materialsApi.list(), plansApi.list(), productionLinesApi.list(),
+      const [rawOrders, work, prods, forms, steps, materials, rawPlans, lines, machineList, employeeList] = await Promise.all([
+        workOrdersApi.list(), workApi.list(), productsApi.list(), formulasApi.list(), formulaStepsApi.list(), materialsApi.list(), plansApi.list(), productionLinesApi.list(), machinesApi.list(), employeesApi.list(),
       ]);
       const workByOrder = new Map<string, string[]>();
       (work ?? []).forEach((w: ApiWork) => {
@@ -129,6 +138,8 @@ function WorkOrdersPage() {
       setFormulaSteps(steps ?? []);
       setRawMaterial(materials ?? []);
       setProductionLines(lines ?? []);
+      setMachines(machineList ?? []);
+      setEmployees(employeeList ?? []);
       // ดึงแผนการผลิตจริงจาก backend มาให้เลือกตอน "สร้างใบสั่งผลิต" แทนข้อมูลตัวอย่าง (mock) เดิม
       // เพื่อให้ bom/สายการผลิต/วันที่เริ่มผลิตที่กรอกไว้ตอนสร้างแผน ถูกดึงมาใช้ต่อได้จริง
       setPlans((rawPlans ?? []).map(fromApiPlan));
@@ -171,7 +182,7 @@ function WorkOrdersPage() {
 
   function openCheck(wo: WorkOrder) {
     setActive(wo);
-    setCheckData(buildCheck(wo.product, wo.qty, formatThaiDate(wo.dueDate)));
+    setCheckData(buildCheck(wo.product, wo.qty, formatThaiDate(wo.dueDate), wo.productionLineID));
     setCheckOpen(true);
   }
 
@@ -293,6 +304,8 @@ async function confirmAssignment(rs: AssignWorkResult[]) {
         data={checkData}
         onClose={() => setCheckOpen(false)}
         onConfirm={confirmCheck}
+        onRecheck={recheckResources}
+        rechecking={rechecking}
       />
       <AssignWorkDialog
         open={assignOpen}

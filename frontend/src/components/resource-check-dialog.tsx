@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack,
-  Typography, Box, LinearProgress, Chip, Alert, Divider,
+  Typography, Box, LinearProgress, Chip, Alert, Divider, CircularProgress,
 } from "@mui/material";
-import { CheckCircle, Warning, Cancel, Inventory2, PrecisionManufacturing, Groups } from "@mui/icons-material";
+import { CheckCircle, Warning, Cancel, Inventory2, PrecisionManufacturing, Groups, Refresh } from "@mui/icons-material";
 
 export type ResourceStatus = "ok" | "warn" | "fail";
 
@@ -28,6 +28,11 @@ interface Props {
   data: ResourceCheckData | null;
   onClose: () => void;
   onConfirm: () => void;
+  /** ดึงข้อมูลทรัพยากรจริงจาก backend มาตรวจซ้ำ — ใช้ตอนวัตถุดิบ/เครื่องจักร/บุคลากรยังไม่พอ
+   *  ให้กดตรวจใหม่ได้เรื่อยๆ จนกว่าจะพร้อม (ไม่ต้องปิด dialog แล้วเปิดใหม่) */
+  onRecheck?: () => void;
+  /** true ระหว่างที่ onRecheck กำลังโหลดข้อมูลจาก backend อยู่ */
+  rechecking?: boolean;
 }
 
 function statusOf(items: ResourceItem[]): ResourceStatus {
@@ -82,7 +87,7 @@ function SectionCard({
   );
 }
 
-export function ResourceCheckDialog({ open, data, onClose, onConfirm }: Props) {
+export function ResourceCheckDialog({ open, data, onClose, onConfirm, onRecheck, rechecking }: Props) {
   if (!data) return null;
   const overall: ResourceStatus = (() => {
     const list = [statusOf(data.materials), statusOf(data.machines), statusOf(data.personnel)];
@@ -90,6 +95,9 @@ export function ResourceCheckDialog({ open, data, onClose, onConfirm }: Props) {
     if (list.includes("warn")) return "warn";
     return "ok";
   })();
+  // ยังไม่พร้อม -> ให้กดตรวจใหม่ได้ (ดึงข้อมูลจริงจาก backend มาคำนวณซ้ำ) จนกว่าจะพร้อม
+  // พอพร้อมแล้ว (overall !== "fail") ถือว่ายึดผลของรอบนี้ไว้ ไม่ต้องตรวจซ้ำอีก
+  const canRecheck = overall === "fail" && Boolean(onRecheck);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -103,10 +111,23 @@ export function ResourceCheckDialog({ open, data, onClose, onConfirm }: Props) {
         <Alert
           severity={overall === "ok" ? "success" : overall === "warn" ? "warning" : "error"}
           sx={{ mb: 1.5, py: 0.25 }}
+          action={
+            canRecheck ? (
+              <Button
+                color="inherit"
+                size="small"
+                disabled={rechecking}
+                onClick={onRecheck}
+                startIcon={rechecking ? <CircularProgress size={14} color="inherit" /> : <Refresh fontSize="small" />}
+              >
+                ตรวจใหม่
+              </Button>
+            ) : undefined
+          }
         >
           {overall === "ok" && "ทรัพยากรพร้อมสำหรับแผนการผลิตนี้"}
           {overall === "warn" && "ทรัพยากรพอ แต่มีบางรายการใกล้ขาด แนะนำให้เตรียมเพิ่ม"}
-          {overall === "fail" && "ทรัพยากรไม่เพียงพอ ต้องเติมสต็อก/จัดสรรก่อนเริ่มผลิต"}
+          {overall === "fail" && "ทรัพยากรไม่เพียงพอ ต้องเติมสต็อก/จัดสรรก่อนเริ่มผลิต — เติม/จัดสรรแล้วกด \"ตรวจใหม่\" ได้เลย"}
         </Alert>
         <Stack spacing={1.5}>
           <SectionCard index={0} title="วัตถุดิบ" icon={<Inventory2 color="primary" fontSize="small" />} items={data.materials} />

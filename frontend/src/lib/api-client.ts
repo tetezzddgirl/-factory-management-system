@@ -188,6 +188,49 @@ export function computeRequiredMaterials(
   });
 }
 
+function isMachineUsable(status: string): boolean {
+  return status === "running" || status === "idle";
+}
+
+export function buildResourceCheck(
+  formulas: ApiFormulaItem[],
+  rawMaterial: ApiRawMaterial[],
+  machines: ApiMachine[],
+  employees: ApiEmployee[],
+  productName: string,
+  matchedProduct: ApiProduct | undefined,
+  target: number,
+  dueDate: string,
+  productionLineID: number | undefined,
+): { product: string; target: number; dueDate: string; materials: { name: string; required: number; available: number; unit: string }[]; machines: { name: string; required: number; available: number; unit: string }[]; personnel: { name: string; required: number; available: number; unit: string }[] } {
+  const materials = matchedProduct
+    ? computeRequiredMaterials(formulas, rawMaterial, matchedProduct.product_id, target).map((m) => ({
+        name: m.name, required: m.required, available: m.available, unit: m.unit,
+      }))
+    : [];
+
+  const lineMachines = productionLineID != null
+    ? machines.filter((m) => m.productionLineID === productionLineID)
+    : [];
+  const machineItems = lineMachines.length
+    ? lineMachines.map((m) => ({
+        name: m.name, required: 1, available: isMachineUsable(m.status) ? 1 : 0, unit: "เครื่อง",
+      }))
+    : [{ name: "เครื่องจักรในสายการผลิตนี้", required: 1, available: 0, unit: "เครื่อง" }];
+
+  const workingProduction = employees.filter((e) => e.department === "Production" && e.status === "working").length;
+  const neededStaff = Math.max(1, lineMachines.length || 1);
+
+  return {
+    product: productName, target, dueDate,
+    materials,
+    machines: machineItems,
+    personnel: [
+      { name: "เจ้าหน้าที่ฝ่ายผลิตที่เข้าเวร", required: neededStaff, available: workingProduction, unit: "คน" },
+    ],
+  };
+}
+
 /** หา bomID ของสูตรที่ผูกกับสินค้าตัวหนึ่ง (ใช้ไปดึงขั้นตอนการผลิตที่ผูกกับ bomID นั้นต่อ) */
 export function formulaIDFor(formulas: ApiFormulaItem[], productID: string): string | undefined {
   return formulaFor(formulas, productID)[0]?.formulaID;

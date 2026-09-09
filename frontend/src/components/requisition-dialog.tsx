@@ -134,7 +134,7 @@ export function RequisitionDialog({ defaultOrderID, trigger, onCreated }: Requis
         { name: "palletNumber", label: "Pallet Number", placeholder: "PLT-005", helperText: "เลือก Location หรือกรอก Pallet ที่มีอยู่แล้ว ระบบจะดึงข้อมูลที่เหลือให้อัตโนมัติ" },
         { name: "lotNumber", label: "Lot Number", placeholder: "LOT-005" },
         { name: "handler", label: "ชื่อผู้บันทึกรายการ", type: "select", options: personnelOptions, defaultValue: currentHandler },
-        { name: "agency", label: "แผนกปลายทาง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
+        { name: "agency", label: "แผนกที่เกี่ยวข้อง", defaultValue: "ฝ่ายคลังสินค้าระหว่างผลิต" },
       ]}
       onAutoFill={autoFillRequisition}
       onSubmit={async (v) => {

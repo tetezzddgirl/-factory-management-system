@@ -40,7 +40,7 @@ export const ROLE_NAV: Record<RoleKey, string[]> = {
   // เจ้าหน้าที่บำรุงรักษา — เข้าถึงเฉพาะเครื่องจักรและงานซ่อมบำรุง
   // (เมนู "บุคลากร" ทุก Role เห็นได้อยู่แล้ว ดูหมายเหตุใน components/app-sidebar.tsx)
   maintenance: ["/", "/machines", "/maintenance"],
-  shipping:    ["/", "/warehouse", "/issues"],
+  shipping:    ["/", "/warehouse"],
   admin:       ["/", "/users", "/personnel", "/tasks", "/products", "/planning", "/work-orders", "/materials", "/wip", "/production", "/issues", "/quality", "/machines", "/maintenance", "/warehouse"],
   executive:   ["/", "/planning", "/work-orders", "/production", "/quality", "/warehouse", "/personnel", "/tasks", "/issues"],
 };

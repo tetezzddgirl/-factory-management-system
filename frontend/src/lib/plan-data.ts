@@ -1,5 +1,4 @@
 import type { PlanRow } from "@/components/plan-detail-dialog";
-import type { ResourceCheckData } from "@/components/resource-check-dialog";
 
 export const initialPlans: PlanRow[] = [
   { planID: "PLAN-2025-07-01-001", name: "ขวด PET 500ml", formula:"FOR-001", amount: 12000, dueDate: "05 ก.ค. 2568", status: "กำลังผลิต", priority: "สูง", startDate: "01 ก.ค. 2568", owner: "สมชาย ใจดี" },
@@ -14,6 +13,7 @@ export type WorkOrder = {
   product: string;
   qty: number;
   line: string;
+  productionLineID?: number;
   startDate: string;
   dueDate: string;
   // priority: string;
@@ -27,23 +27,3 @@ export const initialWorkOrders: WorkOrder[] = [
   { orderNo: "WO-20250701-001", planId: "PLAN-2025-07-03-001", product: "ฝาเกลียว", qty: 20000, line: "สายการฉีด L-03", startDate: "28 มิ.ย. 2568", dueDate: "03 ก.ค. 2568",  status: "เสร็จสิ้น", assignees: ["ธนกฤต ศรีสุข"] },
 ];
 
-/** mock resource requirement calc from BOM — always sufficient so the demo flow proceeds */
-export function buildCheck(product: string, target: number, dueDate: string): ResourceCheckData {
-  const surplus = (base: number) => Math.max(base + 1, Math.round(base * 1.25));
-  return {
-    product, target, dueDate,
-    materials: [
-      { name: "เม็ดพลาสติก PET", required: target * 2, available: surplus(target * 2), unit: "กรัม" },
-      { name: "สีผสม", required: Math.round(target * 0.05), available: surplus(Math.round(target * 0.05)), unit: "กรัม" },
-      { name: "ฉลาก", required: target, available: surplus(target), unit: "ชิ้น" },
-    ],
-    machines: [
-      { name: "เครื่องเป่าขวด M-01", required: 1, available: 1, unit: "เครื่อง" },
-      { name: "สายการบรรจุ L-02", required: 1, available: 1, unit: "สาย" },
-    ],
-    personnel: [
-      { name: "Operator", required: 3, available: 6, unit: "คน" },
-      { name: "QC Inspector", required: 1, available: 2, unit: "คน" },
-    ],
-  };
-}
