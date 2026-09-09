@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: factoryflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: factory
+      POSTGRES_PASSWORD: factory_dev_pw
+      POSTGRES_DB: factory_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - factoryflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factory -d factory_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: factoryflow-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_USER: factory
+      DB_PASSWORD: factory_dev_pw
+      DB_NAME: factory_db
+      DB_PORT: "5432"
+      JWT_SECRET: change-this-secret-in-production
+      SERVER_PORT: "8090"
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "8090:8090"
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: factoryflow-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  factoryflow_pg_data:
