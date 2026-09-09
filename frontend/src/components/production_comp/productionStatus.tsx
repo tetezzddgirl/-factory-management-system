@@ -21,11 +21,7 @@ import {
   TextField,
 } from "@mui/material";
 import { toast } from "sonner";
-<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeFullName, employeeOptions } from "@/lib/api-client";
-=======
-import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
->>>>>>> origin/diw-test2
 
 export interface StatusHistory {
   historyId: string;
@@ -52,11 +48,7 @@ export default function ProductionStatus({
 }: ProductionStatusProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
   const [changedBy, setChangedBy] = useState<string>("");
-<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
-=======
-  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
->>>>>>> origin/diw-test2
   const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [history, setHistory] = useState<StatusHistory[]>([]);
@@ -65,21 +57,12 @@ export default function ProductionStatus({
   useEffect(() => {
     const fetchPersonnel = async () => {
       try {
-<<<<<<< HEAD
         const people = await employeesApi.list();
         setPersonnel(people ?? []);
         const map: Record<string, string> = {};
         (people ?? []).forEach((e: ApiEmployee) => {
           if (e.employeeId) {
             map[e.employeeId] = `${e.employeeId} — ${employeeFullName(e)}`;
-=======
-        const people = await personnelApi.list();
-        setPersonnel(people ?? []);
-        const map: Record<string, string> = {};
-        (people ?? []).forEach((p: ApiPersonnel) => {
-          if (p.id) {
-            map[p.id] = `${p.id} — ${p.name}`;
->>>>>>> origin/diw-test2
           }
         });
         setPersonnelMap(map);
@@ -121,11 +104,7 @@ export default function ProductionStatus({
     fetchHistory();
   }, [orderId]);
 
-<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
-=======
-  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
->>>>>>> origin/diw-test2
 
   const getStatusDisplay = (status: string, isActive: boolean = true) => {
     const label = status || "รอมอบหมาย";

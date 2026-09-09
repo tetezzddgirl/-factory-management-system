@@ -17,13 +17,8 @@ import {
 import { toast } from "sonner";
 import { getSession } from "@/lib/auth";
 import {
-<<<<<<< HEAD
   issuesApi, workOrdersApi, employeesApi, employeeFullName, employeeOptions,
   type ApiWorkOrder, type ApiEmployee, type ApiIssue,
-=======
-  issuesApi, workOrdersApi, personnelApi,
-  type ApiWorkOrder, type ApiPersonnel, type ApiIssue,
->>>>>>> origin/diw-test2
 } from "@/lib/api-client";
 
 interface IssuesFormProps {
@@ -35,11 +30,7 @@ interface IssuesFormProps {
 
 export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFormProps) {
   const [workOrders, setWorkOrders] = useState<ApiWorkOrder[]>([]);
-<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
-=======
-  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
->>>>>>> origin/diw-test2
   
   const [formData, setFormData] = useState({
     orderID: "",
@@ -55,11 +46,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
     (async () => {
       try {
         const [orders, people] = await Promise.all([
-<<<<<<< HEAD
           workOrdersApi.list(), employeesApi.list(),
-=======
-          workOrdersApi.list(), personnelApi.list(),
->>>>>>> origin/diw-test2
         ]);
         setWorkOrders(orders ?? []);
         setPersonnel(people ?? []);
@@ -67,11 +54,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
         // ตั้งค่าผู้แจ้งปัญหาอัตโนมัติจากเซสชันปัจจุบัน
         const currentUserEmail = getSession()?.email ?? "";
         const currentReporterRow = (people ?? []).find((p) => p.email?.toLowerCase() === currentUserEmail.toLowerCase());
-<<<<<<< HEAD
         const defaultReporter = currentReporterRow ? `${currentReporterRow.employeeId} — ${employeeFullName(currentReporterRow)}` : "";
-=======
-        const defaultReporter = currentReporterRow ? `${currentReporterRow.id} — ${currentReporterRow.name}` : "";
->>>>>>> origin/diw-test2
         
         let initialOrder = "";
         if (orderID && orderName) {
@@ -97,11 +80,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
   }, [orderID, orderName]);
 
   const orderOptions = workOrders.map((o) => `${o.orderID} - ${o.name}`);
-<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
-=======
-  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
->>>>>>> origin/diw-test2
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -123,11 +102,7 @@ export function IssuesForm({ orderID, orderName, onCreated, onCancel }: IssuesFo
         orderID: selectedOrderID,
         reporter_id: selectedReporterID,
         issue: formData.problem,
-<<<<<<< HEAD
         description: formData.description,
-=======
-        description_id: formData.description,
->>>>>>> origin/diw-test2
         status: "รอแก้ไข",
       });
       

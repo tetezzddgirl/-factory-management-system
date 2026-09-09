@@ -16,11 +16,7 @@ import {
   InputAdornment, 
   Autocomplete,
 } from "@mui/material";
-<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
-=======
-import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
->>>>>>> origin/diw-test2
 
 interface ProductionWipFormProps {
   orderID: string;
@@ -42,11 +38,7 @@ export default function ProductionWipForm({
   onSave,
 }: ProductionWipFormProps) {
   const [wipOptions, setWipOptions] = useState<WorkInProcessItem[]>([]);
-<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
-=======
-  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
->>>>>>> origin/diw-test2
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -66,11 +58,7 @@ export default function ProductionWipForm({
         
         const [wipRes, peopleRes] = await Promise.all([
           fetch("http://localhost:8090/api/wip", { headers: { Authorization: `Bearer ${token}` } }),
-<<<<<<< HEAD
           employeesApi.list()
-=======
-          personnelApi.list()
->>>>>>> origin/diw-test2
         ]);
 
         if (wipRes.ok) {
@@ -86,11 +74,7 @@ export default function ProductionWipForm({
     fetchData();
   }, []);
 
-<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
-=======
-  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
->>>>>>> origin/diw-test2
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

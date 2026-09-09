@@ -15,11 +15,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import { toast } from "sonner";
-<<<<<<< HEAD
 import { employeesApi, type ApiEmployee, employeeOptions } from "@/lib/api-client";
-=======
-import { personnelApi, type ApiPersonnel } from "@/lib/api-client";
->>>>>>> origin/diw-test2
 
 export interface EventData {
   eventType: string;
@@ -47,11 +43,7 @@ const eventTypes = [
 ];
 
 export default function ProductionEvenForm({ orderID, orderName, onSave, onCancel, loading }: ProductionEvenFormProps) {
-<<<<<<< HEAD
   const [personnel, setPersonnel] = useState<ApiEmployee[]>([]);
-=======
-  const [personnel, setPersonnel] = useState<ApiPersonnel[]>([]);
->>>>>>> origin/diw-test2
   const [formData, setFormData] = useState<EventData>({
     eventType: "",
     startTime: "",
@@ -66,11 +58,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
   useEffect(() => {
     (async () => {
       try {
-<<<<<<< HEAD
         const people = await employeesApi.list();
-=======
-        const people = await personnelApi.list();
->>>>>>> origin/diw-test2
         setPersonnel(people ?? []);
       } catch (e) {
         console.error("Failed to load personnel:", e);
@@ -78,11 +66,7 @@ export default function ProductionEvenForm({ orderID, orderName, onSave, onCance
     })();
   }, []);
 
-<<<<<<< HEAD
   const personnelOptions = employeeOptions(personnel);
-=======
-  const personnelOptions = personnel.map((p) => `${p.id} — ${p.name}`);
->>>>>>> origin/diw-test2
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

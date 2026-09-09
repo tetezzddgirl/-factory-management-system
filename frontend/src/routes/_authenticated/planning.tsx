@@ -91,6 +91,10 @@ function PlanningPage() {
   const { role } = useRole();
   const canAssign = role === "planner" || role === "supervisor" || role === "admin";
 
+  function isDueBeforeStart(values: Record<string, string>) {
+    return Boolean(values.start && values.due && values.due < values.start);
+  }
+
   function buildCheck(product: string, target: number, due: string): ResourceCheckData {
     const surplus = (base: number) => Math.max(base + 1, Math.round(base * (1.15 + Math.random() * 0.25)));
     const matchedProduct = products.find((p) => p.product_name === product);
@@ -331,7 +335,7 @@ function PlanningPage() {
                 { name: "requiredMaterials", label: "วัตถุดิบที่ต้องใช้ (คำนวณจากสูตร x จำนวน)", type: "textarea", required: false, helperText: "คำนวณอัตโนมัติจากสูตรการผลิตของสินค้าที่เลือก เทียบกับยอดคงเหลือปัจจุบัน" },
                 { name: "priority", label: "ลำดับความสำคัญ", type: "select", options: ["สูง", "ปกติ", "ต่ำ"], defaultValue: "ปกติ" },
                 { name: "start", label: "วันที่เริ่มผลิต", type: "date", defaultValue: getToday() },
-                { name: "due", label: "กำหนดเสร็จ", type: "date", defaultValue: getToday() },
+                { name: "due", label: "กำหนดเสร็จ", type: "date", defaultValue: getToday(), error: isDueBeforeStart, helperText: "ต้องไม่มาก่อนวันที่เริ่มผลิต",},
               ]}
               onOpen={async () => {
                 try {
