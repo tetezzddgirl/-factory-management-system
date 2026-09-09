@@ -73,6 +73,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
   const set = <K extends keyof WorkOrderResult>(k: K, val: WorkOrderResult[K]) =>
     setV((s) => ({ ...s, [k]: val }));
   const dateError = Boolean(v.startDate && v.due && v.due < v.startDate);
+  const qtyError = v.qty > data.amount;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -99,6 +100,8 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
               <TextField
                 fullWidth label="จำนวนที่สั่งผลิต" type="number" value={v.qty}
                 onChange={(e) => set("qty", Number(e.target.value) || 0)}
+                error={qtyError}
+                helperText={qtyError ? `ต้องไม่เกินจำนวนตามแผน (${data.amount.toLocaleString()})` : undefined}
               />
               <TextField
                 fullWidth select label="สายการผลิต" value={v.line} 
@@ -145,7 +148,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
         <Button onClick={onClose}>ยกเลิก</Button>
         <Button
           variant="contained"
-          disabled={ !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError}
+          disabled={ !v.product.trim() || v.qty <= 0 || !v.startDate.trim() || !v.due.trim() || dateError || qtyError}
           onClick={() => onSubmit(v)}
         >
           ถัดไป: ตรวจสอบทรัพยากร

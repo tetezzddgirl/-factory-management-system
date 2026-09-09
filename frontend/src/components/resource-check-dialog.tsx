@@ -126,7 +126,7 @@ export function ResourceCheckDialog({ open, data, onClose, onConfirm }: Props) {
           disabled={overall === "fail"}
           onClick={onConfirm}
         >
-          {overall === "fail" ? "ทรัพยากรไม่พอ" : "ยืนยันสร้างใบสั่งผลิต"}
+          {overall === "fail" ? "ทรัพยากรไม่พอ" : "ถัดไป: มอบหมายงานผลิต"}
         </Button>
       </DialogActions>
     </Dialog>
