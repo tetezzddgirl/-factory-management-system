@@ -209,12 +209,14 @@ function getPersonnelLabel(id: string) {
             <Stack spacing={2} sx={{ pt: 1 }}>
               <Divider />
               <TextField select label="เจ้าหน้าที่ผู้แจ้งปัญหา" value={reporterID} onChange={(e) => setReporterID(e.target.value)} >
-              {personnelOptions.map((p) => ( <MenuItem key={p} value={p}> {p} </MenuItem> ))} </TextField>
+                {personnelOptions.map((p) => ( <MenuItem key={p} value={p}> {p} </MenuItem> ))}
+              </TextField>
               <TextField label="ปัญหาที่พบ" value={problemText} onChange={(e) => setProblemText(e.target.value)} />
               <TextField label="รายละเอียดปัญหา" multiline minRows={3} value={descriptionText} onChange={(e) => setDescriptionText(e.target.value)} />
               <Divider />
               <TextField label="เจ้าหน้าที่ฝ่ายวางแผนการผลิต" value={solutionProviderID} onChange={(e) => setSolutionProviderID(e.target.value)} slotProps={{ input: { readOnly: !isPlanner}, }} > 
-              {personnelOptions.map((p) => ( <MenuItem key={p} value={p}> {p} </MenuItem> ))} </TextField>
+              {personnelOptions.map((p) => ( <MenuItem key={p} value={p}> {p} </MenuItem> ))} 
+              </TextField>
               <TextField label="แนวทางแก้ไขปัญหา" multiline minRows={3} value={solution} onChange={(e) => setSolution(e.target.value)} slotProps={{ input: { readOnly: !isPlanner}, }} />
               <TextField select label="สถานะ" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
