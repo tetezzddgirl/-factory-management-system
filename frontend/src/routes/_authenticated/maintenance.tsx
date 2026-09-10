@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert, Box, Card, CardActionArea, CardContent, Chip, CircularProgress, Stack, Typography,
   Button, Tabs, Tab, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions,
-  DialogContentText, Divider, InputAdornment,
+  DialogContentText, Divider
 } from "@mui/material";
 import { PageShell } from "@/components/page-shell";
 import {
@@ -101,14 +101,6 @@ function MaintenancePage() {
     );
   }, [orders, applied]);
 
-  // ค่าใช้จ่ายรวมของแต่ละใบงาน (มาจากประวัติการซ่อมบำรุงที่สร้างตอนปิดงาน)
-  const costByRequest = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const l of logs) {
-      if (l.requestID) m.set(l.requestID, (m.get(l.requestID) ?? 0) + l.totalCost);
-    }
-    return m;
-  }, [logs]);
 
   const shown = tab === 0 ? active : history;
 
@@ -191,7 +183,7 @@ function MaintenancePage() {
               <Card>
                 <CardActionArea onClick={() => setDetail(o)}>
                   <CardContent>
-                    <OrderSummary order={o} cost={costByRequest.get(o.id)} />
+                    <OrderSummary order={o}  />
                   </CardContent>
                 </CardActionArea>
               </Card>
@@ -215,7 +207,7 @@ function MaintenancePage() {
         <DialogContent>
           {detail && (
             <Box sx={{ pt: 1 }}>
-              <OrderSummary order={detail} cost={costByRequest.get(detail.id)} />
+              <OrderSummary order={detail}  />
             </Box>
           )}
         </DialogContent>
@@ -272,11 +264,7 @@ function OrderSummary({ order, cost }: { order: ApiMaintenanceOrder; cost?: numb
 
         <Box sx={{ flexGrow: 1 }} />
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          {cost !== undefined && (
-            <Typography variant="caption" color="text.secondary">
-              ค่าใช้จ่าย {cost.toLocaleString()} บาท
-            </Typography>
-          )}
+          
           <Chip size="small" label={order.type} color={maintenanceTypeTone(order.type)} />
           <Chip
             size="small"
@@ -296,7 +284,7 @@ type FormState = {
   date: string;
   detail: string;
   status: string;
-  cost: string;
+  
 };
 
 const EMPTY: FormState = {
@@ -305,7 +293,7 @@ const EMPTY: FormState = {
   date: todayISO(),
   detail: "",
   status: "pending",
-  cost: "0",
+  
 };
 
 /**
@@ -345,7 +333,7 @@ function OrderFormDialog({
         date: editing.date || todayISO(),
         detail: editing.detail,
         status: editing.status,
-        cost: "0",
+        
       });
       setCode(editing.code);
       return;
@@ -364,11 +352,6 @@ function OrderFormDialog({
   async function save() {
     if (!form.machineID || !form.technician.trim() || !form.date) {
       toast.error("กรุณาเลือกเครื่องจักร ผู้รับผิดชอบ และวันที่ดำเนินงานให้ครบ");
-      return;
-    }
-    const cost = Number(form.cost.replace(/,/g, ""));
-    if (closingNow && (Number.isNaN(cost) || cost < 0)) {
-      toast.error("ค่าใช้จ่ายต้องเป็นตัวเลขที่ไม่ติดลบ");
       return;
     }
 
@@ -396,7 +379,7 @@ function OrderFormDialog({
           await maintenanceApi.complete(editing.id, {
             staff: form.technician.trim(),
             description: form.detail.trim(),
-            totalCost: cost,
+            
           });
           toast.success("ปิดงานซ่อมแล้ว — บันทึกประวัติการซ่อมบำรุงให้อัตโนมัติ");
         } else {
@@ -495,17 +478,7 @@ function OrderFormDialog({
                   <MenuItem key={s} value={s}>{maintenanceStatusLabel(s)}</MenuItem>
                 ))}
               </TextField>
-              {closingNow && (
-                <TextField
-                  label="ค่าใช้จ่ายในการซ่อม"
-                  value={form.cost}
-                  onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                  slotProps={{
-                    input: { endAdornment: <InputAdornment position="end">บาท</InputAdornment> },
-                  }}
-                  helperText="บันทึกลงประวัติการซ่อมบำรุงของเครื่องนี้"
-                />
-              )}
+              
             </>
           )}
         </Stack>
