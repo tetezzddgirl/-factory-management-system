@@ -213,6 +213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       id: `h${Date.now()}`,
       code: `SHP-${500 + Date.now() % 1000}`,
       customer: input.customer,
+      address: input.address || "",
       productName: input.productName,
       quantity: input.quantity,
       eta: input.eta ? new Date(input.eta).toLocaleDateString("th-TH") : "รอกำหนด",
@@ -230,6 +231,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ? {
               ...s,
               customer: input.customer,
+              address: input.address !== undefined ? input.address : s.address,
               productName: input.productName,
               quantity: input.quantity,
               eta: input.eta

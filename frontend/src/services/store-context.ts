@@ -28,10 +28,10 @@ export interface StoreValue {
     remark?: string;
   }) => { ok: boolean; message: string };
   verifyShipment: (id: string) => void;
-  addShipment: (input: { customer: string; productName: string; quantity: number; eta: string }) => void;
+  addShipment: (input: { customer: string; address?: string; productName: string; quantity: number; eta: string }) => void;
   updateShipment: (
     id: string,
-    input: { customer: string; productName: string; quantity: number; eta: string },
+    input: { customer: string; address?: string; productName: string; quantity: number; eta: string },
   ) => void;
   deleteShipment: (id: string) => void;
   addBom: (input: {

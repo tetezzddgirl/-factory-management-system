@@ -15,6 +15,7 @@ type ShipmentResponse struct {
 	ID          string  `json:"id"`
 	Code        string  `json:"code"`
 	Customer    string  `json:"customer"`
+	Address     string  `json:"address,omitempty"`
 	ProductName string  `json:"productName"`
 	Quantity    int     `json:"quantity"`
 	ETA         string  `json:"eta"`
@@ -24,6 +25,7 @@ type ShipmentResponse struct {
 
 type CreateShipmentRequest struct {
 	Customer    string `json:"customer"`
+	Address     string `json:"address"`
 	ProductName string `json:"productName"`
 	Quantity    int    `json:"quantity"`
 	ETA         string `json:"eta"`
@@ -41,8 +43,15 @@ func GetShipments(c *gin.Context) {
 	result := make([]ShipmentResponse, 0)
 	for _, s := range shipments {
 		custName := "ลูกค้าทั่วไป"
-		if s.Order.Customer.CustomerName != "" {
+		if s.CustomerName != "" {
+			custName = s.CustomerName
+		} else if s.Order.Customer.CustomerName != "" {
 			custName = s.Order.Customer.CustomerName
+		}
+
+		addr := s.ShippingAddress
+		if addr == "" && s.Order.Customer.Address != "" {
+			addr = s.Order.Customer.Address
 		}
 
 		prodName := "สินค้าทั่วไป"
@@ -70,6 +79,7 @@ func GetShipments(c *gin.Context) {
 			ID:          s.ShipmentID,
 			Code:        s.TrackingNumber,
 			Customer:    custName,
+			Address:     addr,
 			ProductName: prodName,
 			Quantity:    qty,
 			ETA:         eta,
@@ -88,24 +98,16 @@ func CreateShipment(c *gin.Context) {
 		return
 	}
 
-	// 1. Find or create customer
-	var cust models.Customer
-	if err := database.DB.Where("customer_name = ?", req.Customer).First(&cust).Error; err != nil {
-		cust = models.Customer{CustomerName: req.Customer}
-		database.DB.Create(&cust)
-	}
-
-	// 2. Create Order
+	// 1. Optional order link
 	orderID := fmt.Sprintf("ORD-%d", time.Now().UnixNano()%1000000)
 	order := models.Order{
 		OrderID:    orderID,
-		CustomerID: cust.CustomerID,
 		OrderDate:  time.Now(),
 		TotalPrice: float64(req.Quantity * 10),
 	}
 	database.DB.Create(&order)
 
-	// 3. Create OrderDetail with Product if exists
+	// 2. Create OrderDetail with Product if exists
 	var prod models.Product
 	if err := database.DB.Where("product_name = ?", req.ProductName).First(&prod).Error; err == nil {
 		detail := models.OrderDetail{
@@ -117,16 +119,18 @@ func CreateShipment(c *gin.Context) {
 		database.DB.Create(&detail)
 	}
 
-	// 4. Create Shipment
+	// 3. Create Shipment with direct text customer and address
 	shipID := fmt.Sprintf("h%d", time.Now().UnixNano()%1000000)
 	trackNo := fmt.Sprintf("SHP-%d", 500+time.Now().Unix()%1000)
 	shipment := models.Shipment{
-		ShipmentID:     shipID,
-		OrderID:        orderID,
-		ShipmentStatus: "pending",
-		TrackingNumber: trackNo,
-		ShipmentDate:   time.Now(),
-		DeliveryDate:   time.Now().Add(24 * time.Hour),
+		ShipmentID:      shipID,
+		OrderID:         orderID,
+		CustomerName:    req.Customer,
+		ShippingAddress: req.Address,
+		ShipmentStatus:  "pending",
+		TrackingNumber:  trackNo,
+		ShipmentDate:    time.Now(),
+		DeliveryDate:    time.Now().Add(24 * time.Hour),
 	}
 	if err := database.DB.Create(&shipment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -137,6 +141,7 @@ func CreateShipment(c *gin.Context) {
 		ID:          shipID,
 		Code:        trackNo,
 		Customer:    req.Customer,
+		Address:     req.Address,
 		ProductName: req.ProductName,
 		Quantity:    req.Quantity,
 		ETA:         req.ETA,

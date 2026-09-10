@@ -280,7 +280,7 @@ export async function postStockTransaction(tx: StockTransaction): Promise<StockT
   }
 }
 
-export async function createShipmentApi(payload: { customer: string; productName: string; quantity: number; eta: string }): Promise<Shipment | null> {
+export async function createShipmentApi(payload: { customer: string; address?: string; productName: string; quantity: number; eta: string }): Promise<Shipment | null> {
   try {
     const res = await fetch(`${BASE_URL}/shipments`, {
       method: "POST",

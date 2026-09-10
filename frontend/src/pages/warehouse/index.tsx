@@ -84,7 +84,7 @@ export function WarehousePage() {
   const [verifyId, setVerifyId] = useState<string | null>(null);
   const [shipOpen, setShipOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const emptyShip = { customer: "", productName: "", quantity: "", eta: "" };
+  const emptyShip = { customer: "", address: "", productName: "", quantity: "", eta: "" };
   const [shipForm, setShipForm] = useState(emptyShip);
   const [shipSearch, setShipSearch] = useState("");
   const [shipSort, setShipSort] = useState<"newest" | "oldest" | "status" | "customer">("newest");
@@ -529,6 +529,11 @@ export function WarehousePage() {
                     <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
                       {sh.code} • {sh.productName} × {sh.quantity.toLocaleString("th-TH")}
                     </Typography>
+                    {sh.address ? (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.3, fontStyle: "italic" }}>
+                        📍 {sh.address}
+                      </Typography>
+                    ) : null}
                     <Typography variant="caption" fontWeight={600} color="primary.main" sx={{ display: "block", mt: 0.5 }}>
                       ETA: {sh.eta}
                     </Typography>
@@ -570,6 +575,7 @@ export function WarehousePage() {
               setEditingId(sh.id);
               setShipForm({
                 customer: sh.customer,
+                address: sh.address || "",
                 productName: sh.productName,
                 quantity: String(sh.quantity),
                 eta: sh.eta,
@@ -870,6 +876,7 @@ export function WarehousePage() {
 
                 const payload = {
                   customer: shipForm.customer,
+                  address: shipForm.address,
                   productName: shipForm.productName,
                   quantity: qty,
                   eta: shipForm.eta,
@@ -902,20 +909,19 @@ export function WarehousePage() {
           </Alert>
         ) : null}
 
-        <SelectField
-          label="เลือกลูกค้า / บริษัทที่จัดส่ง (ตาราง Customers)"
+        <Field
+          label="ชื่อลูกค้า / บริษัทปลายทาง"
+          placeholder="ระบุชื่อลูกค้าหรือชื่อบริษัท (เช่น บริษัท โออิชิ กรุ๊ป จำกัด)"
           value={shipForm.customer}
           onChange={(e) => setShipForm({ ...shipForm, customer: e.target.value })}
-        >
-          <option value="" disabled>
-            -- เลือกลูกค้าจากฐานข้อมูล --
-          </option>
-          {customers.map((c) => (
-            <option key={c.customer_id || c.id} value={c.customer_name}>
-              {c.customer_name} {c.address ? `(${c.address})` : ""}
-            </option>
-          ))}
-        </SelectField>
+        />
+
+        <Field
+          label="ที่อยู่สำหรับจัดส่ง (Shipping Address)"
+          placeholder="ระบุที่อยู่จัดส่ง ปลายทาง หรือสาขา"
+          value={shipForm.address}
+          onChange={(e) => setShipForm({ ...shipForm, address: e.target.value })}
+        />
 
         <SelectField
           label="ชนิดขวด / สินค้าสำเร็จรูปในสต็อก"
@@ -980,6 +986,11 @@ export function WarehousePage() {
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {verifying.code} • {verifying.productName} × {verifying.quantity.toLocaleString("th-TH")} ชิ้น
             </Typography>
+            {verifying.address ? (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: "italic" }}>
+                📍 ที่อยู่จัดส่ง: {verifying.address}
+              </Typography>
+            ) : null}
             <Typography variant="body2" fontWeight={600} color="primary.main" sx={{ mt: 1.5 }}>
               กำหนดส่ง (ETA): {verifying.eta}
             </Typography>

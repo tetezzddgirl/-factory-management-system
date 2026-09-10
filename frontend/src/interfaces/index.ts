@@ -60,6 +60,7 @@ export interface Shipment {
   id: string;
   code: string;
   customer: string;
+  address?: string;
   productName: string;
   quantity: number;
   eta: string;
