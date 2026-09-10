@@ -53,7 +53,6 @@ func Migrate(db *gorm.DB) error {
 		&models.User{},
 
 		// ฝ่ายผลิต (Production)
-		&models.Machine{},
 		&models.ProductionLine{},
 		&models.Product{},
 		&models.FormulaItem{},
