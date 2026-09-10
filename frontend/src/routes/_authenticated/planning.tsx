@@ -13,7 +13,8 @@ import { WorkOrderDialog, type WorkOrderResult } from "@/components/work-order-d
 import { PlanSavedDialog } from "@/components/plan-saved-dialog";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
-import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, machinesApi, employeesApi, computeRequiredMaterials, buildResourceCheck, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
+import { plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, workOrdersApi, workApi, machinesApi, employeesApi, resourcesApi, buildResourceCheckRows,
+  computeRequiredMaterials, buildResourceCheck, formulaIDFor, formulaIDFromOption, formulaOptions, formulaOptionFor, stepsFor, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue } from "@/lib/plan-utils";
 
 export const Route = createFileRoute("/_authenticated/planning")({
@@ -100,6 +101,14 @@ function PlanningPage() {
 
   function isDueBeforeStart(values: Record<string, string>) {
     return Boolean(values.start && values.due && values.due < values.start);
+  }
+
+  async function persistResourceCheck(orderID: string, data: ResourceCheckData) {
+    try {
+      await resourcesApi.create(buildResourceCheckRows(orderID, data));
+    } catch (e) {
+      console.warn("บันทึกผลตรวจสอบทรัพยากรไม่สำเร็จ:", e);
+    }
   }
 
   /** ตรวจสอบทรัพยากรจริงจาก database ของ backend: วัตถุดิบจากสูตร x คลังจริง, เครื่องจักรจาก

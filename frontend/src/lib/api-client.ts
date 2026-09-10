@@ -2,6 +2,7 @@
 // ใช้แทนที่การเรียก supabase.from(...) เดิม
 
 import { getToken, logout } from "./auth";
+import { statusOf, type ResourceItem } from "@/components/resource-check-dialog";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8090";
 
@@ -190,6 +191,40 @@ export function computeRequiredMaterials(
 
 function isMachineUsable(status: string): boolean {
   return status === "running" || status === "idle";
+}
+export type ApiResourceCheck = {
+  timestamp: string;
+  resourceID: string;
+  rmID: string;
+  rawMaterialStatus: string;
+  requiredAmount: number;
+  machineStatus: string;
+  workerStatus: string;
+  orderID: string;
+};
+
+export const resourcesApi = {
+  list: (orderID?: string) =>
+    apiFetch<ApiResourceCheck[]>(orderID ? `/api/resources?orderID=${encodeURIComponent(orderID)}` : "/api/resources"),
+  create: (rows: Omit<ApiResourceCheck, "resourceID" | "timestamp">[]) =>
+    apiFetch<ApiResourceCheck[]>("/api/resources", { method: "POST", body: JSON.stringify(rows) }),
+};
+
+export function buildResourceCheckRows(
+  orderID: string,
+  data: { materials: ResourceItem[]; machines: ResourceItem[]; personnel: ResourceItem[] },
+): Omit<ApiResourceCheck, "resourceID" | "timestamp">[] {
+  const machineStatus = statusOf(data.machines);
+  const workerStatus = statusOf(data.personnel);
+  if (data.materials.length === 0) {
+    return [{ rmID: "", rawMaterialStatus: "-", requiredAmount: 0, machineStatus, workerStatus, orderID }];
+  }
+  return data.materials.map((m) => ({
+    rmID: (m as ResourceItem & { rmID?: string }).rmID ?? "",
+    rawMaterialStatus: statusOf([m]),
+    requiredAmount: Math.round(m.required),
+    machineStatus, workerStatus, orderID,
+  }));
 }
 
 export function buildResourceCheck(

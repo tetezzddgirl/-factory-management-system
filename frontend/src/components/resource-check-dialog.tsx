@@ -35,7 +35,7 @@ interface Props {
   rechecking?: boolean;
 }
 
-function statusOf(items: ResourceItem[]): ResourceStatus {
+export function statusOf(items: ResourceItem[]): ResourceStatus {
   if (items.some((i) => i.available < i.required)) return "fail";
   if (items.some((i) => i.available < i.required * 1.1)) return "warn";
   return "ok";

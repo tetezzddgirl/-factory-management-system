@@ -48,6 +48,7 @@ func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	taskHandler := handlers.NewTaskHandler(db)                     // FactoryFlow Task CRUD (FRESH-08)
 	taskAssignmentHandler := handlers.NewTaskAssignmentHandler(db) // FactoryFlow Task↔Employee assignment (FRESH-08)
 	issueHandler := handlers.NewIssueHandler(db)
+	resourceHandler := handlers.NewResourceHandler(db)
 	wipHandler := handlers.NewWipHandler(db)
 	workOrderHandler := handlers.NewWorkOrderHandler(db)
 
@@ -164,6 +165,10 @@ func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		api.GET("/issues", issueHandler.ListIssues)
 		api.POST("/issues", issueHandler.CreateIssue)
 		api.PUT("/issues/:id", issueHandler.UpdateIssue)
+
+		// ผลตรวจสอบทรัพยากร (Resource Check) — บันทึกผลตรวจวัตถุดิบ/เครื่องจักร/บุคลากรของแต่ละรอบตรวจ
+		api.GET("/resources", resourceHandler.ListResourceChecks)
+		api.POST("/resources", resourceHandler.CreateResourceChecks)
 
 		// สินค้าระหว่างผลิต (Work In Process)
 		api.GET("/wip", wipHandler.ListWorkInProcess)

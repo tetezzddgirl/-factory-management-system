@@ -13,7 +13,8 @@ import { AssignWorkDialog, type AssignWorkResult } from "@/components/assign-wor
 import { SelectPlanDialog } from "@/components/select-plan-dialog";
 import type { PlanRow } from "@/components/plan-detail-dialog";
 import { type WorkOrder } from "@/lib/plan-data";
-import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, machinesApi, employeesApi, buildResourceCheck, formulaIDFor, stepsFor, type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
+import { workOrdersApi, workApi, plansApi, productsApi, formulasApi, formulaStepsApi, materialsApi, productionLinesApi, machinesApi, employeesApi, buildResourceCheck, formulaIDFor, stepsFor, resourcesApi, buildResourceCheckRows,
+  type ApiWorkOrder, type ApiWork, type ApiProduct, type ApiFormulaItem, type ApiFormulaStep, type ApiRawMaterial, type ApiProductionLine, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
 import { fromApiPlan, toISO, toDateInputValue, formatThaiDate, lineNameFromID } from "@/lib/plan-utils";
 import { useRole } from "@/lib/roles";
 import { toast } from "sonner";
@@ -77,6 +78,14 @@ function WorkOrdersPage() {
   const existingWorkIdsRef = useRef<Set<string>>(new Set());
   const { role } = useRole();
   const canAssign = role === "planner" || role === "supervisor" || role === "admin";
+
+  async function persistResourceCheck(orderID: string, data: ResourceCheckData) {
+    try {
+      await resourcesApi.create(buildResourceCheckRows(orderID, data));
+    } catch (e) {
+      console.warn("บันทึกผลตรวจสอบทรัพยากรไม่สำเร็จ:", e);
+    }
+  }
 
   /** ตรวจสอบทรัพยากรจริงจาก database ของ backend: วัตถุดิบจากสูตร x คลังจริง, เครื่องจักรจาก
    *  เครื่องจักรที่อยู่ในสายการผลิต (production_line_id) ของใบสั่งผลิตนี้จริงๆ, บุคลากรจากพนักงานฝ่ายผลิตที่เข้าเวรจริง */
