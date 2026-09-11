@@ -111,7 +111,7 @@ type MaintenanceLog struct {
 	Description string    `json:"description" gorm:"size:255"`
 	Staff       string    `json:"staff" gorm:"size:100"`
 	RepairDate  time.Time `json:"repair_date" gorm:"column:repair_date"`
-	TotalCost   float64   `json:"total_cost" gorm:"column:total_cost"`
+	
 
 	RequestID   *string `json:"request_id" gorm:"column:request_id;size:100;index"`
 	MachineryID *string `json:"machinery_id" gorm:"column:machinery_id;size:100;index"`

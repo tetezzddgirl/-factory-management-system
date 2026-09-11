@@ -97,7 +97,7 @@ export type ApiMaintenanceLog = {
   description: string;
   staff: string;
   repairDate: string;
-  totalCost: number;
+  
 };
 
 export type ApiProductionLine = { id: number; name: string };
@@ -384,7 +384,7 @@ export const maintenanceApi = {
   remove: (id: string) =>
     apiFetch<{ ok: boolean }>(`/api/maintenance/requests/${encodeURIComponent(id)}`, { method: "DELETE" }),
   /** ปิดงานซ่อม — backend จะสร้างประวัติการซ่อมบำรุงและคืนสถานะเครื่องจักรให้เอง */
-  complete: (id: string, body: { staff: string; description: string; totalCost: number }) =>
+  complete: (id: string, body: { staff: string; description: string }) =>
     apiFetch<{ order: ApiMaintenanceOrder; logID: string }>(
       `/api/maintenance/requests/${encodeURIComponent(id)}/complete`,
       { method: "POST", body: JSON.stringify(body) },

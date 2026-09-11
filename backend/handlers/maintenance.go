@@ -418,10 +418,7 @@ func (h *MaintenanceHandler) CompleteRepairRequest(c *gin.Context) {
 		if description == "" {
 			description = r.Description
 		}
-		cost := 0.0
-		if in.TotalCost != nil {
-			cost = *in.TotalCost
-		}
+		
 
 		logID = fmt.Sprintf("LOG-%d", now.UnixNano()/int64(time.Millisecond))
 		return tx.Create(&models.MaintenanceLog{
@@ -429,7 +426,6 @@ func (h *MaintenanceHandler) CompleteRepairRequest(c *gin.Context) {
 			Description: description,
 			Staff:       staff,
 			RepairDate:  now,
-			TotalCost:   cost,
 			RequestID:   &r.RequestID,
 			MachineryID: r.MachineryID,
 		}).Error
@@ -481,7 +477,7 @@ func (h *MaintenanceHandler) ListMaintenanceLogs(c *gin.Context) {
 			Description: l.Description,
 			Staff:       l.Staff,
 			RepairDate:  formatDate(&l.RepairDate),
-			TotalCost:   l.TotalCost,
+			
 		}
 		if l.RequestID != nil {
 			item.RequestID = *l.RequestID

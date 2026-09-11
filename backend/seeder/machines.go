@@ -157,13 +157,13 @@ func seedMaintenanceLogs(db *gorm.DB) {
 
 	upsert(db, "log_id", []models.MaintenanceLog{
 		{LogID: "LOG-0001", Description: "ทำความสะอาดท่อส่งพลาสติก", Staff: "ช่างสมศักดิ์",
-			RepairDate: d("2026-07-12"), TotalCost: 1500, RequestID: p("MT-1023"), MachineryID: p("M-01")},
+			RepairDate: d("2026-07-12"), RequestID: p("MT-1023"), MachineryID: p("M-01")},
 		{LogID: "LOG-0002", Description: "เปลี่ยนสายพาน", Staff: "ช่างพิชิต",
-			RepairDate: d("2026-07-10"), TotalCost: 2800, RequestID: p("MT-1022"), MachineryID: p("M-02")},
+			RepairDate: d("2026-07-10"), RequestID: p("MT-1022"), MachineryID: p("M-02")},
 		{LogID: "LOG-0003", Description: "เปลี่ยนชุดเฟืองขับ", Staff: "ช่างพิชิต",
-			RepairDate: d("2026-06-30"), TotalCost: 4200, RequestID: p("MT-1020"), MachineryID: p("M-03")},
+			RepairDate: d("2026-06-30"), RequestID: p("MT-1020"), MachineryID: p("M-03")},
 		{LogID: "LOG-0004", Description: "ซ่อมสวิตช์เปิดเครื่อง", Staff: "ช่างมานะ",
-			RepairDate: d("2026-07-03"), TotalCost: 900, RequestID: p("MT-1021"), MachineryID: p("M-05")},
+			RepairDate: d("2026-07-03"), RequestID: p("MT-1021"), MachineryID: p("M-05")},
 	})
 }
 
