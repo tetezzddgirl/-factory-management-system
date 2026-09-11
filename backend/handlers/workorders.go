@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"sync/atomic"
 
 	"factoryflow/models"
 
@@ -177,6 +178,7 @@ func (h *WorkOrderHandler) ListWork(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
+var workIDSeq int64
 // CreateWork มอบหมายงานใหม่ให้กับใบสั่งผลิต
 func (h *WorkOrderHandler) CreateWork(c *gin.Context) {
 	var w models.Work
@@ -185,7 +187,8 @@ func (h *WorkOrderHandler) CreateWork(c *gin.Context) {
 		return
 	}
 	if w.WorkID == "" {
-		w.WorkID = fmt.Sprintf("WRK-%d", time.Now().UnixNano())
+		seq := atomic.AddInt64(&workIDSeq, 1)
+		w.WorkID = fmt.Sprintf("WRK-%d-%d", time.Now().UnixNano(), seq)
 	}
 	if err := h.db.Create(&w).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
