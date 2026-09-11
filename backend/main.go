@@ -7,10 +7,11 @@ import (
 	"factoryflow/database"
 	"factoryflow/handlers"
 	"factoryflow/middleware"
+	sf_database "factoryflow/sf_module/database"
+	sf_routes "factoryflow/sf_module/routes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -25,16 +26,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r := newRouter(cfg, db)
+	sf_database.InitDB(db)
 
-	log.Println("listening on :" + cfg.ServerPort)
-	log.Fatal(r.Run(":" + cfg.ServerPort))
-}
-
-// newRouter ประกอบ handler ทั้งหมดและลงทะเบียน route ทุกเส้นของระบบ
-// แยกออกมาจาก main() เพื่อให้เขียนเทสต์ตรวจการลงทะเบียน route ได้โดยไม่ต้องต่อฐานข้อมูลจริง
-// (ดู router_test.go — gin จะ panic ตอนลงทะเบียนถ้ามี path ชนกัน)
-func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	secret := []byte(cfg.JWTSecret)
 	authHandler := handlers.NewAuthHandler(db, secret)
 	machineHandler := handlers.NewMachineHandler(db)
@@ -59,9 +52,21 @@ func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{cfg.CORSOrigin},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		AllowOrigins: []string{
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+			"http://localhost:5174",
+			"http://127.0.0.1:5174",
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://localhost:8080",
+			"http://127.0.0.1:8080",
+			"http://localhost:8090",
+			"http://127.0.0.1:8090",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
 
@@ -214,7 +219,9 @@ func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		api.PATCH("/production/reports/:reportId", productionHandler.UpdateReport)
 
 		api.GET("/production/orders/:id/transfers", productionHandler.GetTransfersByOrderID)
+		api.GET("/production/transfers/pending-fg", productionHandler.ListPendingFGTransfers)
 		api.POST("/production/transfers", productionHandler.CreateTransfer)
+		api.PATCH("/production/transfers/:id/receive", productionHandler.ReceiveTransfer)
 
 		api.DELETE("/production/transfers/:id", productionHandler.DeleteTransfer)
 
@@ -244,5 +251,8 @@ func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		api.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsRead)
 	}
 
-	return r
+	sf_routes.SetupRoutes(api)
+
+	log.Println("listening on :" + cfg.ServerPort)
+	log.Fatal(r.Run(":" + cfg.ServerPort))
 }

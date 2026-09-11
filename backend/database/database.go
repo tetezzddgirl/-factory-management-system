@@ -5,6 +5,7 @@ import (
 
 	"factoryflow/config"
 	"factoryflow/models"
+	sf_models "factoryflow/sf_module/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,7 +19,8 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort,
 	)
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger:                                   logger.Default.LogMode(logger.Warn),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 }
 
@@ -29,6 +31,25 @@ func Migrate(db *gorm.DB) error {
 		}
 		if err := db.Migrator().DropTable("w_ip_locations"); err != nil {
 			return err
+		}
+	}
+
+	// Move user's old tables to sf_ prefix to preserve data and prevent team schema clashes
+	tablesToRename := map[string]string{
+		"products":      "sf_products",
+		"raw_materials": "sf_raw_materials",
+		"formulas":      "sf_formulas",
+		"customers":     "sf_customers",
+		"orders":        "sf_orders",
+	}
+	for oldName, newName := range tablesToRename {
+		if db.Migrator().HasTable(oldName) && !db.Migrator().HasTable(newName) {
+			// Drop constraints that might block rename or cause issues later
+			db.Exec("ALTER TABLE " + oldName + " DROP CONSTRAINT IF EXISTS fk_products_product_category CASCADE")
+			db.Exec("ALTER TABLE " + oldName + " DROP CONSTRAINT IF EXISTS fk_raw_materials_unit CASCADE")
+			if err := db.Migrator().RenameTable(oldName, newName); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -117,6 +138,22 @@ func Migrate(db *gorm.DB) error {
 		&models.Task{},
 		&models.TaskAssignment{},
 		&models.EmployeeEmailHistory{},
+
+		// Stock & Formula Module
+		&sf_models.Customer{},
+		&sf_models.ProductCategory{},
+		&sf_models.UnitOfMeasure{},
+		&sf_models.Product{},
+		&sf_models.Formula{},
+		&sf_models.FormulaStep{},
+		&sf_models.Warehouse{},
+		&sf_models.Inventory{},
+		&sf_models.RawMaterial{},
+		&sf_models.Shipment{},
+		&sf_models.StockTransaction{},
+		&sf_models.ProductOrder{},
+		&sf_models.Order{},
+		&sf_models.OrderDetail{},
 	); err != nil {
 		return err
 	}
@@ -145,14 +182,10 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 	db.Exec(`ALTER TABLE production_orders DROP COLUMN IF EXISTS machines`)
-	
-	// FRESH-03 — finish the FactoryFlow foundation tables with the DDL GORM
-	// AutoMigrate cannot express (idempotent; touches only the five tables
-	// above; never references a Friend table). See database/factoryflow_schema.go.
+
 	if err := ensureFactoryFlowSchema(db); err != nil {
 		return err
 	}
-
 
 	return nil
 }

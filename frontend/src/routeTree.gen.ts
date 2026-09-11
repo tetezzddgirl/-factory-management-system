@@ -19,8 +19,11 @@ import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPersonnelRouteImport } from './routes/_authenticated/personnel'
 import { Route as AuthenticatedPlanningRouteImport } from './routes/_authenticated/planning'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated/production'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedWarehouseRouteImport } from './routes/_authenticated/warehouse'
 import { Route as AuthenticatedWipRouteImport } from './routes/_authenticated/wip'
 import { Route as AuthenticatedWorkOrdersRouteImport } from './routes/_authenticated/work-orders'
 import { Route as AuthenticatedSubProductionManagementRouteImport } from './routes/_authenticated/sub/productionManagement'
@@ -76,6 +79,11 @@ const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
   path: '/production',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
   id: '/quality',
   path: '/quality',
@@ -84,6 +92,16 @@ const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWarehouseRoute = AuthenticatedWarehouseRouteImport.update({
+  id: '/warehouse',
+  path: '/warehouse',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWipRoute = AuthenticatedWipRouteImport.update({
@@ -119,8 +137,11 @@ export interface FileRoutesByFullPath {
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/warehouse': typeof AuthenticatedWarehouseRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/sub/productionManagement': typeof AuthenticatedSubProductionManagementRoute
@@ -135,8 +156,11 @@ export interface FileRoutesByTo {
   '/personnel': typeof AuthenticatedPersonnelRoute
   '/planning': typeof AuthenticatedPlanningRoute
   '/production': typeof AuthenticatedProductionRoute
+  '/products': typeof AuthenticatedProductsRoute
   '/quality': typeof AuthenticatedQualityRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/users': typeof AuthenticatedUsersRoute
+  '/warehouse': typeof AuthenticatedWarehouseRoute
   '/wip': typeof AuthenticatedWipRoute
   '/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -154,8 +178,11 @@ export interface FileRoutesById {
   '/_authenticated/personnel': typeof AuthenticatedPersonnelRoute
   '/_authenticated/planning': typeof AuthenticatedPlanningRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/warehouse': typeof AuthenticatedWarehouseRoute
   '/_authenticated/wip': typeof AuthenticatedWipRoute
   '/_authenticated/work-orders': typeof AuthenticatedWorkOrdersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -174,8 +201,11 @@ export interface FileRouteTypes {
     | '/personnel'
     | '/planning'
     | '/production'
+    | '/products'
     | '/quality'
     | '/tasks'
+    | '/users'
+    | '/warehouse'
     | '/wip'
     | '/work-orders'
     | '/sub/productionManagement'
@@ -190,8 +220,11 @@ export interface FileRouteTypes {
     | '/personnel'
     | '/planning'
     | '/production'
+    | '/products'
     | '/quality'
     | '/tasks'
+    | '/users'
+    | '/warehouse'
     | '/wip'
     | '/work-orders'
     | '/'
@@ -208,8 +241,11 @@ export interface FileRouteTypes {
     | '/_authenticated/personnel'
     | '/_authenticated/planning'
     | '/_authenticated/production'
+    | '/_authenticated/products'
     | '/_authenticated/quality'
     | '/_authenticated/tasks'
+    | '/_authenticated/users'
+    | '/_authenticated/warehouse'
     | '/_authenticated/wip'
     | '/_authenticated/work-orders'
     | '/_authenticated/'
@@ -294,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quality': {
       id: '/_authenticated/quality'
       path: '/quality'
@@ -306,6 +349,20 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/warehouse': {
+      id: '/_authenticated/warehouse'
+      path: '/warehouse'
+      fullPath: '/warehouse'
+      preLoaderRoute: typeof AuthenticatedWarehouseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/wip': {
@@ -347,8 +404,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPersonnelRoute: typeof AuthenticatedPersonnelRoute
   AuthenticatedPlanningRoute: typeof AuthenticatedPlanningRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedWarehouseRoute: typeof AuthenticatedWarehouseRoute
   AuthenticatedWipRoute: typeof AuthenticatedWipRoute
   AuthenticatedWorkOrdersRoute: typeof AuthenticatedWorkOrdersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -364,8 +424,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPersonnelRoute: AuthenticatedPersonnelRoute,
   AuthenticatedPlanningRoute: AuthenticatedPlanningRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
+  AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedWarehouseRoute: AuthenticatedWarehouseRoute,
   AuthenticatedWipRoute: AuthenticatedWipRoute,
   AuthenticatedWorkOrdersRoute: AuthenticatedWorkOrdersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

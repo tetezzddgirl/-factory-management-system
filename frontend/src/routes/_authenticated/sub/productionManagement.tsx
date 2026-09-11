@@ -19,6 +19,9 @@ import { RequisitionForm } from "@/components/production_comp/requisitionForm";
 import { IssuesForm } from '@/components/production_comp/issuesForm';
 import ProductionStatusHistory from "@/components/production_comp/productionStatusHistory";
 
+// 1. นำเข้า OrderFormDialog และ API Client
+import { OrderFormDialog } from "@/components/production_comp/repairForm"; // ปรับ path ให้ตรงกับที่วาง repairForm.tsx
+import { machinesApi, employeesApi, type ApiMachine, type ApiEmployee } from "@/lib/api-client";
 
 interface ProductionReport {
   reportId?: string;
@@ -62,7 +65,6 @@ function RouteComponent() {
   const { id: orderID } = useSearch({ from: '/_authenticated/sub/productionManagement' });
 
   const [order, setOrder] = useState<ProductionOrder | null>(null);
-  // State ใหม่สำหรับเก็บยอด FG รวมที่ทำได้
   const [totalFgAmount, setTotalFgAmount] = useState<number>(0);
   
   const [loading, setLoading] = useState<boolean>(true);
@@ -73,6 +75,17 @@ function RouteComponent() {
   const [openReqDialog, setOpenReqDialog] = useState(false);
   const [openIssuesDialog, setOpenIssuesDialog] = useState(false);
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
+
+  // 2. เพิ่ม State สำหรับเปิดหน้าต่างแจ้งซ่อม และรายชื่อเครื่องจักร/ช่าง
+  const [openRepairDialog, setOpenRepairDialog] = useState(false);
+  const [machines, setMachines] = useState<ApiMachine[]>([]);
+  const [technicians, setTechnicians] = useState<ApiEmployee[]>([]);
+
+  // โหลดรายชื่อเครื่องจักรและช่างล่วงหน้าสำหรับตัวเลือกในฟอร์มแจ้งซ่อม
+  useEffect(() => {
+    machinesApi.list().then((res) => setMachines(res ?? [])).catch(() => setMachines([]));
+    employeesApi.list().then((res) => setTechnicians(res ?? [])).catch(() => setTechnicians([]));
+  }, []);
 
   const fetchOrderDetails = useCallback(async (isSilent = false) => {
     if (!orderID) return;
@@ -92,12 +105,10 @@ function RouteComponent() {
         const resFg = await fetch(`http://localhost:8090/api/production/finished-goods`, { headers });
         if (resFg.ok) {
           const fgList = await resFg.json();
-          // กรองเอาเฉพาะ FG ที่เป็นของ Order นี้
           const orderFgList = (fgList || []).filter((fg: any) => 
             fg.orderID === orderID || fg.OrderID === orderID || fg.order_id === orderID
           );
           
-          // หาผลรวมจำนวน Quantity ทั้งหมด
           const sum = orderFgList.reduce((acc: number, curr: any) => acc + (Number(curr.quantity) || 0), 0);
           setTotalFgAmount(sum);
         }
@@ -142,13 +153,13 @@ function RouteComponent() {
       
       setOrder((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       setOpenStatusDialog(false); 
-      fetchOrderDetails(true); // รีเฟรชข้อมูลล่าสุด
+      fetchOrderDetails(true);
     } catch (err: any) {
       alert(err.message);
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -185,7 +196,6 @@ function RouteComponent() {
     );
   }
 
-  // คำนวณความคืบหน้า (Progress) จาก FG ที่รวมมา
   const done = totalFgAmount;
   const target = order.amount || 1;
   const progressPct = Math.min(100, Math.round((done / target) * 100));
@@ -239,36 +249,38 @@ function RouteComponent() {
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container spacing={2}>
               {canAccess && (
-              <Grid size={{ xs: 6 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={() => setOpenStatusDialog(true)}
-                >
-                  เปลี่ยนสถานะ
-                </Button>
-              </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={() => setOpenStatusDialog(true)}
+                  >
+                    เปลี่ยนสถานะ
+                  </Button>
+                </Grid>
               )}
               {(role !== "operator" && role !== "admin") && (
-              <Grid size={{ xs: 6 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={() => setOpenHistoryDialog(true)}
-                >
-                  ประวัติการเปลี่ยนสถานะ
-                </Button>
-              </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Button 
+                    fullWidth 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={() => setOpenHistoryDialog(true)}
+                  >
+                    ประวัติการเปลี่ยนสถานะ
+                  </Button>
+                </Grid>
               )}
               {canAccess && (
                 <>
                   <Grid size={{ xs: 6 }}>
+                    {/* 3. ผูก onClick ให้เปิด OrderFormDialog */}
                     <Button 
                       fullWidth 
                       variant="contained" 
                       color="primary"
+                      onClick={() => setOpenRepairDialog(true)}
                     >
                       แจ้งเสีย
                     </Button>
@@ -314,46 +326,38 @@ function RouteComponent() {
         </Box>
 
         <Box sx={{ pt: 3 }}>
-          {tabValue === 0 && (
-            <ProductionDetails 
-              orderID={order.orderID} 
-            />
-          )}
-          {tabValue === 1 && (
-          <ProductionFix 
-              orderID={order.orderID} 
-              orderName={order.name} 
-            />
-          )}
-          {tabValue === 2 && (
-            <ProductionEven 
-              orderID={order.orderID} 
-              orderName={order.name} 
-            />
-          )}
-          {tabValue === 3 && (
-            <ProductionReport 
-              orderID={order.orderID}
-              orderName={order.name}
-            />
-          )}
-          {tabValue === 4 && (
-            <ProductionWip 
-              orderID={order.orderID}
-              orderName={order.name}
-            />
-          )}
-          {tabValue === 5 && (
-            <ProductionFg 
-              orderID={order.orderID}
-              orderName={order.name}
-            />
-          )}
+          {tabValue === 0 && <ProductionDetails orderID={order.orderID} />}
+          {tabValue === 1 && <ProductionFix orderID={order.orderID} orderName={order.name} />}
+          {tabValue === 2 && <ProductionEven orderID={order.orderID} orderName={order.name} />}
+          {tabValue === 3 && <ProductionReport orderID={order.orderID} orderName={order.name} />}
+          {tabValue === 4 && <ProductionWip orderID={order.orderID} orderName={order.name} />}
+          {tabValue === 5 && <ProductionFg orderID={order.orderID} orderName={order.name} />}
         </Box>
 
       </Box>
 
-      {/* Dialog แก้ไขสถานะ */}
+      {/* Render หน้าต่างแจ้งซ่อม (ครอบด้วย <Dialog> แบบเดียวกับที่อื่น) */}
+      <Dialog
+        open={openRepairDialog}
+        onClose={() => setOpenRepairDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 2 } }}
+      >
+        {/* ในกรณีที่กดแจ้งเสีย ให้ส่ง type="CM" */}
+        <OrderFormDialog
+          type="CM"
+          editing={null}
+          machines={machines}
+          technicians={technicians}
+          onCancel={() => setOpenRepairDialog(false)}
+          onSaved={async () => {
+            setOpenRepairDialog(false);
+            fetchOrderDetails(true);
+          }}
+        />
+      </Dialog>
+
       <Dialog
         open={openStatusDialog}
         onClose={() => setOpenStatusDialog(false)}
@@ -369,6 +373,7 @@ function RouteComponent() {
           onCancel={() => setOpenStatusDialog(false)}
         />
       </Dialog>
+
       <Dialog
         open={openHistoryDialog}
         onClose={() => setOpenHistoryDialog(false)}

@@ -56,6 +56,7 @@ export function WorkOrderDialog({ open, data, productionLines, onClose, onSubmit
       product: data.name,
       qty: data.amount,
       line: LINES[0],
+      productionLineID: productionLines?.[0]?.id,
       startDate: today,
       due: today,
       note: "",

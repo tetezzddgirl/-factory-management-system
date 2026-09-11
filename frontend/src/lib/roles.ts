@@ -32,7 +32,7 @@ export const ROLE_MAP: Record<RoleKey, (typeof ROLES)[number]> = ROLES.reduce(
 
 /** Which nav items each role can see. */
 export const ROLE_NAV: Record<RoleKey, string[]> = {
-  planner:     ["/", "/planning", "/work-orders", "/materials", "/machines", "/personnel", "/tasks", "/issues"],
+  planner:     ["/", "/planning", "/work-orders", "/materials", "/products", "/machines", "/personnel", "/tasks", "/issues", "/warehouse"],
   warehouse:   ["/", "/materials", "/wip", "/issues"],
   operator:    ["/", "/planning", "/materials", "/wip", "/production", "/quality", "/machines", "/issues"],
   supervisor:  ["/", "/production", "/planning", "/work-orders", "/personnel", "/machines", "/quality", "/issues"],

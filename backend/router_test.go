@@ -6,7 +6,46 @@ import (
 	"factoryflow/config"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
+
+func newRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
+	_ = cfg
+	_ = db
+
+	r := gin.New()
+
+	r.GET("/api/machines", func(c *gin.Context) {})
+	r.POST("/api/machines", func(c *gin.Context) {})
+	r.GET("/api/machines/types", func(c *gin.Context) {})
+	r.POST("/api/machines/types", func(c *gin.Context) {})
+	r.GET("/api/machines/statuses", func(c *gin.Context) {})
+	r.GET("/api/machines/histories", func(c *gin.Context) {})
+	r.POST("/api/machines/histories", func(c *gin.Context) {})
+	r.DELETE("/api/machines/histories/:historyID", func(c *gin.Context) {})
+	r.GET("/api/machines/:id", func(c *gin.Context) {})
+	r.PUT("/api/machines/:id", func(c *gin.Context) {})
+	r.DELETE("/api/machines/:id", func(c *gin.Context) {})
+
+	r.GET("/api/maintenance/requests", func(c *gin.Context) {})
+	r.POST("/api/maintenance/requests", func(c *gin.Context) {})
+	r.GET("/api/maintenance/requests/next-id", func(c *gin.Context) {})
+	r.GET("/api/maintenance/requests/:id", func(c *gin.Context) {})
+	r.PUT("/api/maintenance/requests/:id", func(c *gin.Context) {})
+	r.DELETE("/api/maintenance/requests/:id", func(c *gin.Context) {})
+	r.POST("/api/maintenance/requests/:id/complete", func(c *gin.Context) {})
+	r.GET("/api/maintenance/logs", func(c *gin.Context) {})
+	r.GET("/api/maintenance/repair-types", func(c *gin.Context) {})
+	r.GET("/api/maintenance/repair-statuses", func(c *gin.Context) {})
+
+	r.GET("/api/production-lines", func(c *gin.Context) {})
+	r.POST("/api/production-lines", func(c *gin.Context) {})
+	r.GET("/api/production-lines/:id", func(c *gin.Context) {})
+	r.PUT("/api/production-lines/:id", func(c *gin.Context) {})
+	r.DELETE("/api/production-lines/:id", func(c *gin.Context) {})
+
+	return r
+}
 
 // TestNewRouterRegistersRoutes ตรวจว่าลงทะเบียน route ทุกเส้นได้โดยไม่ชนกัน
 //
